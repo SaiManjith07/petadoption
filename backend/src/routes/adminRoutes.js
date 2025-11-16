@@ -1,5 +1,6 @@
 import express from 'express';
 import { protect, authorize } from '../middleware/auth.js';
+import { validateObjectId } from '../middleware/security.js';
 import {
   getDashboardStats,
   getAdminDashboardStats,
@@ -13,6 +14,11 @@ import {
   rejectReport,
   acceptAdoptionRequest,
   getPendingAdoptionRequests,
+  getAllChatRequests,
+  getAllChats,
+  getChatStats,
+  respondToChatRequest,
+  getChatRoom,
 } from '../controllers/adminController.js';
 
 const router = express.Router();
@@ -33,8 +39,8 @@ router.get('/dashboard', getAdminDashboardStats);
  * POST /api/admin/pending/:id/reject - Reject a report
  */
 router.get('/pending', getPendingReports);
-router.post('/pending/:id/accept', acceptReport);
-router.post('/pending/:id/reject', rejectReport);
+router.post('/pending/:id/accept', validateObjectId, acceptReport);
+router.post('/pending/:id/reject', validateObjectId, rejectReport);
 
 /**
  * Adoption Management
@@ -42,7 +48,7 @@ router.post('/pending/:id/reject', rejectReport);
  * POST /api/admin/adoptions/:id/accept - Accept and verify an adoption request
  */
 router.get('/adoptions/pending', getPendingAdoptionRequests);
-router.post('/adoptions/:id/accept', acceptAdoptionRequest);
+router.post('/adoptions/:id/accept', validateObjectId, acceptAdoptionRequest);
 
 /**
  * User Management
@@ -51,8 +57,8 @@ router.post('/adoptions/:id/accept', acceptAdoptionRequest);
  * DELETE /api/admin/users/:id - Deactivate user
  */
 router.get('/users', getAllUsers);
-router.patch('/users/:id', updateUser);
-router.delete('/users/:id', deleteUser);
+router.patch('/users/:id', validateObjectId, updateUser);
+router.delete('/users/:id', validateObjectId, deleteUser);
 
 /**
  * Pet Management
@@ -60,6 +66,20 @@ router.delete('/users/:id', deleteUser);
  * DELETE /api/admin/pets/:id - Delete or resolve pet
  */
 router.get('/pets', getAllPets);
-router.delete('/pets/:id', deletePet);
+router.delete('/pets/:id', validateObjectId, deletePet);
+
+/**
+ * Chat Management
+ * GET /api/admin/chats/requests - Get all chat requests
+ * GET /api/admin/chats - Get all active chats
+ * GET /api/admin/chats/stats - Get chat statistics
+ * GET /api/admin/chats/:roomId - Get chat room details
+ * POST /api/admin/chats/requests/:id/respond - Respond to chat request
+ */
+router.get('/chats/requests', getAllChatRequests);
+router.get('/chats', getAllChats);
+router.get('/chats/stats', getChatStats);
+router.get('/chats/:roomId', getChatRoom);
+router.post('/chats/requests/:id/respond', validateObjectId, respondToChatRequest);
 
 export default router;

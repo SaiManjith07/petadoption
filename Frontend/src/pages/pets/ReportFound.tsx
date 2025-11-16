@@ -19,6 +19,10 @@ const foundPetSchema = z.object({
   breed: z.string().min(2, 'Please enter the breed'),
   color: z.string().min(2, 'Please describe the color'),
   sex: z.string().min(1, 'Please select sex'),
+  estimated_age: z.string().optional(),
+  size: z.string().optional(),
+  microchip_id: z.string().optional(),
+  collar_tag: z.string().optional(),
   distinguishing_marks: z.string().min(10, 'Please provide detailed description'),
   location_found: z.string().min(3, 'Please enter the location'),
   date_found: z.string().min(1, 'Please select the date'),
@@ -79,7 +83,11 @@ export default function ReportFound() {
         species: data.species,
         breed: data.breed,
         sex: data.sex || 'Unknown',
+        estimated_age: data.estimated_age || 'unknown',
+        size: data.size || 'Unknown',
         color_primary: data.color,
+        microchip_id: data.microchip_id || null,
+        collar_tag: data.collar_tag || null,
         distinguishing_marks: data.distinguishing_marks,
         last_seen_or_found_location_text: data.location_found,
         last_seen_or_found_date: data.date_found,
@@ -121,85 +129,79 @@ export default function ReportFound() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-green-50/30">
-      {/* Compact Hero Section */}
-      <div className="bg-gradient-to-r from-green-600 to-emerald-600">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
-          <Button 
-            variant="ghost" 
-            onClick={() => navigate(-1)} 
-            className="mb-6 text-white/90 hover:text-white hover:bg-white/20 backdrop-blur-sm"
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back
-          </Button>
-          
-          <div className="flex flex-col lg:flex-row items-start lg:items-center gap-8">
-            {/* Left Side - Content */}
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="h-12 w-12 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center border-2 border-white/30">
-                  <Heart className="h-7 w-7 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-2 drop-shadow-lg">
-                    Report a Found Pet
-                  </h1>
-                  <div className="flex items-center gap-2">
-                    <Sparkles className="h-4 w-4 text-green-200" />
-                    <p className="text-base sm:text-lg text-green-50">
-                      Help reunite this pet with their family
-                    </p>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-green-50/30 py-8">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+        <Button 
+          variant="ghost" 
+          onClick={() => navigate(-1)} 
+          className="mb-6"
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back
+        </Button>
+
+        {/* Single Container with Image and Form */}
+        <Card className="shadow-2xl border-2 border-gray-200 bg-white rounded-2xl overflow-hidden">
+          {/* Top Image with Text Overlay */}
+          <div className="relative w-full h-56 sm:h-64 overflow-hidden">
+            <img
+              src="https://images.unsplash.com/photo-1551717743-49959800b1f6?w=1200&q=80"
+              alt="Found pets - dogs, cats, and other animals waiting to be reunited"
+              className="w-full h-full object-cover"
+              loading="eager"
+            />
+            {/* Dark overlay for text readability */}
+            <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/50" />
+            
+            {/* Text Overlay - Better Aligned */}
+            <div className="absolute inset-0 flex flex-col justify-center px-6 sm:px-8 lg:px-12 py-8">
+              <div className="max-w-4xl">
+                <div className="flex items-start gap-4 mb-4">
+                  <div className="h-12 w-12 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center border-2 border-white/30 flex-shrink-0 shadow-lg">
+                    <Heart className="h-7 w-7 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white drop-shadow-2xl leading-tight mb-3">
+                      Report a Found Pet
+                    </h1>
+                    <div className="flex items-start gap-2">
+                      <Sparkles className="h-5 w-5 text-white/90 flex-shrink-0 mt-0.5" />
+                      <p className="text-base sm:text-lg lg:text-xl text-white/95 drop-shadow-lg leading-relaxed">
+                        Help reunite this pet with their family. Provide detailed information for accurate identification and faster reunification.
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
-              
-              {/* Info Points */}
-              <div className="flex flex-wrap items-center gap-4 mt-6">
-                <div className="flex items-center gap-2 text-white/90">
-                  <ShieldCheck className="h-5 w-5 text-green-200" />
-                  <span className="text-sm font-medium">NGO Verified</span>
-                </div>
-                <div className="h-4 w-px bg-white/30" />
-                <div className="flex items-center gap-2 text-white/90">
-                  <CheckCircle2 className="h-5 w-5 text-green-200" />
-                  <span className="text-sm font-medium">Quick Processing</span>
-                </div>
-              </div>
-            </div>
-            
-            {/* Right Side - Image */}
-            <div className="w-full lg:w-80 xl:w-96 flex-shrink-0">
-              <div className="relative rounded-2xl overflow-hidden shadow-2xl border-4 border-white/30">
-                <img
-                  src="https://images.unsplash.com/photo-1601758228041-f3b2795255f1?w=800&q=80"
-                  alt="Found pet illustration"
-                  className="w-full h-64 lg:h-72 object-cover"
-                  loading="eager"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-green-900/40 via-transparent to-transparent" />
-              </div>
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* Form Section */}
-      <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-12">
-        <Card className="shadow-2xl border-2 border-gray-200 bg-white rounded-2xl">
-          <CardHeader className="pt-8 pb-6 px-8">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="h-1 w-12 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full" />
-              <CardTitle className="text-3xl font-bold text-gray-900">Pet Details</CardTitle>
-            </div>
-            <CardDescription className="text-base mt-2 text-gray-600">
-              Please provide as much information as possible to help identify the pet and reunite them with their family
-            </CardDescription>
-          </CardHeader>
-          <form onSubmit={handleSubmit(onSubmit)}>
-            <CardContent className="space-y-8 px-8 pb-8">
-              {/* First Row - Species and Breed */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Form Section */}
+          <div className="bg-gradient-to-b from-white to-gray-50/50">
+            <CardHeader className="pt-8 pb-6 px-6 sm:px-8 border-b border-gray-200 bg-white">
+              <div className="flex items-center gap-4 mb-3">
+                <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-lg">
+                  <Heart className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <CardTitle className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">Pet Details</CardTitle>
+                  <CardDescription className="text-sm text-gray-600">
+                    Please provide as much information as possible to help identify the pet and reunite them with their family
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <form onSubmit={handleSubmit(onSubmit)}>
+              <CardContent className="space-y-8 px-6 sm:px-8 lg:px-12 py-8">
+                
+                {/* Section 1: Basic Information */}
+                <div className="space-y-6">
+                  <div className="flex items-center gap-3 pb-2 border-b border-gray-200">
+                    <div className="h-8 w-1 bg-gradient-to-b from-orange-500 to-orange-600 rounded-full" />
+                    <h3 className="text-lg font-semibold text-gray-900">Basic Information</h3>
+                  </div>
+                  {/* First Row - Species and Breed */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Species */}
                 <div className="space-y-2">
                   <Label htmlFor="species" className="text-sm font-semibold">Species *</Label>
@@ -235,8 +237,8 @@ export default function ReportFound() {
                 </div>
               </div>
 
-              {/* Second Row - Sex and Color */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Second Row - Sex and Color */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Sex */}
                 <div className="space-y-2">
                   <Label htmlFor="sex" className="text-sm font-semibold">Sex *</Label>
@@ -270,23 +272,104 @@ export default function ReportFound() {
                 </div>
               </div>
 
-              {/* Distinguishing Marks - Full Width */}
-              <div className="space-y-2">
-                <Label htmlFor="distinguishing_marks" className="text-sm font-semibold">Distinguishing Marks & Description *</Label>
-                <Textarea
-                  id="distinguishing_marks"
-                  rows={5}
-                  placeholder="Describe any unique features, markings, collar, tags, behavior, etc."
-                  className="resize-none"
-                  {...register('distinguishing_marks')}
-                />
-                {errors.distinguishing_marks && (
-                  <p className="text-sm text-destructive mt-1">{errors.distinguishing_marks.message}</p>
-                )}
+                </div>
+
+                {/* Section 2: Physical Characteristics */}
+                <div className="space-y-6">
+                  <div className="flex items-center gap-3 pb-2 border-b border-gray-200">
+                    <div className="h-8 w-1 bg-gradient-to-b from-orange-500 to-orange-600 rounded-full" />
+                    <h3 className="text-lg font-semibold text-gray-900">Physical Characteristics</h3>
+                  </div>
+                  
+                  {/* Third Row - Age and Size */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Estimated Age */}
+                <div className="space-y-2">
+                  <Label htmlFor="estimated_age" className="text-sm font-semibold">Estimated Age</Label>
+                  <Select onValueChange={(value) => setValue('estimated_age', value)}>
+                    <SelectTrigger className="h-11">
+                      <SelectValue placeholder="Select age range" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="puppy/kitten">Puppy/Kitten (0-6 months)</SelectItem>
+                      <SelectItem value="young">Young (6 months - 2 years)</SelectItem>
+                      <SelectItem value="adult">Adult (2-7 years)</SelectItem>
+                      <SelectItem value="senior">Senior (7+ years)</SelectItem>
+                      <SelectItem value="unknown">Unknown</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Size */}
+                <div className="space-y-2">
+                  <Label htmlFor="size" className="text-sm font-semibold">Size</Label>
+                  <Select onValueChange={(value) => setValue('size', value)}>
+                    <SelectTrigger className="h-11">
+                      <SelectValue placeholder="Select size" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Small">Small</SelectItem>
+                      <SelectItem value="Medium">Medium</SelectItem>
+                      <SelectItem value="Large">Large</SelectItem>
+                      <SelectItem value="Extra Large">Extra Large</SelectItem>
+                      <SelectItem value="Unknown">Unknown</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
-              {/* Third Row - Location and Date */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Fourth Row - Tag/Registration and Collar/Tag */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Tag/Registration Number */}
+                <div className="space-y-2">
+                  <Label htmlFor="microchip_id" className="text-sm font-semibold">Tag/Registration Number</Label>
+                  <Input
+                    id="microchip_id"
+                    placeholder="e.g., Tag ID, Registration No., License No."
+                    className="h-11"
+                    {...register('microchip_id')}
+                  />
+                  <p className="text-xs text-gray-500">Enter any tag ID, registration number, license number, or microchip ID</p>
+                </div>
+
+                {/* Collar/Tag Info */}
+                <div className="space-y-2">
+                  <Label htmlFor="collar_tag" className="text-sm font-semibold">Collar/Tag Information</Label>
+                  <Input
+                    id="collar_tag"
+                    placeholder="e.g., Blue collar with name tag 'Max'"
+                    className="h-11"
+                    {...register('collar_tag')}
+                  />
+                  <p className="text-xs text-gray-500">Describe any collar, tags, or identification markers</p>
+                </div>
+              </div>
+
+                  {/* Distinguishing Marks - Full Width */}
+                  <div className="space-y-2">
+                    <Label htmlFor="distinguishing_marks" className="text-sm font-semibold">Distinguishing Marks & Description *</Label>
+                    <Textarea
+                      id="distinguishing_marks"
+                      rows={5}
+                      placeholder="Describe any unique features, markings, collar, tags, behavior, etc."
+                      className="resize-none"
+                      {...register('distinguishing_marks')}
+                    />
+                    {errors.distinguishing_marks && (
+                      <p className="text-sm text-destructive mt-1">{errors.distinguishing_marks.message}</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Section 3: Location & Date */}
+                <div className="space-y-6">
+                  <div className="flex items-center gap-3 pb-2 border-b border-gray-200">
+                    <div className="h-8 w-1 bg-gradient-to-b from-orange-500 to-orange-600 rounded-full" />
+                    <h3 className="text-lg font-semibold text-gray-900">Location & Date</h3>
+                  </div>
+                  
+                  {/* Location and Date */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Location */}
                 <div className="space-y-2">
                   <Label htmlFor="location_found" className="text-sm font-semibold">Location Found *</Label>
@@ -317,22 +400,38 @@ export default function ReportFound() {
                 </div>
               </div>
 
-              {/* Photos - Full Width */}
-              <div className="space-y-2">
-                <Label htmlFor="photos" className="text-sm font-semibold">Photos *</Label>
+                </div>
+
+                {/* Section 4: Photos */}
+                <div className="space-y-6">
+                  <div className="flex items-center gap-3 pb-2 border-b border-gray-200">
+                    <div className="h-8 w-1 bg-gradient-to-b from-orange-500 to-orange-600 rounded-full" />
+                    <h3 className="text-lg font-semibold text-gray-900">Photos</h3>
+                  </div>
+                  
+                  {/* Photos - Full Width */}
+                  <div className="space-y-2">
+                <Label htmlFor="photos" className="text-sm font-semibold">
+                  Photos <span className="text-destructive">*</span>
+                  <span className="text-xs font-normal text-gray-600 ml-2">(Required for identification)</span>
+                </Label>
                 <div className="flex items-center justify-center w-full">
                   <label
                     htmlFor="photos"
-                    className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-xl cursor-pointer bg-muted/30 hover:bg-muted/50 transition-all hover:border-primary/50"
+                    className={`flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-xl cursor-pointer transition-all ${
+                      photos.length === 0 
+                        ? 'bg-red-50/50 border-red-300 hover:border-red-400 hover:bg-red-50' 
+                        : 'bg-muted/30 hover:bg-muted/50 hover:border-primary/50'
+                    }`}
                   >
                     <div className="flex flex-col items-center justify-center pt-5 pb-6">
                       <Upload className="w-10 h-10 mb-3 text-muted-foreground" />
-                      <p className="text-sm font-medium text-muted-foreground">
+                      <p className={`text-sm font-medium ${photos.length === 0 ? 'text-red-600' : 'text-muted-foreground'}`}>
                         {photos.length > 0
                           ? `${photos.length} photo(s) selected`
-                          : 'Click to upload photos or drag and drop'}
+                          : 'Click to upload photos or drag and drop (Required)'}
                       </p>
-                      <p className="text-xs text-muted-foreground mt-1">PNG, JPG up to 10MB</p>
+                      <p className="text-xs text-muted-foreground mt-1">PNG, JPG up to 10MB - At least 1 photo required</p>
                     </div>
                     <input
                       id="photos"
@@ -357,10 +456,11 @@ export default function ReportFound() {
                     ))}
                   </div>
                 )}
-              </div>
-            </CardContent>
+                  </div>
+                </div>
+              </CardContent>
 
-        <div className="px-8 py-6 flex flex-col sm:flex-row gap-4 border-t-2 border-gray-100 bg-gradient-to-r from-gray-50 to-white">
+              <div className="px-6 sm:px-8 py-4 flex flex-col sm:flex-row gap-4 border-t-2 border-gray-100 bg-gradient-to-r from-gray-50 to-white">
           <Button
             type="button"
             variant="outline"
@@ -371,8 +471,8 @@ export default function ReportFound() {
           </Button>
           <Button
             type="submit"
-            disabled={isSubmitting}
-            className="flex-1 h-12 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold shadow-lg"
+            disabled={isSubmitting || photos.length === 0}
+            className="flex-1 h-12 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSubmitting ? (
               <>Submitting...</>
@@ -382,9 +482,10 @@ export default function ReportFound() {
                 Submit Report
               </>
             )}
-          </Button>
-        </div>
-          </form>
+              </Button>
+              </div>
+            </form>
+          </div>
         </Card>
       </div>
     </div>

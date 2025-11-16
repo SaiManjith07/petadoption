@@ -145,7 +145,14 @@ const petSchema = new mongoose.Schema(
     // Photos & media
     photos: [
       {
-        url: String,
+        url: {
+          type: String,
+          required: true,
+        }, // Can be data URL (base64) or file URL
+        file_url: {
+          type: String,
+          default: null,
+        }, // Optional file URL as backup
         original_filename: String,
         uploaded_at: {
           type: Date,

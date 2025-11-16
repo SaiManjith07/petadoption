@@ -24,6 +24,7 @@ import {
   CheckCircle2,
   Quote,
   Star,
+  AlertCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -112,7 +113,7 @@ const petImages = [
     type: 'Dogs',
     text: 'Find Your Lost Companion',
     description: 'Dogs are loyal companions who bring joy to millions of families. From Golden Retrievers to mixed breeds, we help reunite lost dogs with their worried owners through our verified reporting system.',
-    color: 'from-orange-500 to-amber-600'
+    color: 'from-green-600 to-emerald-600'
   },
   {
     url: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=1920&q=80',
@@ -179,7 +180,7 @@ const HeroSection = ({ isAuthenticated }: { isAuthenticated: boolean }) => {
 
   return (
     <section
-      className="relative overflow-hidden min-h-[90vh] flex items-center justify-center"
+      className="relative overflow-hidden min-h-[70vh] sm:min-h-[80vh] flex items-center justify-center py-12 sm:py-16 lg:py-20"
       aria-label="Hero section"
     >
       {/* Background Image Carousel with Smooth Crossfade */}
@@ -202,8 +203,9 @@ const HeroSection = ({ isAuthenticated }: { isAuthenticated: boolean }) => {
               <img
                 src={pet.url}
                 alt={`${pet.type} - ${pet.text}`}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover object-center"
                 loading={index === 0 ? 'eager' : 'lazy'}
+                style={{ objectFit: 'cover', width: '100%', height: '100%' }}
               />
               {/* Gradient overlay that matches pet type */}
               <div className={`absolute inset-0 bg-gradient-to-br ${pet.color} opacity-40`} />
@@ -215,78 +217,68 @@ const HeroSection = ({ isAuthenticated }: { isAuthenticated: boolean }) => {
       </div>
 
       {/* Content Overlay with Smooth Text Transitions */}
-      <div className="relative z-20 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 w-full py-20">
+      <div className="relative z-20 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 w-full py-12 sm:py-16 lg:py-20">
         <div className="max-w-4xl mx-auto text-center">
-          {/* Animated Pet Type Badge */}
-          <div className="mb-6 inline-block">
-            <span 
-              key={currentImageIndex}
-              className="px-6 py-2 bg-orange-500/90 text-white rounded-full text-sm font-semibold backdrop-blur-sm transition-opacity duration-500 ease-in-out"
-            >
-              {currentPet.type}
-            </span>
-          </div>
-
           {/* Main Heading with smooth transition */}
           <h1 
             key={`heading-${currentImageIndex}`}
-            className="text-4xl sm:text-5xl lg:text-7xl font-bold tracking-tight text-white leading-tight drop-shadow-2xl mb-6 transition-all duration-700 ease-in-out"
+            className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold tracking-tight text-white leading-tight drop-shadow-2xl mb-4 sm:mb-6 transition-all duration-700 ease-in-out px-2"
           >
             {currentPet.text}
           </h1>
           
-          <h2 className="text-xl sm:text-2xl lg:text-3xl font-semibold text-white/95 drop-shadow-lg mb-4">
+          <h2 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-semibold text-white/95 drop-shadow-lg mb-3 sm:mb-4 px-2">
             Rescue. Reunite. Protect — A Trusted Platform for Every Animal.
           </h2>
           
           {/* Dynamic Description for each pet type */}
           <p 
             key={`desc-${currentImageIndex}`}
-            className="mt-6 text-lg sm:text-xl text-white/90 leading-relaxed max-w-2xl mx-auto drop-shadow-md mb-10 transition-all duration-700 ease-in-out"
+            className="mt-4 sm:mt-6 text-base sm:text-lg md:text-xl text-white/90 leading-relaxed max-w-2xl mx-auto drop-shadow-md mb-6 sm:mb-8 md:mb-10 transition-all duration-700 ease-in-out px-4"
           >
             {currentPet.description}
           </p>
 
           {/* Action Buttons */}
-          <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:gap-4 justify-center items-center" role="group" aria-label="Primary actions">
+          <div className="mt-6 sm:mt-8 md:mt-10 flex flex-row gap-3 sm:gap-4 justify-center items-center px-4 flex-wrap" role="group" aria-label="Primary actions">
             <Button
               size="lg"
-              className="bg-orange-500 hover:bg-orange-600 text-white text-lg px-8 py-6 group transition-transform hover:scale-105 hover:shadow-2xl shadow-lg"
+              className="flex-1 sm:flex-initial bg-green-600 hover:bg-green-700 text-white text-base sm:text-lg px-4 sm:px-6 py-5 sm:py-6 group transition-transform hover:scale-105 hover:shadow-2xl shadow-lg whitespace-nowrap"
               data-analytics="cta_report_missing"
               aria-label="Report Missing Animal"
               onClick={() => isAuthenticated ? navigate('/pets/new/lost') : navigate('/auth/login')}
             >
-              <Search className="h-6 w-6 mr-2 group-hover:scale-110 transition-transform" />
+              <AlertCircle className="h-5 w-5 sm:h-6 sm:w-6 mr-2 group-hover:scale-110 transition-transform" />
               Report Missing Animal
             </Button>
 
             <Button
               size="lg"
-              className="bg-white/95 hover:bg-white text-orange-600 text-lg px-8 py-6 group transition-transform hover:scale-105 hover:shadow-2xl shadow-lg border-2 border-white"
+              className="flex-1 sm:flex-initial bg-white/95 hover:bg-white text-green-600 text-base sm:text-lg px-4 sm:px-6 py-5 sm:py-6 group transition-transform hover:scale-105 hover:shadow-2xl shadow-lg border-2 border-white whitespace-nowrap"
               data-analytics="cta_report_found"
               aria-label="Report Found Animal"
               onClick={() => isAuthenticated ? navigate('/pets/new/found') : navigate('/auth/login')}
             >
-              <Heart className="h-6 w-6 mr-2 text-orange-600 group-hover:scale-110 transition-transform" />
+              <Heart className="h-5 w-5 sm:h-6 sm:w-6 mr-2 text-green-600 group-hover:scale-110 transition-transform" />
               Report Found Animal
             </Button>
 
             <Button
               size="lg"
               variant="ghost"
-              className="text-white hover:bg-white/20 text-lg px-8 py-6 group transition-transform hover:scale-105 border-2 border-white/50 backdrop-blur-sm"
+              className="flex-1 sm:flex-initial text-white hover:bg-white/20 text-base sm:text-lg px-4 sm:px-6 py-5 sm:py-6 group transition-transform hover:scale-105 border-2 border-white/50 backdrop-blur-sm whitespace-nowrap"
               data-analytics="cta_adopt"
               aria-label="Browse animals for adoption"
               onClick={() => isAuthenticated ? navigate('/pets/adopt') : navigate('/auth/login')}
             >
-              <Home className="h-6 w-6 mr-2 text-white" />
+              <Home className="h-5 w-5 sm:h-6 sm:w-6 mr-2 text-white" />
               Adopt
             </Button>
           </div>
 
-          {/* Image Indicators with Pet Type Labels */}
-          <div className="mt-12">
-            <div className="flex justify-center gap-2 mb-4">
+          {/* Image Indicators */}
+          <div className="mt-8 sm:mt-10 md:mt-12">
+            <div className="flex justify-center gap-2">
               {petImages.map((pet, index) => (
                 <button
                   key={index}
@@ -299,81 +291,59 @@ const HeroSection = ({ isAuthenticated }: { isAuthenticated: boolean }) => {
                   }}
                   className={`h-2 rounded-full transition-all duration-500 ${
                     index === currentImageIndex
-                      ? 'w-8 bg-orange-500 shadow-lg'
+                      ? 'w-8 bg-green-600 shadow-lg'
                       : 'w-2 bg-white/50 hover:bg-white/75 hover:w-3'
                   }`}
                   aria-label={`View ${pet.type} image`}
                 />
               ))}
             </div>
-            {/* Pet Type Labels */}
-            <div className="flex flex-wrap justify-center gap-2 mt-4">
-              {petImages.map((pet, index) => (
-                <button
-                  key={index}
-                  onClick={() => {
-                    setIsTransitioning(true);
-                    setTimeout(() => {
-                      setCurrentImageIndex(index);
-                      setIsTransitioning(false);
-                    }, 300);
-                  }}
-                  className={`px-4 py-1.5 rounded-full text-xs sm:text-sm font-medium transition-all duration-300 ${
-                    index === currentImageIndex
-                      ? 'bg-white/90 text-orange-600 shadow-lg scale-105'
-                      : 'bg-white/20 text-white/80 hover:bg-white/30 hover:text-white'
-                  }`}
-                >
-                  {pet.type}
-                </button>
-              ))}
-            </div>
           </div>
         </div>
 
-        {/* Features Section with Circular Icons */}
-        <div className="mt-20 grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 max-w-5xl mx-auto">
+        {/* Features Section with Circular Icons - Hidden on Mobile */}
+        <div className="hidden md:grid mt-16 lg:mt-20 grid-cols-3 gap-8 lg:gap-12 max-w-6xl mx-auto px-4">
           {/* Report Feature */}
           <div className="group text-center flex flex-col items-center">
-            <div className="relative inline-block mb-4">
-              <div className="h-16 w-16 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-xl group-hover:shadow-blue-500/50 transition-all duration-300 group-hover:scale-105 group-hover:-translate-y-1">
+            <div className="relative inline-block mb-5">
+              <div className="h-16 w-16 rounded-full bg-gradient-to-br from-green-600 to-emerald-600 flex items-center justify-center shadow-xl group-hover:shadow-green-500/50 transition-all duration-300 group-hover:scale-105 group-hover:-translate-y-1">
                 <FileText className="h-7 w-7 text-white" />
               </div>
               {/* Decorative Ring */}
-              <div className="absolute inset-0 rounded-full border-2 border-blue-200/40 group-hover:border-blue-300/60 transition-all duration-300 scale-125" />
+              <div className="absolute inset-0 rounded-full border-2 border-green-200/40 group-hover:border-green-300/60 transition-all duration-300 scale-125" />
             </div>
-            <h3 className="text-lg sm:text-xl font-bold text-white mb-2 drop-shadow-lg">Easy Reporting</h3>
-            <p className="text-white/90 text-xs sm:text-sm leading-relaxed max-w-[280px] mx-auto drop-shadow-md px-2">
+            <h3 className="text-lg lg:text-xl font-bold text-white mb-3 drop-shadow-lg">Easy Reporting</h3>
+            <p className="text-white/90 text-sm lg:text-base leading-relaxed max-w-[280px] mx-auto drop-shadow-md">
               Submit detailed reports with photos and location information. Our simple form makes it easy to report lost or found animals quickly.
             </p>
           </div>
 
           {/* Reunite Feature */}
           <div className="group text-center flex flex-col items-center">
-            <div className="relative inline-block mb-4">
+            <div className="relative inline-block mb-5">
               <div className="h-16 w-16 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-xl group-hover:shadow-green-500/50 transition-all duration-300 group-hover:scale-105 group-hover:-translate-y-1">
                 <Heart className="h-7 w-7 text-white fill-white" />
               </div>
               {/* Decorative Ring */}
               <div className="absolute inset-0 rounded-full border-2 border-green-200/40 group-hover:border-green-300/60 transition-all duration-300 scale-125" />
             </div>
-            <h3 className="text-lg sm:text-xl font-bold text-white mb-2 drop-shadow-lg">Smart Matching</h3>
-            <p className="text-white/90 text-xs sm:text-sm leading-relaxed max-w-[280px] mx-auto drop-shadow-md px-2">
+            <h3 className="text-lg lg:text-xl font-bold text-white mb-3 drop-shadow-lg">Smart Matching</h3>
+            <p className="text-white/90 text-sm lg:text-base leading-relaxed max-w-[280px] mx-auto drop-shadow-md">
               Our intelligent matching system connects lost and found reports automatically, helping reunite pets with their families faster.
             </p>
           </div>
 
           {/* Verification Feature */}
           <div className="group text-center flex flex-col items-center">
-            <div className="relative inline-block mb-4">
-              <div className="h-16 w-16 rounded-full bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-xl group-hover:shadow-orange-500/50 transition-all duration-300 group-hover:scale-105 group-hover:-translate-y-1">
+            <div className="relative inline-block mb-5">
+              <div className="h-16 w-16 rounded-full bg-gradient-to-br from-green-600 to-emerald-600 flex items-center justify-center shadow-xl group-hover:shadow-green-500/50 transition-all duration-300 group-hover:scale-105 group-hover:-translate-y-1">
                 <ShieldCheck className="h-7 w-7 text-white" />
               </div>
               {/* Decorative Ring */}
-              <div className="absolute inset-0 rounded-full border-2 border-orange-200/40 group-hover:border-orange-300/60 transition-all duration-300 scale-125" />
+              <div className="absolute inset-0 rounded-full border-2 border-green-200/40 group-hover:border-green-300/60 transition-all duration-300 scale-125" />
             </div>
-            <h3 className="text-lg sm:text-xl font-bold text-white mb-2 drop-shadow-lg">NGO Verified</h3>
-            <p className="text-white/90 text-xs sm:text-sm leading-relaxed max-w-[280px] mx-auto drop-shadow-md px-2">
+            <h3 className="text-lg lg:text-xl font-bold text-white mb-3 drop-shadow-lg">NGO Verified</h3>
+            <p className="text-white/90 text-sm lg:text-base leading-relaxed max-w-[280px] mx-auto drop-shadow-md">
               All reports are verified by trusted NGO partners to ensure accuracy and prevent fraud, giving you confidence in every listing.
             </p>
           </div>
@@ -397,8 +367,8 @@ const AboutSection = ({ isAuthenticated }: { isAuthenticated: boolean }) => {
     {
       icon: PawPrint,
       text: 'Support for all animal types including farm and working animals',
-      color: 'text-orange-600',
-      bgColor: 'bg-orange-50'
+      color: 'text-green-600',
+      bgColor: 'bg-green-50'
     },
     {
       icon: HandHeart,
@@ -415,19 +385,19 @@ const AboutSection = ({ isAuthenticated }: { isAuthenticated: boolean }) => {
   ];
 
   return (
-    <section className="py-16 sm:py-20 bg-gradient-to-b from-white via-orange-50/30 to-white" aria-label="About">
+    <section className="py-16 sm:py-20 bg-gradient-to-b from-white via-green-50/30 to-white" aria-label="About">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="grid gap-12 lg:grid-cols-2 items-center">
           {/* Left Side - Content */}
           <div className="space-y-6">
             {/* Header with Icon */}
             <div className="flex items-center gap-3 mb-6">
-              <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-lg">
+              <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-green-600 to-emerald-600 flex items-center justify-center shadow-lg">
                 <Award className="h-8 w-8 text-white" />
               </div>
               <div>
                 <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900">What We Do</h2>
-                <div className="h-1 w-20 bg-gradient-to-r from-orange-500 to-orange-600 mt-2 rounded-full" />
+                <div className="h-1 w-20 bg-gradient-to-r from-green-600 to-emerald-600 mt-2 rounded-full" />
               </div>
             </div>
             
@@ -457,7 +427,7 @@ const AboutSection = ({ isAuthenticated }: { isAuthenticated: boolean }) => {
             <div className="mt-8">
               <Button 
                 size="lg"
-                className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 px-8 py-6 text-base font-semibold"
+                className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 px-8 py-6 text-base font-semibold"
                 onClick={() => isAuthenticated ? navigate('/about') : navigate('/auth/login')}
               >
                 <ShieldCheck className="mr-2 h-5 w-5" />
@@ -469,19 +439,19 @@ const AboutSection = ({ isAuthenticated }: { isAuthenticated: boolean }) => {
           {/* Right Side - NGO Trust Card */}
           <div className="relative">
             {/* Decorative Background Elements */}
-            <div className="absolute -top-4 -right-4 h-32 w-32 bg-orange-200 rounded-full opacity-20 blur-2xl" />
-            <div className="absolute -bottom-4 -left-4 h-24 w-24 bg-blue-200 rounded-full opacity-20 blur-2xl" />
+            <div className="absolute -top-4 -right-4 h-32 w-32 bg-green-200 rounded-full opacity-20 blur-2xl" />
+            <div className="absolute -bottom-4 -left-4 h-24 w-24 bg-emerald-200 rounded-full opacity-20 blur-2xl" />
             
-            <div className="relative rounded-2xl overflow-hidden shadow-2xl bg-gradient-to-br from-white to-gray-50 border-2 border-orange-100">
+            <div className="relative rounded-2xl overflow-hidden shadow-2xl bg-gradient-to-br from-white to-gray-50 border-2 border-green-100">
               {/* Header */}
-              <div className="bg-gradient-to-r from-orange-500 to-orange-600 p-6">
+              <div className="bg-gradient-to-r from-green-600 to-emerald-600 p-6">
                 <div className="flex items-center gap-3">
                   <div className="h-12 w-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
                     <Building2 className="h-7 w-7 text-white" />
                   </div>
                   <div>
                     <h3 className="text-2xl font-bold text-white">Trusted by NGOs</h3>
-                    <p className="text-orange-100 text-sm mt-1">Verified Partners</p>
+                    <p className="text-green-100 text-sm mt-1">Verified Partners</p>
                   </div>
                 </div>
               </div>
@@ -498,10 +468,10 @@ const AboutSection = ({ isAuthenticated }: { isAuthenticated: boolean }) => {
                   {ngos.map((ngo, index) => (
                     <div 
                       key={index}
-                      className="flex items-center gap-4 p-4 rounded-xl bg-white border-2 border-gray-100 hover:border-orange-200 hover:shadow-md transition-all duration-300 group"
+                      className="flex items-center gap-4 p-4 rounded-xl bg-white border-2 border-gray-100 hover:border-green-200 hover:shadow-md transition-all duration-300 group"
                     >
-                      <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-orange-100 to-orange-50 flex items-center justify-center group-hover:from-orange-200 group-hover:to-orange-100 transition-colors">
-                        <ngo.icon className="h-7 w-7 text-orange-600" />
+                      <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-green-100 to-emerald-50 flex items-center justify-center group-hover:from-green-200 group-hover:to-emerald-100 transition-colors">
+                        <ngo.icon className="h-7 w-7 text-green-600" />
                       </div>
                       <div className="flex-1">
                         <p className="font-semibold text-gray-900">{ngo.name}</p>
@@ -517,8 +487,8 @@ const AboutSection = ({ isAuthenticated }: { isAuthenticated: boolean }) => {
                 {/* Stats */}
                 <div className="mt-6 pt-6 border-t border-gray-200">
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="text-center p-3 rounded-lg bg-orange-50">
-                      <p className="text-2xl font-bold text-orange-600">50+</p>
+                    <div className="text-center p-3 rounded-lg bg-green-50">
+                      <p className="text-2xl font-bold text-green-600">50+</p>
                       <p className="text-xs text-gray-600 mt-1">NGO Partners</p>
                     </div>
                     <div className="text-center p-3 rounded-lg bg-green-50">
@@ -544,9 +514,9 @@ const HowItWorksSection = ({ isAuthenticated }: { isAuthenticated: boolean }) =>
       icon: FileText, 
       title: 'Report Missing Animal', 
       description: 'Log details and photos so the community and NGO can start a search quickly.',
-      color: 'from-blue-500 to-blue-600',
-      bgColor: 'from-blue-50 to-blue-100',
-      iconColor: 'text-blue-600'
+      color: 'from-green-600 to-emerald-600',
+      bgColor: 'from-green-50 to-emerald-100',
+      iconColor: 'text-green-600'
     },
     { 
       icon: Heart, 
@@ -568,9 +538,9 @@ const HowItWorksSection = ({ isAuthenticated }: { isAuthenticated: boolean }) =>
       icon: Users, 
       title: 'Reunify or Adopt', 
       description: 'If claimed, NGO supervises handover; if unclaimed, animals are listed for adoption.',
-      color: 'from-orange-500 to-amber-600',
-      bgColor: 'from-orange-50 to-amber-100',
-      iconColor: 'text-orange-600'
+      color: 'from-green-600 to-emerald-600',
+      bgColor: 'from-green-50 to-emerald-100',
+      iconColor: 'text-green-600'
     },
   ];
 
@@ -579,9 +549,9 @@ const HowItWorksSection = ({ isAuthenticated }: { isAuthenticated: boolean }) =>
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
           <div className="inline-flex items-center justify-center mb-4">
-            <Sparkles className="h-8 w-8 text-orange-500 mr-2" />
+            <Sparkles className="h-8 w-8 text-green-600 mr-2" />
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900">How It Works</h2>
-            <Sparkles className="h-8 w-8 text-orange-500 ml-2" />
+            <Sparkles className="h-8 w-8 text-green-600 ml-2" />
           </div>
           <p className="mt-4 text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto">
             A clear, NGO-backed process to reunify animals with their families
@@ -590,7 +560,7 @@ const HowItWorksSection = ({ isAuthenticated }: { isAuthenticated: boolean }) =>
 
         <div className="relative">
           {/* Connecting Line - Desktop Only */}
-          <div className="hidden lg:block absolute top-20 left-0 right-0 h-0.5 bg-gradient-to-r from-blue-200 via-pink-200 via-green-200 to-orange-200" />
+          <div className="hidden lg:block absolute top-20 left-0 right-0 h-0.5 bg-gradient-to-r from-green-200 via-emerald-200 via-green-200 to-emerald-200" />
           
           <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
             {steps.map((step, i) => (
@@ -623,7 +593,7 @@ const HowItWorksSection = ({ isAuthenticated }: { isAuthenticated: boolean }) =>
                 )}
                 
                 {/* Content */}
-                <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-orange-600 transition-colors">
+                <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-green-600 transition-colors">
                   {step.title}
                 </h3>
                 <p className="text-gray-600 text-sm sm:text-base leading-relaxed max-w-xs">
@@ -653,17 +623,17 @@ const TrustSection = () => {
       icon: HandHeart,
       title: 'Safe Handover',
       description: 'Clear protocols and supervised handovers protect both animals and claimants during reunification.',
-      color: 'from-orange-500 to-amber-600',
-      bgColor: 'from-orange-50 to-amber-50',
-      iconColor: 'text-orange-600'
+      color: 'from-green-600 to-emerald-600',
+      bgColor: 'from-green-50 to-emerald-50',
+      iconColor: 'text-green-600'
     },
     {
       icon: Shield,
       title: 'Secure Platform',
       description: 'Your data is protected with industry-standard security measures and privacy controls.',
-      color: 'from-blue-500 to-indigo-600',
-      bgColor: 'from-blue-50 to-indigo-50',
-      iconColor: 'text-blue-600'
+      color: 'from-green-600 to-emerald-600',
+      bgColor: 'from-green-50 to-emerald-50',
+      iconColor: 'text-green-600'
     }
   ];
 
@@ -673,9 +643,9 @@ const TrustSection = () => {
         {/* Header */}
         <div className="text-center mb-12">
           <div className="inline-flex items-center justify-center mb-4">
-            <Shield className="h-10 w-10 text-orange-500 mr-3" />
+            <Shield className="h-10 w-10 text-green-600 mr-3" />
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900">Trust & Safety</h2>
-            <Shield className="h-10 w-10 text-orange-500 ml-3" />
+            <Shield className="h-10 w-10 text-green-600 ml-3" />
           </div>
           <p className="mt-4 text-lg sm:text-xl text-gray-600 max-w-3xl mx-auto">
             All reports are reviewed by our NGO partners. Verified listings show a partner badge and
@@ -688,7 +658,7 @@ const TrustSection = () => {
           {safetyFeatures.map((feature, index) => (
             <div 
               key={index}
-              className={`group relative bg-gradient-to-br ${feature.bgColor} rounded-2xl p-6 border-2 border-transparent hover:border-orange-200 transition-all duration-300 hover:shadow-xl hover:-translate-y-1`}
+              className={`group relative bg-gradient-to-br ${feature.bgColor} rounded-2xl p-6 border-2 border-transparent hover:border-green-200 transition-all duration-300 hover:shadow-xl hover:-translate-y-1`}
             >
               <div className={`h-16 w-16 rounded-2xl bg-gradient-to-br ${feature.color} flex items-center justify-center shadow-lg mb-4 group-hover:scale-110 transition-transform`}>
                 <feature.icon className={`h-8 w-8 text-white`} />
@@ -706,9 +676,9 @@ const TrustSection = () => {
         {/* Verification Badge Showcase */}
         <div className="grid gap-8 lg:grid-cols-2 items-center">
           <div className="order-2 lg:order-1">
-            <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl p-8 border-2 border-orange-100 shadow-xl">
+            <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl p-8 border-2 border-green-100 shadow-xl">
               <div className="flex items-center gap-4 mb-6">
-                <div className="h-16 w-16 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-lg">
+                <div className="h-16 w-16 rounded-xl bg-gradient-to-br from-green-600 to-emerald-600 flex items-center justify-center shadow-lg">
                   <Award className="h-8 w-8 text-white" />
                 </div>
                 <div>
@@ -733,15 +703,15 @@ const TrustSection = () => {
           <div className="order-1 lg:order-2">
             <div className="relative">
               {/* Badge Preview */}
-              <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl p-8 shadow-2xl transform rotate-3 hover:rotate-0 transition-transform duration-300">
+              <div className="bg-gradient-to-br from-green-600 to-emerald-600 rounded-2xl p-8 shadow-2xl transform rotate-3 hover:rotate-0 transition-transform duration-300">
                 <div className="bg-white/20 backdrop-blur-sm rounded-xl p-6 border-2 border-white/30">
                   <div className="flex items-center gap-4 mb-4">
                     <div className="h-12 w-12 rounded-full bg-white flex items-center justify-center">
-                      <ShieldCheck className="h-6 w-6 text-orange-600" />
+                      <ShieldCheck className="h-6 w-6 text-green-600" />
                     </div>
                     <div>
                       <p className="text-white font-bold text-lg">Verified</p>
-                      <p className="text-orange-100 text-sm">Animal Rescue Foundation</p>
+                      <p className="text-green-100 text-sm">Animal Rescue Foundation</p>
                     </div>
                   </div>
                   <div className="bg-white/90 rounded-lg p-4 mt-4">
@@ -751,8 +721,8 @@ const TrustSection = () => {
                 </div>
               </div>
               {/* Decorative Elements */}
-              <div className="absolute -top-4 -right-4 h-24 w-24 bg-orange-200 rounded-full opacity-20 blur-2xl" />
-              <div className="absolute -bottom-4 -left-4 h-16 w-16 bg-blue-200 rounded-full opacity-20 blur-2xl" />
+              <div className="absolute -top-4 -right-4 h-24 w-24 bg-green-200 rounded-full opacity-20 blur-2xl" />
+              <div className="absolute -bottom-4 -left-4 h-16 w-16 bg-green-200 rounded-full opacity-20 blur-2xl" />
             </div>
           </div>
         </div>
@@ -775,7 +745,7 @@ const AdoptionSection = ({ isAuthenticated }: { isAuthenticated: boolean }) => {
     {
       icon: Users,
       text: 'Prospective adopters undergo screening and reference checks',
-      color: 'text-blue-600'
+      color: 'text-green-600'
     },
     {
       icon: Heart,
@@ -785,7 +755,7 @@ const AdoptionSection = ({ isAuthenticated }: { isAuthenticated: boolean }) => {
   ];
 
   return (
-    <section className="py-16 sm:py-20 bg-gradient-to-b from-gray-50 via-white to-orange-50/30" aria-label="Adoption awareness">
+    <section className="py-16 sm:py-20 bg-gradient-to-b from-gray-50 via-white to-green-50/30" aria-label="Adoption awareness">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="grid gap-12 lg:grid-cols-2 items-center">
           {/* Left Side - Content */}
@@ -908,9 +878,9 @@ const TestimonialsSection = () => {
         {/* Header */}
         <div className="text-center mb-16">
           <div className="inline-flex items-center justify-center mb-4">
-            <Heart className="h-10 w-10 text-orange-500 mr-3 fill-orange-500" />
+            <Heart className="h-10 w-10 text-green-600 mr-3 fill-green-600" />
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900">Success Stories</h2>
-            <Heart className="h-10 w-10 text-orange-500 ml-3 fill-orange-500" />
+            <Heart className="h-10 w-10 text-green-600 ml-3 fill-green-600" />
           </div>
           <p className="mt-4 text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto">
             See how our community is changing animal lives and bringing families together
@@ -922,10 +892,10 @@ const TestimonialsSection = () => {
           {testimonials.map((t, i) => (
             <div 
               key={i} 
-              className="group relative bg-white rounded-2xl p-6 sm:p-8 border-2 border-gray-100 hover:border-orange-200 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2"
+              className="group relative bg-white rounded-2xl p-6 sm:p-8 border-2 border-gray-100 hover:border-green-200 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2"
             >
               {/* Quote Icon */}
-              <div className="absolute -top-4 -left-4 h-12 w-12 rounded-full bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-lg">
+              <div className="absolute -top-4 -left-4 h-12 w-12 rounded-full bg-gradient-to-br from-green-600 to-emerald-600 flex items-center justify-center shadow-lg">
                 <Quote className="h-6 w-6 text-white fill-white" />
               </div>
 
@@ -947,7 +917,7 @@ const TestimonialsSection = () => {
                   <img 
                     src={t.image} 
                     alt={t.author} 
-                    className="h-14 w-14 rounded-full bg-gradient-to-br from-orange-100 to-orange-50 border-2 border-orange-200 shadow-md group-hover:scale-110 transition-transform" 
+                    className="h-14 w-14 rounded-full bg-gradient-to-br from-green-100 to-emerald-50 border-2 border-green-200 shadow-md group-hover:scale-110 transition-transform" 
                     loading="lazy" 
                   />
                   <div className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-green-500 border-2 border-white flex items-center justify-center">
@@ -956,25 +926,25 @@ const TestimonialsSection = () => {
                 </div>
                 <div className="flex-1">
                   <p className="font-bold text-gray-900 text-base">{t.author}</p>
-                  <p className="text-orange-600 text-sm font-medium">{t.role}</p>
+                  <p className="text-green-600 text-sm font-medium">{t.role}</p>
                   <p className="text-gray-500 text-xs mt-1">{t.location}</p>
                 </div>
               </div>
 
               {/* Decorative Element */}
-              <div className="absolute top-4 right-4 h-2 w-2 rounded-full bg-orange-200 opacity-30 group-hover:opacity-50 transition-opacity" />
+              <div className="absolute top-4 right-4 h-2 w-2 rounded-full bg-green-200 opacity-30 group-hover:opacity-50 transition-opacity" />
             </div>
           ))}
         </div>
 
         {/* Bottom Decorative Element */}
         <div className="mt-16 text-center">
-          <div className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-50 to-rose-50 rounded-full border-2 border-orange-100">
-            <Sparkles className="h-5 w-5 text-orange-500" />
+          <div className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-full border-2 border-green-100">
+            <Sparkles className="h-5 w-5 text-green-600" />
             <p className="text-sm font-semibold text-gray-700">
               Join thousands of happy pet owners and rescuers
             </p>
-            <Sparkles className="h-5 w-5 text-orange-500" />
+            <Sparkles className="h-5 w-5 text-green-600" />
           </div>
         </div>
       </div>
@@ -984,14 +954,14 @@ const TestimonialsSection = () => {
 
 // CTA BAND
 const CTABand = () => (
-  <section className="py-12 bg-gradient-to-r from-orange-500 to-orange-600 text-white">
+  <section className="py-12 bg-gradient-to-r from-green-600 to-emerald-600 text-white">
     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h3 className="text-xl sm:text-2xl font-bold">Seen a lost animal? Help reunite a family today.</h3>
-          <p className="mt-2 text-orange-100 text-sm">Your report could bring an animal home in hours, not days.</p>
+          <p className="mt-2 text-green-100 text-sm">Your report could bring an animal home in hours, not days.</p>
         </div>
-        <Button size="lg" className="bg-white text-orange-600 hover:bg-gray-100 font-semibold whitespace-nowrap" asChild data-analytics="cta_report_now">
+        <Button size="lg" className="bg-white text-green-600 hover:bg-gray-100 font-semibold whitespace-nowrap" asChild data-analytics="cta_report_now">
           <Link to="/auth/login">Report Now</Link>
         </Button>
       </div>
@@ -1005,7 +975,7 @@ export default function Landing() {
 
   return (
     <>
-      <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:z-50 focus:top-4 focus:left-4 focus:bg-orange-600 focus:text-white focus:px-4 focus:py-2 focus:rounded focus:outline-none">Skip to main content</a>
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:z-50 focus:top-4 focus:left-4 focus:bg-green-600 focus:text-white focus:px-4 focus:py-2 focus:rounded focus:outline-none">Skip to main content</a>
       <main id="main-content" className="min-h-screen bg-white">
         <HeroSection isAuthenticated={isAuthenticated} />
         <AboutSection isAuthenticated={isAuthenticated} />

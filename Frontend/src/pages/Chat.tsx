@@ -52,24 +52,32 @@ export default function Chat() {
     }
   };
 
-  const handleSendMessage = () => {
-    if (!newMessage.trim()) return;
+  // Refresh messages after sending
+  useEffect(() => {
+    if (roomId && messages.length > 0) {
+      // In production, this would be handled by WebSocket
+      // For now, we'll reload periodically
+      const interval = setInterval(() => {
+        loadRoom();
+      }, 5000);
+      return () => clearInterval(interval);
+    }
+  }, [roomId]);
 
-    const message = {
-      id: Date.now().toString(),
-      sender: { id: user?.id || '1', name: user?.name || 'You' },
-      text: newMessage,
-      timestamp: new Date().toISOString(),
-    };
+  const handleSendMessage = async () => {
+    if (!newMessage.trim() || !roomId) return;
 
-    setMessages([...messages, message]);
-    setNewMessage('');
-
-    // In production, send via WebSocket
-    toast({
-      title: 'Message sent',
-      description: 'In production, this would be sent via WebSocket',
-    });
+    try {
+      const message = await chatAPI.sendMessage(roomId, user?.id || '', newMessage);
+      setMessages([...messages, message]);
+      setNewMessage('');
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Could not send message',
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleMarkReunified = () => {

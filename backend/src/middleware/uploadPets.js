@@ -15,19 +15,40 @@ const storage = multer.diskStorage({
     cb(null, uploadsDir);
   },
   filename: (req, file, cb) => {
-    // Sanitize filename
+    // Enhanced filename sanitization
+    const ext = path.extname(file.originalname).toLowerCase();
     const sanitized = file.originalname
       .toLowerCase()
       .replace(/[^a-z0-9.]/g, '-')
-      .replace(/-+/g, '-');
+      .replace(/-+/g, '-')
+      .replace(/^\.+/, '') // Remove leading dots
+      .substring(0, 100); // Limit length
+    
+    // Ensure valid extension
+    const validExt = ['.jpg', '.jpeg', '.png', '.heic', '.heif'].includes(ext) ? ext : '.jpg';
+    
     const timestamp = Date.now();
     const random = Math.random().toString(36).substring(2, 15);
-    cb(null, `pet-${timestamp}-${random}-${sanitized}`);
+    cb(null, `pet-${timestamp}-${random}${validExt}`);
   },
 });
 
-// File filter for images only
+// File filter for images only with enhanced security
 const fileFilter = (req, file, cb) => {
+  // Additional security checks
+  if (!file) {
+    return cb(new Error('No file provided'), false);
+  }
+
+  // Check file extension matches MIME type
+  const ext = path.extname(file.originalname).toLowerCase();
+  const allowedExts = ['.jpg', '.jpeg', '.png', '.heic', '.heif'];
+  
+  if (!allowedExts.includes(ext)) {
+    return cb(new Error('Invalid file extension'), false);
+  }
+
+  // Validate MIME type
   const validation = validateImageFile(file);
   if (validation.valid) {
     cb(null, true);

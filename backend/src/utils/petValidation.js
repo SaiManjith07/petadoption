@@ -220,13 +220,16 @@ export const validateSize = (size) => {
   return { valid: true };
 };
 
-// Validate estimated age
+// Validate estimated age (case-insensitive)
 export const validateEstimatedAge = (age) => {
   if (!age) return { valid: true, value: 'unknown' };
-  if (!ALLOWED_AGES.includes(age)) {
+  // Normalize to lowercase for comparison
+  const normalizedAge = age.toLowerCase().trim();
+  if (!ALLOWED_AGES.includes(normalizedAge)) {
     return { valid: false, error: `Age must be one of: ${ALLOWED_AGES.join(', ')}` };
   }
-  return { valid: true };
+  // Return normalized lowercase value
+  return { valid: true, value: normalizedAge };
 };
 
 // Validate behavior/medical notes
@@ -285,7 +288,12 @@ export const validatePetData = (data) => {
   if (data.size && !sizeCheck.valid) errors.size = sizeCheck.error;
 
   const ageCheck = validateEstimatedAge(data.estimated_age);
-  if (data.estimated_age && !ageCheck.valid) errors.estimated_age = ageCheck.error;
+  if (data.estimated_age && !ageCheck.valid) {
+    errors.estimated_age = ageCheck.error;
+  } else if (ageCheck.valid && ageCheck.value) {
+    // Use the normalized lowercase value
+    data.estimated_age = ageCheck.value;
+  }
 
   const pincodeCheck = validatePincode(data.last_seen_or_found_pincode);
   if (data.last_seen_or_found_pincode && !pincodeCheck.valid) {

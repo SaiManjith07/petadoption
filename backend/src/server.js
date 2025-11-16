@@ -2,40 +2,84 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import http from 'http';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { Server as SocketIOServer } from 'socket.io';
 import connectDB from './config/mongodb.js';
 import { errorHandler } from './middleware/errorHandler.js';
+import {
+  securityHeaders,
+  apiRateLimiter,
+  sanitizeQuery,
+  requestSizeLimiter,
+} from './middleware/security.js';
+
+// Get directory name for ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Import routes
 import authRoutes from './routes/authRoutes.js';
 import petRoutes from './routes/petRoutesV2.js';
 import adminRoutes from './routes/adminRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
+import chatRoutes from './routes/chatRoutes.js';
 
 // Load environment variables
 dotenv.config();
+
+// Validate required environment variables
+const requiredEnvVars = ['JWT_SECRET', 'MONGODB_URI'];
+const missingEnvVars = requiredEnvVars.filter(varName => !process.env[varName]);
+if (missingEnvVars.length > 0) {
+  console.error('❌ Missing required environment variables:', missingEnvVars.join(', '));
+  process.exit(1);
+}
 
 // Initialize Express app
 const app = express();
 const server = http.createServer(app);
 
-// Initialize Socket.IO for real-time chat
+// Initialize Socket.IO for real-time chat with security
 const io = new SocketIOServer(server, {
   cors: {
     origin: process.env.FRONTEND_URL || 'http://localhost:8080',
     methods: ['GET', 'POST'],
+    credentials: true,
   },
+  pingTimeout: 60000,
+  pingInterval: 25000,
 });
 
-// Middleware
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ limit: '10mb', extended: true }));
+// Security Middleware (apply first)
+app.use(securityHeaders);
+
+// Request size limiting
+app.use(requestSizeLimiter('10mb'));
+
+// Body parsing with limits
+app.use(express.json({ limit: '10mb', strict: true }));
+app.use(express.urlencoded({ limit: '10mb', extended: true, parameterLimit: 50 }));
+
+// CORS configuration
 app.use(
   cors({
     origin: process.env.FRONTEND_URL || 'http://localhost:8080',
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    maxAge: 86400, // 24 hours
   })
 );
+
+// Query sanitization (prevent NoSQL injection)
+app.use(sanitizeQuery);
+
+// API rate limiting
+app.use('/api', apiRateLimiter);
+
+// Serve static files from uploads directory
+app.use('/uploads', express.static(path.join(__dirname, '../../uploads')));
 
 // Connect to MongoDB
 connectDB();
@@ -45,6 +89,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/pets', petRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/chats', chatRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -66,29 +111,83 @@ app.use((req, res) => {
 // Error handling middleware
 app.use(errorHandler);
 
-// Socket.IO connection handling for real-time chat
+// Socket.IO connection handling for real-time chat with security
+io.use((socket, next) => {
+  // Validate socket connection
+  const token = socket.handshake.auth?.token || socket.handshake.headers?.authorization?.split(' ')[1];
+  
+  if (!token) {
+    return next(new Error('Authentication required'));
+  }
+  
+  // Verify token (you can add JWT verification here)
+  // For now, allow connection but validate in message handlers
+  next();
+});
+
 io.on('connection', (socket) => {
   console.log(`🔌 New socket connection: ${socket.id}`);
 
-  // Join chat room
+  // Join chat room with validation
   socket.on('join-room', (roomId) => {
-    socket.join(roomId);
-    console.log(`📍 User joined room: ${roomId}`);
+    // Validate roomId format
+    if (!roomId || typeof roomId !== 'string' || roomId.length > 100) {
+      socket.emit('error', { message: 'Invalid room ID' });
+      return;
+    }
+    
+    // Sanitize roomId
+    const sanitizedRoomId = roomId.replace(/[^a-zA-Z0-9-_]/g, '');
+    socket.join(sanitizedRoomId);
+    console.log(`📍 User joined room: ${sanitizedRoomId}`);
   });
 
-  // Send message
+  // Send message with validation
   socket.on('send-message', (message) => {
-    const { roomId, userId, text } = message;
-    io.to(roomId).emit('receive-message', {
-      userId,
-      text,
-      timestamp: new Date(),
-    });
+    try {
+      const { roomId, userId, text } = message;
+      
+      // Validate message data
+      if (!roomId || !userId || !text) {
+        socket.emit('error', { message: 'Invalid message data' });
+        return;
+      }
+      
+      // Validate text length
+      if (typeof text !== 'string' || text.length > 1000 || text.length < 1) {
+        socket.emit('error', { message: 'Message must be between 1 and 1000 characters' });
+        return;
+      }
+      
+      // Sanitize roomId
+      const sanitizedRoomId = roomId.replace(/[^a-zA-Z0-9-_]/g, '');
+      
+      // Validate userId format (MongoDB ObjectId)
+      if (!/^[0-9a-fA-F]{24}$/.test(userId)) {
+        socket.emit('error', { message: 'Invalid user ID' });
+        return;
+      }
+      
+      // Emit to room
+      io.to(sanitizedRoomId).emit('receive-message', {
+        userId,
+        text: text.substring(0, 1000), // Ensure max length
+        timestamp: new Date(),
+      });
+    } catch (error) {
+      socket.emit('error', { message: 'Failed to send message' });
+      console.error('Socket message error:', error);
+    }
   });
 
   // Disconnect
-  socket.on('disconnect', () => {
-    console.log(`❌ Socket disconnected: ${socket.id}`);
+  socket.on('disconnect', (reason) => {
+    console.log(`❌ Socket disconnected: ${socket.id}, reason: ${reason}`);
+  });
+  
+  // Handle errors
+  socket.on('error', (error) => {
+    console.error(`Socket error for ${socket.id}:`, error);
   });
 });
 

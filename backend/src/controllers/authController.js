@@ -1,6 +1,8 @@
 import User from '../models/User.js';
 import jwt from 'jsonwebtoken';
 import Admin from '../models/Admin.js';
+import validator from 'validator';
+import { validatePasswordStrength, checkPasswordForUserInfo } from '../utils/passwordValidation.js';
 
 const generateToken = (id) => {
   if (!process.env.JWT_SECRET) {
@@ -23,8 +25,47 @@ export const register = async (req, res, next) => {
       });
     }
 
+    // Validate email format
+    if (!validator.isEmail(email)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide a valid email address',
+      });
+    }
+
+    // Validate name (sanitize and check length)
+    const sanitizedName = validator.trim(name);
+    if (sanitizedName.length < 2 || sanitizedName.length > 100) {
+      return res.status(400).json({
+        success: false,
+        message: 'Name must be between 2 and 100 characters',
+      });
+    }
+
+    // Validate password strength
+    const passwordValidation = validatePasswordStrength(password);
+    if (!passwordValidation.valid) {
+      return res.status(400).json({
+        success: false,
+        message: passwordValidation.error,
+      });
+    }
+
+    // Check if password contains user information
+    const userInfoCheck = checkPasswordForUserInfo(password, sanitizedName, email);
+    if (!userInfoCheck.valid) {
+      return res.status(400).json({
+        success: false,
+        message: userInfoCheck.error,
+      });
+    }
+
+    // Validate role (prevent role escalation)
+    const allowedRoles = ['user', 'rescuer'];
+    const userRole = role && allowedRoles.includes(role) ? role : 'user';
+
     // Check if user already exists
-    let user = await User.findOne({ email });
+    let user = await User.findOne({ email: validator.normalizeEmail(email) });
     if (user) {
       return res.status(400).json({
         success: false,
@@ -34,10 +75,10 @@ export const register = async (req, res, next) => {
 
     // Create user
     user = await User.create({
-      name,
-      email,
+      name: sanitizedName,
+      email: validator.normalizeEmail(email),
       password,
-      role: role || 'user',
+      role: userRole,
     });
 
     const token = generateToken(user._id);
@@ -73,8 +114,19 @@ export const login = async (req, res, next) => {
       });
     }
 
+    // Validate email format
+    if (!validator.isEmail(email)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide a valid email address',
+      });
+    }
+
+    // Normalize email
+    const normalizedEmail = validator.normalizeEmail(email);
+
     // Check for admin first
-    let admin = await Admin.findOne({ email }).select('+password');
+    let admin = await Admin.findOne({ email: normalizedEmail }).select('+password');
     if (admin) {
       // Check if admin is active
       if (!admin.is_active) {
@@ -106,7 +158,7 @@ export const login = async (req, res, next) => {
     }
 
     // Check for user
-    const user = await User.findOne({ email }).select('+password');
+    const user = await User.findOne({ email: normalizedEmail }).select('+password');
     if (!user) {
       return res.status(401).json({
         success: false,
@@ -133,9 +185,11 @@ export const login = async (req, res, next) => {
       },
     });
   } catch (error) {
+    // Don't expose internal error details
+    console.error('Login error:', error);
     res.status(500).json({
       success: false,
-      message: error.message,
+      message: 'An error occurred during login. Please try again.',
     });
   }
 };

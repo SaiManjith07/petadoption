@@ -34,6 +34,7 @@ interface PetGalleryProps {
   actionLabel?: string;
   showFilters?: boolean;
   theme?: 'green' | 'orange' | 'blue';
+  currentUserId?: string;
 }
 
 export const PetGallery = ({
@@ -43,6 +44,7 @@ export const PetGallery = ({
   actionLabel,
   showFilters = true,
   theme = 'green',
+  currentUserId,
 }: PetGalleryProps) => {
   const themeColors = {
     green: {
@@ -83,7 +85,7 @@ export const PetGallery = ({
 
   if (loading) {
     return (
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
         {Array.from({ length: 8 }).map((_, i) => (
           <div key={i} className="space-y-3">
             <Skeleton className="aspect-square rounded-xl" />
@@ -177,13 +179,14 @@ export const PetGallery = ({
             </p>
           </div>
         ) : (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
             {filteredPets.map((pet) => (
               <PetCard
                 key={pet.id}
                 pet={pet}
                 onActionClick={onActionClick}
                 actionLabel={actionLabel}
+                currentUserId={currentUserId}
               />
             ))}
           </div>

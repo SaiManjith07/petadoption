@@ -2,17 +2,17 @@ export const errorHandler = (err, req, res, next) => {
   let error = { ...err };
   error.message = err.message;
 
-  // Log to console for dev
-  if (process.env.NODE_ENV === 'development') {
-    console.error('Error:', err);
-  } else {
-    // In production, log errors but don't expose stack traces
-    console.error('Error:', err.message);
-  }
+  // Log to console (always log full error for debugging)
+  console.error('Error:', {
+    message: err.message,
+    name: err.name,
+    code: err.code,
+    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
+  });
 
   // Mongoose bad ObjectId
   if (err.name === 'CastError') {
-    const message = `Resource not found`;
+    const message = 'Resource not found';
     error = { message, statusCode: 404 };
   }
 
@@ -40,9 +40,16 @@ export const errorHandler = (err, req, res, next) => {
     error = { message: 'Token expired', statusCode: 401 };
   }
 
-  res.status(error.statusCode || 500).json({
+  // Don't expose internal error details in production
+  const isDevelopment = process.env.NODE_ENV === 'development';
+  const statusCode = error.statusCode || 500;
+  const message = statusCode === 500 && !isDevelopment
+    ? 'An internal server error occurred'
+    : (error.message || 'Server Error');
+
+  res.status(statusCode).json({
     success: false,
-    message: error.message || 'Server Error',
-    ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
+    message,
+    ...(isDevelopment && { stack: err.stack, details: err.message }),
   });
 };

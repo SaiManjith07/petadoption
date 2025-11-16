@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./lib/auth";
 import { TopNav } from "./components/layout/TopNav";
 import { Footer } from "./components/layout/Footer";
+import { AdminRedirect } from "./components/AdminRedirect";
 import Landing from "./pages/Landing";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
@@ -23,6 +24,7 @@ import PetDetail from "./pages/pets/PetDetail";
 import ReportFound from "./pages/pets/ReportFound";
 import ReportLost from "./pages/pets/ReportLost";
 import Chat from "./pages/Chat";
+import ChatList from "./pages/ChatList";
 import Policy from "./pages/Policy";
 import Safety from "./pages/Safety";
 import NotFound from "./pages/NotFound";
@@ -50,12 +52,34 @@ const App = () => (
                 <Route path="/admin/found-pets" element={<AdminFoundPets />} />
                 <Route path="/admin/lost-pets" element={<AdminLostPets />} />
                 <Route path="/admin/adopt" element={<AdminAdopt />} />
-                <Route path="/pets/found" element={<FoundPets />} />
-                <Route path="/pets/lost" element={<LostPets />} />
-                <Route path="/pets/adopt" element={<AdoptablePets />} />
+                <Route 
+                  path="/pets/found" 
+                  element={
+                    <AdminRedirect adminPath="/admin/found-pets">
+                      <FoundPets />
+                    </AdminRedirect>
+                  } 
+                />
+                <Route 
+                  path="/pets/lost" 
+                  element={
+                    <AdminRedirect adminPath="/admin/lost-pets">
+                      <LostPets />
+                    </AdminRedirect>
+                  } 
+                />
+                <Route 
+                  path="/pets/adopt" 
+                  element={
+                    <AdminRedirect adminPath="/admin/adopt">
+                      <AdoptablePets />
+                    </AdminRedirect>
+                  } 
+                />
                 <Route path="/pets/new/found" element={<ReportFound />} />
                 <Route path="/pets/new/lost" element={<ReportLost />} />
                 <Route path="/pets/:id" element={<PetDetail />} />
+                <Route path="/chats" element={<ChatList />} />
                 <Route path="/chat/:roomId" element={<Chat />} />
                 <Route path="/policy" element={<Policy />} />
                 <Route path="/safety" element={<Safety />} />

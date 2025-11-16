@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/lib/auth';
-import { petsAPI, usersAPI } from '@/services/api';
+import { petsAPI, usersAPI, getImageUrl } from '@/services/api';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 
@@ -35,14 +35,18 @@ export default function Profile() {
     try {
       setLoading(true);
       const { items } = await petsAPI.getAll();
-      // Filter pets submitted by current user
+      // Filter pets submitted by current user - only lost and found pets
       // Handle both object and string formats for submitted_by
       const userPets = items.filter((p: any) => {
         const submittedById = typeof p.submitted_by === 'object' 
           ? (p.submitted_by._id || p.submitted_by.id)
           : p.submitted_by;
         const userId = user?._id || user?.id;
-        return submittedById && userId && String(submittedById) === String(userId);
+        const isMyPet = submittedById && userId && String(submittedById) === String(userId);
+        // Only show lost and found pets (not adoption)
+        const isLostOrFound = p.report_type === 'lost' || p.report_type === 'found' || 
+                             p.status?.includes('Lost') || p.status?.includes('Found');
+        return isMyPet && isLostOrFound;
       });
       // Sort by date_submitted (most recent first)
       userPets.sort((a: any, b: any) => {
@@ -50,7 +54,14 @@ export default function Profile() {
         const dateB = new Date(b.date_submitted || b.createdAt || 0).getTime();
         return dateB - dateA;
       });
-      setMyPets(userPets);
+      // Normalize IDs - ensure all pets have an id field
+      const normalizedPets = userPets.map((pet: any) => {
+        if (!pet.id && pet._id) {
+          pet.id = pet._id;
+        }
+        return pet;
+      });
+      setMyPets(normalizedPets);
     } catch (error) {
       console.error('Error loading pets:', error);
     } finally {
@@ -409,9 +420,15 @@ export default function Profile() {
                   <div className="space-y-4">
                     {myPets.map((pet: any) => {
                       const petId = pet.id || pet._id;
-                      const photoUrl = Array.isArray(pet.photos) && pet.photos.length > 0
-                        ? (typeof pet.photos[0] === 'string' ? pet.photos[0] : pet.photos[0].url)
-                        : 'https://via.placeholder.com/300';
+                      const photoPath = Array.isArray(pet.photos) && pet.photos.length > 0
+                        ? (typeof pet.photos[0] === 'string' 
+                            ? pet.photos[0] 
+                            : pet.photos[0]?.url || pet.photos[0]?.file_url || pet.photos[0])
+                        : null;
+                      // If it's a data URL, use it directly; otherwise convert
+                      const photoUrl = photoPath?.startsWith('data:') 
+                        ? photoPath 
+                        : (getImageUrl(photoPath) || 'https://via.placeholder.com/300');
                       return (
                       <Card key={petId} className="overflow-hidden">
                         <div className="flex flex-col sm:flex-row">
@@ -438,9 +455,25 @@ export default function Profile() {
                               Submitted {format(new Date(pet.date_submitted || pet.createdAt || new Date()), 'MMM d, yyyy')}
                             </p>
                             <div className="flex gap-2 mt-auto">
-                              <Button variant="outline" size="sm" asChild className="flex-1">
-                                <Link to={`/pets/${petId}`}>View</Link>
-                              </Button>
+                              {petId ? (
+                                <>
+                                  <Button 
+                                    variant="default" 
+                                    size="sm" 
+                                    asChild 
+                                    className="flex-1 bg-orange-600 hover:bg-orange-700"
+                                  >
+                                    <Link to={`/pets/${petId}`}>My Pet</Link>
+                                  </Button>
+                                  <Button variant="outline" size="sm" asChild>
+                                    <Link to={`/pets/${petId}`}>View</Link>
+                                  </Button>
+                                </>
+                              ) : (
+                                <Button variant="outline" size="sm" disabled className="flex-1">
+                                  ID Missing
+                                </Button>
+                              )}
                               {pet.status && pet.status.includes('Pending') && (
                                 <Button
                                   variant="destructive"

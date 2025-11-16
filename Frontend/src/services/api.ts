@@ -4,6 +4,34 @@
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8000/ws';
 
+// Get base URL for image serving (without /api)
+const getBaseUrl = () => {
+  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+  // Remove /api from the end if present
+  return apiUrl.replace(/\/api\/?$/, '');
+};
+
+// Helper function to convert relative image paths to full URLs
+export const getImageUrl = (imagePath: string | undefined | null): string | null => {
+  if (!imagePath) return null;
+  
+  // If it's a data URL (base64), return as is
+  if (imagePath.startsWith('data:')) {
+    return imagePath;
+  }
+  
+  // If it's already a full URL (starts with http:// or https://), return as is
+  if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+    return imagePath;
+  }
+  
+  // If it's a relative path, prepend the base URL
+  const baseUrl = getBaseUrl();
+  // Ensure path starts with /
+  const path = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
+  return `${baseUrl}${path}`;
+};
+
 // Helper for mock delays
 const mockDelay = (ms: number = 500) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -14,6 +42,7 @@ let currentUser: any = null;
 const mockData = {
   pets: [] as any[],
   chats: [] as any[],
+  chatRequests: [] as any[],
   notifications: [] as any[],
 };
 
@@ -147,11 +176,38 @@ export const petsAPI = {
   },
 
   async getById(id: string) {
-    await mockDelay();
-    initMockData();
-    const pet = mockData.pets.find(p => p.id === id);
-    if (!pet) throw new Error('Pet not found');
-    return pet;
+    if (!id || id === 'undefined' || id === 'null') {
+      throw new Error('Invalid pet ID');
+    }
+    const url = `${API_URL}/pets/${id}`;
+    try {
+      const response = await fetch(url, {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+      });
+      if (!response.ok) {
+        if (response.status === 404) {
+          throw new Error('Pet not found');
+        }
+        if (response.status === 500) {
+          throw new Error(`Server error: Invalid pet ID format`);
+        }
+        throw new Error(`Failed to fetch pet: ${response.status}`);
+      }
+      const data = await response.json();
+      const pet = data.data || data;
+      // Ensure pet has an id field (use _id if id doesn't exist)
+      if (pet && !pet.id && pet._id) {
+        pet.id = pet._id;
+      }
+      return pet;
+    } catch (error: any) {
+      // Fallback to mock
+      await mockDelay();
+      initMockData();
+      const pet = mockData.pets.find(p => p.id === id || p._id === id);
+      if (!pet) throw new Error('Pet not found');
+      return pet;
+    }
   },
 
   async create(petData: any) {
@@ -180,9 +236,14 @@ export const petsAPI = {
     if (petData.photos && Array.isArray(petData.photos)) {
       petData.photos.forEach((photo: any, index: number) => {
         if (photo instanceof File) {
-          formData.append('photos', photo); // Field name must match multer field name
+          formData.append('photos', photo, photo.name); // Include filename for better backend handling
+        } else {
+          console.warn('Photo at index', index, 'is not a File object:', photo);
         }
       });
+      console.log(`Added ${petData.photos.length} photo(s) to FormData`);
+    } else {
+      console.warn('No photos array found in petData or photos is not an array');
     }
     
     try {
@@ -191,6 +252,12 @@ export const petsAPI = {
       
       console.log('Sending request to:', url);
       console.log('FormData keys:', Array.from(formData.keys()));
+      
+      // Log photo files for debugging
+      const photoFiles = petData.photos?.filter((p: any) => p instanceof File) || [];
+      if (photoFiles.length > 0) {
+        console.log('Photo files being sent:', photoFiles.map((f: File) => ({ name: f.name, size: f.size, type: f.type })));
+      }
       
       const response = await fetch(url, {
         method: 'POST',
@@ -291,40 +358,227 @@ export const petsAPI = {
 
 // Chat API
 export const chatAPI = {
-  async createRoom(petId: string, ownerId: string) {
+  // Request chat with pet owner/finder
+  async requestChat(petId: string, requesterId: string, type: 'claim' | 'adoption', message?: string) {
+    const url = `${API_URL}/chats/request`;
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ petId, type, message: message || '' }),
+      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to create chat request' }));
+        throw new Error(errorData.message || 'Failed to create chat request');
+      }
+      const data = await response.json();
+      return data.data;
+    } catch (error: any) {
+      // Fallback to mock
+      await mockDelay();
+      const requestId = `request-${Date.now()}`;
+      const request = {
+        id: requestId,
+        petId,
+        requesterId,
+        type,
+        message: message || '',
+        status: 'pending',
+        createdAt: new Date().toISOString(),
+      };
+      if (!mockData.chatRequests) mockData.chatRequests = [];
+      mockData.chatRequests.push(request);
+      return request;
+    }
+  },
+
+  // Get chat requests for a user (pending approvals)
+  async getChatRequests(userId: string) {
+    const url = `${API_URL}/chats/requests`;
+    try {
+      const response = await fetch(url, {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+      });
+      if (!response.ok) {
+        if (response.status === 404) {
+          return [];
+        }
+        throw new Error('Failed to fetch chat requests');
+      }
+      const data = await response.json();
+      return data.data || [];
+    } catch (error) {
+      // Fallback to mock
+      await mockDelay();
+      // In production, filter by userId from backend
+      return mockData.chatRequests || [];
+    }
+  },
+
+  // Approve or reject chat request
+  async respondToChatRequest(requestId: string, approved: boolean) {
+    const url = `${API_URL}/chats/requests/${requestId}/respond`;
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ approved }),
+      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to respond to chat request' }));
+        throw new Error(errorData.message || 'Failed to respond to chat request');
+      }
+      const data = await response.json();
+      return data.data;
+    } catch (error: any) {
+      // Fallback to mock
+      await mockDelay();
+      if (!mockData.chatRequests) return null;
+      const request = mockData.chatRequests.find(r => r.id === requestId);
+      if (!request) return null;
+      
+      request.status = approved ? 'approved' : 'rejected';
+      request.respondedAt = new Date().toISOString();
+      
+      if (approved) {
+        // Create chat room when approved (admin will be added by backend)
+        const roomId = `room-${Date.now()}`;
+        const room = {
+          roomId,
+          petId: request.petId,
+          type: request.type,
+          participants: [request.requesterId, currentUser?.id || 'owner-id'],
+          messages: [],
+          createdAt: new Date().toISOString(),
+        };
+        if (!mockData.chats) mockData.chats = [];
+        mockData.chats.push(room);
+        request.roomId = roomId;
+      }
+      
+      return request;
+    }
+  },
+
+  // Get all chats for a user (only adoption and found pet claims)
+  async getUserChats(userId: string) {
+    const url = `${API_URL}/chats`;
+    try {
+      const response = await fetch(url, {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+      });
+      if (!response.ok) {
+        if (response.status === 404) {
+          return [];
+        }
+        throw new Error('Failed to fetch user chats');
+      }
+      const data = await response.json();
+      return data.data || [];
+    } catch (error) {
+      // Fallback to mock
+      await mockDelay();
+      const chats = mockData.chats || [];
+      // Filter chats where user is a participant
+      return chats.filter(chat => 
+        chat.participants?.includes(userId) || 
+        chat.participants?.includes(currentUser?.id || '')
+      );
+    }
+  },
+
+  // Create room directly (for admin or approved chats)
+  async createRoom(petId: string, ownerId: string, type: 'claim' | 'adoption' = 'claim') {
     await mockDelay();
     const roomId = `room-${Date.now()}`;
-    mockData.chats.push({
+    const room = {
       roomId,
       petId,
-      participants: [ownerId, 'rescuer-id', 'admin-id'],
+      type,
+      participants: [ownerId, currentUser?.id || 'requester-id'],
       messages: [],
-    });
+      createdAt: new Date().toISOString(),
+    };
+    if (!mockData.chats) mockData.chats = [];
+    mockData.chats.push(room);
     return { roomId };
   },
 
   async getRoom(roomId: string) {
-    await mockDelay();
-    const room = mockData.chats.find(c => c.roomId === roomId);
-    return room || {
-      roomId,
-      petId: 'unknown',
-      participants: ['user1', 'user2', 'admin'],
-      messages: [
-        {
-          id: '1',
-          sender: { id: 'user1', name: 'Pet Owner' },
-          text: 'Hello, I think this is my pet!',
-          timestamp: new Date().toISOString(),
+    const url = `${API_URL}/chats/${roomId}`;
+    try {
+      const response = await fetch(url, {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+      });
+      if (!response.ok) {
+        if (response.status === 404) {
+          throw new Error('Chat room not found');
+        }
+        throw new Error('Failed to fetch chat room');
+      }
+      const data = await response.json();
+      return data.data;
+    } catch (error: any) {
+      // Fallback to mock
+      await mockDelay();
+      const room = mockData.chats?.find(c => c.roomId === roomId);
+      if (room) {
+        return {
+          ...room,
+          messages: room.messages || [
+            {
+              id: '1',
+              sender: { id: room.participants[0], name: 'Pet Owner' },
+              text: room.type === 'adoption' ? 'Thank you for your interest in adopting!' : 'Hello, I think this is my pet!',
+              timestamp: new Date().toISOString(),
+            },
+          ],
+        };
+      }
+      throw new Error('Chat room not found');
+    }
+  },
+
+  async sendMessage(roomId: string, senderId: string, text: string) {
+    const url = `${API_URL}/chats/${roomId}/message`;
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json',
         },
-        {
-          id: '2',
-          sender: { id: 'user2', name: 'Rescuer' },
-          text: 'Great! Can you describe any unique features?',
+        body: JSON.stringify({ text }),
+      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to send message' }));
+        throw new Error(errorData.message || 'Failed to send message');
+      }
+      const data = await response.json();
+      return data.data;
+    } catch (error: any) {
+      // Fallback to mock
+      await mockDelay();
+      const room = mockData.chats?.find(c => c.roomId === roomId);
+      if (room) {
+        const message = {
+          id: `msg-${Date.now()}`,
+          sender: { id: senderId, name: currentUser?.name || 'User' },
+          text,
           timestamp: new Date().toISOString(),
-        },
-      ],
-    };
+        };
+        if (!room.messages) room.messages = [];
+        room.messages.push(message);
+        return message;
+      }
+      throw new Error('Room not found');
+    }
   },
 
   connectWebSocket(roomId: string) {
@@ -520,6 +774,128 @@ export const adminAPI = {
   async deleteUser(userId: string) {
     await mockDelay();
     return { success: true, message: 'User deactivated' };
+  },
+
+  // Chat Management Functions
+  async getAllChatRequests() {
+    const url = `${API_URL}/admin/chats/requests`;
+    try {
+      const response = await fetch(url, {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+      });
+      if (!response.ok) {
+        // If 404, return empty array (endpoint might not be implemented yet)
+        if (response.status === 404) {
+          console.warn('Chat requests endpoint not found, using fallback');
+          return [];
+        }
+        throw new Error('Failed to fetch chat requests');
+      }
+      const data = await response.json();
+      return data.data || [];
+    } catch (error) {
+      // Fallback to mock
+      console.warn('Using mock data for chat requests:', error);
+      await mockDelay();
+      return mockData.chatRequests || [];
+    }
+  },
+
+  async getAllChats() {
+    const url = `${API_URL}/admin/chats`;
+    try {
+      const response = await fetch(url, {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+      });
+      if (!response.ok) {
+        // If 404, return empty array (endpoint might not be implemented yet)
+        if (response.status === 404) {
+          console.warn('Chats endpoint not found, using fallback');
+          return [];
+        }
+        throw new Error('Failed to fetch chats');
+      }
+      const data = await response.json();
+      return data.data || [];
+    } catch (error) {
+      // Fallback to mock
+      console.warn('Using mock data for chats:', error);
+      await mockDelay();
+      return mockData.chats || [];
+    }
+  },
+
+  async getChatStats() {
+    const url = `${API_URL}/admin/chats/stats`;
+    try {
+      const response = await fetch(url, {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+      });
+      if (!response.ok) {
+        // If 404, return default stats
+        if (response.status === 404) {
+          console.warn('Chat stats endpoint not found, using fallback');
+          return {
+            pending_requests: 0,
+            active_chats: 0,
+            total_requests: 0,
+            approved_requests: 0,
+            rejected_requests: 0,
+          };
+        }
+        throw new Error('Failed to fetch chat stats');
+      }
+      const data = await response.json();
+      return data.data;
+    } catch (error) {
+      // Fallback to mock
+      console.warn('Using mock data for chat stats:', error);
+      await mockDelay();
+      const requests = mockData.chatRequests || [];
+      const chats = mockData.chats || [];
+      return {
+        pending_requests: requests.filter((r: any) => r.status === 'pending').length,
+        active_chats: chats.length,
+        total_requests: requests.length,
+        approved_requests: requests.filter((r: any) => r.status === 'approved').length,
+        rejected_requests: requests.filter((r: any) => r.status === 'rejected').length,
+      };
+    }
+  },
+
+  async respondToChatRequest(requestId: string, approved: boolean, adminNotes?: string) {
+    const url = `${API_URL}/admin/chats/requests/${requestId}/respond`;
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ approved, admin_notes: adminNotes }),
+      });
+      if (!response.ok) throw new Error('Failed to respond to chat request');
+      const data = await response.json();
+      return data.data;
+    } catch (error) {
+      // Fallback to mock
+      return chatAPI.respondToChatRequest(requestId, approved);
+    }
+  },
+
+  async getChatRoom(roomId: string) {
+    const url = `${API_URL}/admin/chats/${roomId}`;
+    try {
+      const response = await fetch(url, {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+      });
+      if (!response.ok) throw new Error('Failed to fetch chat room');
+      const data = await response.json();
+      return data.data;
+    } catch (error) {
+      // Fallback to mock
+      return chatAPI.getRoom(roomId);
+    }
   },
 
   async getAllPets(filters?: any) {

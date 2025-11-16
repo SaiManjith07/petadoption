@@ -1,6 +1,7 @@
 import Pet from '../models/Pet.js';
 import { validatePetData, validatePhotos, sanitizeText } from '../utils/petValidation.js';
 import { findMatchingPets, findMicrochipMatch } from '../utils/petMatching.js';
+import fs from 'fs';
 
 export const getAllPets = async (req, res, next) => {
   try {
@@ -8,24 +9,56 @@ export const getAllPets = async (req, res, next) => {
 
     let filter = { is_active: true };
 
-    if (status) filter.status = status;
-    if (species) filter.species = species;
-    if (report_type) filter.report_type = report_type;
-    if (location) {
-      filter.$or = [
-        { last_seen_or_found_location_text: { $regex: location, $options: 'i' } },
-        { location: { $regex: location, $options: 'i' } }, // Legacy field support
-      ];
+    // Validate status (prevent injection)
+    const allowedStatuses = [
+      'Pending Verification',
+      'Listed Found',
+      'Listed Lost',
+      'Matched',
+      'Reunited',
+      'Pending Adoption',
+      'Available for Adoption',
+      'Adopted',
+      'Rejected',
+    ];
+    if (status && allowedStatuses.includes(status)) {
+      filter.status = status;
     }
 
-    const skip = (parseInt(page) - 1) * parseInt(limit);
+    // Validate species (prevent injection)
+    const allowedSpecies = ['Dog', 'Cat', 'Cow', 'Buffalo', 'Goat', 'Sheep', 'Camel', 'Horse', 'Bird', 'Rabbit', 'Reptile', 'Other'];
+    if (species && allowedSpecies.includes(species)) {
+      filter.species = species;
+    }
+
+    // Validate report_type (prevent injection)
+    const allowedReportTypes = ['found', 'lost'];
+    if (report_type && allowedReportTypes.includes(report_type)) {
+      filter.report_type = report_type;
+    }
+
+    // Sanitize location for regex (already sanitized by middleware, but double-check)
+    if (location && typeof location === 'string') {
+      const sanitizedLocation = location.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').substring(0, 500);
+      if (sanitizedLocation.length > 0) {
+        filter.$or = [
+          { last_seen_or_found_location_text: { $regex: sanitizedLocation, $options: 'i' } },
+          { location: { $regex: sanitizedLocation, $options: 'i' } }, // Legacy field support
+        ];
+      }
+    }
+
+    // Validate and sanitize pagination parameters
+    const pageNum = Math.max(1, parseInt(page) || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit) || 10)); // Max 100 items per page
+    const skip = (pageNum - 1) * limitNum;
 
     const pets = await Pet.find(filter)
       .populate('submitted_by', 'name email phone profile_image')
       .populate('verified_by', 'name email')
       .sort({ date_submitted: -1 })
       .skip(skip)
-      .limit(parseInt(limit));
+      .limit(limitNum);
 
     const total = await Pet.countDocuments(filter);
 
@@ -34,15 +67,16 @@ export const getAllPets = async (req, res, next) => {
       data: pets,
       pagination: {
         total,
-        page: parseInt(page),
-        limit: parseInt(limit),
-        pages: Math.ceil(total / parseInt(limit)),
+        page: pageNum,
+        limit: limitNum,
+        pages: Math.ceil(total / limitNum),
       },
     });
   } catch (error) {
+    console.error('Get all pets error:', error);
     res.status(500).json({
       success: false,
-      message: error.message,
+      message: 'An error occurred while fetching pets',
     });
   }
 };
@@ -50,6 +84,22 @@ export const getAllPets = async (req, res, next) => {
 export const getPetById = async (req, res, next) => {
   try {
     const { id } = req.params;
+
+    // Validate ID exists and is not undefined/null
+    if (!id || id === 'undefined' || id === 'null') {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid pet ID provided',
+      });
+    }
+
+    // Validate MongoDB ObjectId format (24 hex characters)
+    if (!/^[0-9a-fA-F]{24}$/.test(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid pet ID format',
+      });
+    }
 
     const pet = await Pet.findById(id)
       .populate('submitted_by', 'name email phone profile_image address')
@@ -67,9 +117,10 @@ export const getPetById = async (req, res, next) => {
       data: pet,
     });
   } catch (error) {
+    console.error('Get pet by ID error:', error);
     res.status(500).json({
       success: false,
-      message: error.message,
+      message: 'An error occurred while fetching pet',
     });
   }
 };
@@ -113,7 +164,26 @@ export const createPetReport = async (req, res, next) => {
     }
 
     // Validate photos
+    console.log('📸 Received files:', req.files ? req.files.length : 0, 'files');
+    console.log('📸 Request body keys:', Object.keys(req.body));
+    console.log('📸 Request files type:', typeof req.files);
+    console.log('📸 Request files is array:', Array.isArray(req.files));
+    
+    if (req.files && req.files.length > 0) {
+      console.log('📸 File details:', req.files.map(f => ({ 
+        originalname: f.originalname, 
+        filename: f.filename, 
+        path: f.path,
+        size: f.size,
+        mimetype: f.mimetype
+      })));
+    } else {
+      console.error('❌ No files in req.files');
+      console.error('❌ req.files value:', req.files);
+    }
+    
     if (!req.files || req.files.length === 0) {
+      console.error('❌ No photos received in request');
       return res.status(400).json({
         success: false,
         message: 'At least 1 photo is required',
@@ -129,12 +199,76 @@ export const createPetReport = async (req, res, next) => {
       });
     }
 
-    // Format photos with URLs (assumes photos are already uploaded)
-    const photos = req.files.map(file => ({
-      url: file.path || file.secure_url || `/${file.path}`,
-      original_filename: file.originalname || file.filename,
-      uploaded_at: new Date(),
-    }));
+    // Convert uploaded images to base64 data URLs and store in database
+    const photos = await Promise.all(
+      req.files.map(async (file, index) => {
+        try {
+          // Read the file and convert to base64
+          const fileBuffer = fs.readFileSync(file.path);
+          const base64Image = fileBuffer.toString('base64');
+          const mimeType = file.mimetype || 'image/jpeg';
+          
+          // Create data URL
+          const dataUrl = `data:${mimeType};base64,${base64Image}`;
+          
+          // Optionally keep the file on disk for static serving
+          // Or delete it if you only want base64 storage
+          // For now, we'll keep both - file on disk AND base64 in DB
+          
+          // Get base URL for file serving (fallback option)
+          const getBaseUrl = () => {
+            if (process.env.BACKEND_URL) {
+              return process.env.BACKEND_URL;
+            }
+            const protocol = req.protocol || 'http';
+            const host = req.get('host') || `localhost:${process.env.PORT || 8000}`;
+            return `${protocol}://${host}`;
+          };
+          
+          const baseUrl = getBaseUrl();
+          const fileUrl = `${baseUrl}/uploads/pets/${file.filename}`;
+          
+          // Store both data URL and file URL
+          // Data URL for immediate display, file URL as fallback
+          const photoObj = {
+            url: dataUrl, // Store base64 data URL in database
+            file_url: fileUrl, // Also store file URL as backup
+            original_filename: file.originalname || file.filename,
+            uploaded_at: new Date(),
+          };
+          
+          console.log(`📸 Photo ${index + 1} converted to data URL`);
+          console.log(`📸 Photo ${index + 1} data URL length:`, dataUrl.length, 'characters');
+          console.log(`📸 Photo ${index + 1} file URL:`, fileUrl);
+          
+          return photoObj;
+        } catch (error) {
+          console.error(`❌ Error converting photo ${index + 1}:`, error);
+          // Fallback to file URL if base64 conversion fails
+          const getBaseUrl = () => {
+            if (process.env.BACKEND_URL) {
+              return process.env.BACKEND_URL;
+            }
+            const protocol = req.protocol || 'http';
+            const host = req.get('host') || `localhost:${process.env.PORT || 8000}`;
+            return `${protocol}://${host}`;
+          };
+          const baseUrl = getBaseUrl();
+          return {
+            url: `${baseUrl}/uploads/pets/${file.filename}`,
+            original_filename: file.originalname || file.filename,
+            uploaded_at: new Date(),
+          };
+        }
+      })
+    );
+    
+    console.log('📸 Total photos converted:', photos.length);
+    console.log('📸 Photos array structure:', photos.map(p => ({
+      url_length: p.url?.length || 0,
+      has_file_url: !!p.file_url,
+      original_filename: p.original_filename
+    })));
 
     // Validate photos structure
     const photoValidation = validatePhotos(photos);
@@ -164,13 +298,20 @@ export const createPetReport = async (req, res, next) => {
       last_seen_or_found_date: new Date(data.last_seen_or_found_date),
       last_seen_or_found_location_text: data.last_seen_or_found_location_text,
       last_seen_or_found_pincode: data.last_seen_or_found_pincode || null,
-      photos,
+      photos: photos, // Ensure photos array is included
       additional_tags: data.additional_tags || [],
       submitted_by: req.user._id,
       contact_preference: data.contact_preference,
       allow_public_listing: data.allow_public_listing !== false,
       status: 'Pending Verification',
     };
+    
+    // Log petData before saving to verify photos are included
+    console.log('📝 Pet data to save:', {
+      ...petData,
+      photos: petData.photos,
+      photosCount: petData.photos?.length || 0,
+    });
 
     // Only set microchip_id if provided (don't set to null or undefined)
     // This ensures the field is omitted from the document if not provided
@@ -214,6 +355,18 @@ export const createPetReport = async (req, res, next) => {
     }
 
     const pet = await Pet.create(petData);
+    
+    // Log saved pet to verify photos were saved
+    console.log('✅ Pet created successfully:');
+    console.log('   - Pet ID:', pet._id);
+    console.log('   - Photos count:', pet.photos?.length || 0);
+    console.log('   - Photos array:', JSON.stringify(pet.photos, null, 2));
+    
+    // Verify by querying the pet back from database
+    const savedPet = await Pet.findById(pet._id);
+    console.log('✅ Verified from database:');
+    console.log('   - Saved photos count:', savedPet?.photos?.length || 0);
+    console.log('   - Saved photos:', JSON.stringify(savedPet?.photos, null, 2));
 
     res.status(201).json({
       success: true,
@@ -224,7 +377,7 @@ export const createPetReport = async (req, res, next) => {
     console.error('Error creating pet report:', error);
     res.status(500).json({
       success: false,
-      message: error.message,
+      message: 'An error occurred while creating pet report',
     });
   }
 };
@@ -320,7 +473,7 @@ export const matchPets = async (req, res, next) => {
     console.error('Error matching pets:', error);
     res.status(500).json({
       success: false,
-      message: error.message,
+      message: 'An error occurred while matching pets',
     });
   }
 };
@@ -328,6 +481,15 @@ export const matchPets = async (req, res, next) => {
 export const updatePet = async (req, res, next) => {
   try {
     const { id } = req.params;
+    
+    // Validate ObjectId format
+    if (!/^[0-9a-fA-F]{24}$/.test(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid pet ID format',
+      });
+    }
+
     const pet = await Pet.findById(id);
 
     if (!pet) {
@@ -337,8 +499,11 @@ export const updatePet = async (req, res, next) => {
       });
     }
 
-    // Check authorization
-    if (pet.submitted_by.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+    // Check authorization (prevent unauthorized updates)
+    const petOwnerId = pet.submitted_by?.toString() || pet.submitted_by?._id?.toString();
+    const userId = req.user._id?.toString() || req.user.id?.toString();
+    
+    if (petOwnerId !== userId && req.user.role !== 'admin') {
       return res.status(403).json({
         success: false,
         message: 'Not authorized to update this pet',
@@ -356,9 +521,10 @@ export const updatePet = async (req, res, next) => {
       data: updatedPet,
     });
   } catch (error) {
+    console.error('Update pet error:', error);
     res.status(500).json({
       success: false,
-      message: error.message,
+      message: 'An error occurred while updating pet',
     });
   }
 };
@@ -366,6 +532,15 @@ export const updatePet = async (req, res, next) => {
 export const deletePet = async (req, res, next) => {
   try {
     const { id } = req.params;
+    
+    // Validate ObjectId format
+    if (!/^[0-9a-fA-F]{24}$/.test(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid pet ID format',
+      });
+    }
+
     const pet = await Pet.findById(id);
 
     if (!pet) {
@@ -375,8 +550,11 @@ export const deletePet = async (req, res, next) => {
       });
     }
 
-    // Check authorization
-    if (pet.submitted_by.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+    // Check authorization (prevent unauthorized deletions)
+    const petOwnerId = pet.submitted_by?.toString() || pet.submitted_by?._id?.toString();
+    const userId = req.user._id?.toString() || req.user.id?.toString();
+    
+    if (petOwnerId !== userId && req.user.role !== 'admin') {
       return res.status(403).json({
         success: false,
         message: 'Not authorized to delete this pet',
@@ -391,9 +569,10 @@ export const deletePet = async (req, res, next) => {
       message: 'Pet deleted successfully',
     });
   } catch (error) {
+    console.error('Delete pet error:', error);
     res.status(500).json({
       success: false,
-      message: error.message,
+      message: 'An error occurred while deleting pet',
     });
   }
 };
@@ -401,7 +580,41 @@ export const deletePet = async (req, res, next) => {
 export const verifyPet = async (req, res, next) => {
   try {
     const { id } = req.params;
+    
+    // Validate ObjectId format
+    if (!/^[0-9a-fA-F]{24}$/.test(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid pet ID format',
+      });
+    }
+
     const { status, verification_notes } = req.body;
+
+    // Validate status
+    const allowedStatuses = [
+      'Pending Verification',
+      'Listed Found',
+      'Listed Lost',
+      'Matched',
+      'Reunited',
+      'Pending Adoption',
+      'Available for Adoption',
+      'Adopted',
+      'Rejected',
+    ];
+    
+    if (status && !allowedStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid status value',
+      });
+    }
+
+    // Sanitize verification notes
+    const sanitizedNotes = verification_notes && typeof verification_notes === 'string' 
+      ? verification_notes.substring(0, 500) 
+      : null;
 
     // Only admin can verify
     if (req.user.role !== 'admin') {
@@ -442,9 +655,10 @@ export const verifyPet = async (req, res, next) => {
       data: pet,
     });
   } catch (error) {
+    console.error('Verify pet error:', error);
     res.status(500).json({
       success: false,
-      message: error.message,
+      message: 'An error occurred while verifying pet',
     });
   }
 };

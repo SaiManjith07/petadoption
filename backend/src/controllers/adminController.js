@@ -1,6 +1,8 @@
 import User from '../models/User.js';
 import Pet from '../models/Pet.js';
 import Notification from '../models/Notification.js';
+import Chat from '../models/Chat.js';
+import ChatRequest from '../models/ChatRequest.js';
 
 /**
  * Admin Dashboard - Get statistics and analytics
@@ -66,8 +68,18 @@ export const getAllUsers = async (req, res, next) => {
     const { role, is_active } = req.query;
     const filter = {};
 
-    if (role) filter.role = role;
-    if (is_active !== undefined) filter.is_active = is_active === 'true';
+    // Validate and sanitize role (prevent injection)
+    const allowedRoles = ['user', 'rescuer', 'admin'];
+    if (role && allowedRoles.includes(role)) {
+      filter.role = role;
+    }
+
+    // Validate is_active (must be boolean string)
+    if (is_active !== undefined) {
+      if (is_active === 'true' || is_active === 'false') {
+        filter.is_active = is_active === 'true';
+      }
+    }
 
     const users = await User.find(filter).select('-password').sort({ createdAt: -1 });
 
@@ -77,9 +89,10 @@ export const getAllUsers = async (req, res, next) => {
       data: users,
     });
   } catch (error) {
+    console.error('Get all users error:', error);
     res.status(500).json({
       success: false,
-      message: error.message,
+      message: 'An error occurred while fetching users',
     });
   }
 };
@@ -92,11 +105,38 @@ export const getAllPets = async (req, res, next) => {
     const { type, report_type, status, location } = req.query;
     const filter = {};
 
-    // Support both 'type' (legacy) and 'report_type' (new)
-    if (type) filter.report_type = type; // 'found', 'lost'
-    if (report_type) filter.report_type = report_type; // 'found', 'lost'
-    if (status) filter.status = status;
-    if (location) filter['last_seen_or_found_location_text'] = new RegExp(location, 'i');
+    // Validate report_type (prevent injection)
+    const allowedReportTypes = ['found', 'lost'];
+    if (type && allowedReportTypes.includes(type)) {
+      filter.report_type = type;
+    }
+    if (report_type && allowedReportTypes.includes(report_type)) {
+      filter.report_type = report_type;
+    }
+
+    // Validate status (prevent injection)
+    const allowedStatuses = [
+      'Pending Verification',
+      'Listed Found',
+      'Listed Lost',
+      'Matched',
+      'Reunited',
+      'Pending Adoption',
+      'Available for Adoption',
+      'Adopted',
+      'Rejected',
+    ];
+    if (status && allowedStatuses.includes(status)) {
+      filter.status = status;
+    }
+
+    // Sanitize location for regex (already sanitized by middleware, but double-check)
+    if (location && typeof location === 'string') {
+      const sanitizedLocation = location.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').substring(0, 500);
+      if (sanitizedLocation.length > 0) {
+        filter['last_seen_or_found_location_text'] = new RegExp(sanitizedLocation, 'i');
+      }
+    }
 
     const pets = await Pet.find(filter)
       .populate('submitted_by', 'name email phone contact_preference is_verified')
@@ -108,9 +148,10 @@ export const getAllPets = async (req, res, next) => {
       data: pets,
     });
   } catch (error) {
+    console.error('Get all pets error:', error);
     res.status(500).json({
       success: false,
-      message: error.message,
+      message: 'An error occurred while fetching pets',
     });
   }
 };
@@ -123,6 +164,14 @@ export const updateUser = async (req, res, next) => {
     const { id } = req.params;
     const { is_active, role } = req.body;
 
+    // Validate ObjectId format
+    if (!/^[0-9a-fA-F]{24}$/.test(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid user ID format',
+      });
+    }
+
     const user = await User.findById(id);
 
     if (!user) {
@@ -132,20 +181,39 @@ export const updateUser = async (req, res, next) => {
       });
     }
 
+    // Prevent admin from deactivating themselves
+    if (is_active === false && user._id.toString() === req.user._id?.toString()) {
+      return res.status(400).json({
+        success: false,
+        message: 'You cannot deactivate your own account',
+      });
+    }
+
+    // Validate role (prevent role escalation)
+    const allowedRoles = ['user', 'rescuer'];
     if (is_active !== undefined) user.is_active = is_active;
-    if (role && role !== 'admin') user.role = role; // Prevent changing to admin via this route
+    if (role && allowedRoles.includes(role)) {
+      user.role = role; // Prevent changing to admin via this route
+    }
 
     await user.save();
 
     res.status(200).json({
       success: true,
       message: 'User updated successfully',
-      data: user,
+      data: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        is_active: user.is_active,
+      },
     });
   } catch (error) {
+    console.error('Update user error:', error);
     res.status(500).json({
       success: false,
-      message: error.message,
+      message: 'An error occurred while updating user',
     });
   }
 };
@@ -156,6 +224,14 @@ export const updateUser = async (req, res, next) => {
 export const deleteUser = async (req, res, next) => {
   try {
     const { id } = req.params;
+
+    // Validate ObjectId format
+    if (!/^[0-9a-fA-F]{24}$/.test(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid user ID format',
+      });
+    }
 
     const user = await User.findById(id);
 
@@ -183,9 +259,10 @@ export const deleteUser = async (req, res, next) => {
       message: 'User deactivated successfully',
     });
   } catch (error) {
+    console.error('Delete user error:', error);
     res.status(500).json({
       success: false,
-      message: error.message,
+      message: 'An error occurred while deactivating user',
     });
   }
 };
@@ -196,7 +273,25 @@ export const deleteUser = async (req, res, next) => {
 export const deletePet = async (req, res, next) => {
   try {
     const { id } = req.params;
+    
+    // Validate ObjectId format
+    if (!/^[0-9a-fA-F]{24}$/.test(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid pet ID format',
+      });
+    }
+
     const { action } = req.body; // 'delete' or 'resolve'
+
+    // Validate action
+    const allowedActions = ['delete', 'resolve'];
+    if (action && !allowedActions.includes(action)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Action must be either "delete" or "resolve"',
+      });
+    }
 
     const pet = await Pet.findById(id);
 
@@ -254,9 +349,10 @@ export const getPendingReports = async (req, res, next) => {
       data: pendingReports,
     });
   } catch (error) {
+    console.error('Get pending reports error:', error);
     res.status(500).json({
       success: false,
-      message: error.message,
+      message: 'An error occurred while fetching pending reports',
     });
   }
 };
@@ -278,9 +374,10 @@ export const getPendingAdoptionRequests = async (req, res, next) => {
       data: pendingAdoptions,
     });
   } catch (error) {
+    console.error('Get pending adoptions error:', error);
     res.status(500).json({
       success: false,
-      message: error.message,
+      message: 'An error occurred while fetching pending adoptions',
     });
   }
 };
@@ -292,11 +389,21 @@ export const getPendingAdoptionRequests = async (req, res, next) => {
 export const acceptReport = async (req, res, next) => {
   try {
     const { id } = req.params;
+    
+    // Validate ObjectId format
+    if (!/^[0-9a-fA-F]{24}$/.test(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid report ID format',
+      });
+    }
+
     const { 
       notes,
       verification_params = {}
     } = req.body;
 
+    // Validate and sanitize verification parameters
     const {
       verified_photos = false,
       verified_location = false,
@@ -304,6 +411,18 @@ export const acceptReport = async (req, res, next) => {
       verified_identity = false,
       additional_notes = ''
     } = verification_params;
+
+    // Ensure boolean values
+    const verificationChecks = {
+      verified_photos: typeof verified_photos === 'boolean' ? verified_photos : false,
+      verified_location: typeof verified_location === 'boolean' ? verified_location : false,
+      verified_contact: typeof verified_contact === 'boolean' ? verified_contact : false,
+      verified_identity: typeof verified_identity === 'boolean' ? verified_identity : false,
+    };
+
+    // Sanitize notes
+    const sanitizedNotes = notes && typeof notes === 'string' ? notes.substring(0, 500) : null;
+    const sanitizedAdditionalNotes = additional_notes && typeof additional_notes === 'string' ? additional_notes.substring(0, 500) : '';
 
     const pet = await Pet.findById(id).populate('submitted_by', 'name email phone is_verified');
 
@@ -322,21 +441,21 @@ export const acceptReport = async (req, res, next) => {
     }
 
     // Verification checks - Admin must verify at least some parameters
-    const verificationChecks = {
-      photos: verified_photos || pet.photos?.length > 0,
-      location: verified_location || (pet.last_seen_or_found_location_text && pet.last_seen_or_found_coords),
-      contact: verified_contact || (pet.submitted_by?.phone || pet.submitted_by?.email),
-      identity: verified_identity || pet.submitted_by?.is_verified,
+    const verificationStatus = {
+      photos: verificationChecks.verified_photos || pet.photos?.length > 0,
+      location: verificationChecks.verified_location || (pet.last_seen_or_found_location_text && pet.last_seen_or_found_coords),
+      contact: verificationChecks.verified_contact || (pet.submitted_by?.phone || pet.submitted_by?.email),
+      identity: verificationChecks.verified_identity || pet.submitted_by?.is_verified,
     };
 
     // Count verified parameters
-    const verifiedCount = Object.values(verificationChecks).filter(Boolean).length;
+    const verifiedCount = Object.values(verificationStatus).filter(Boolean).length;
     
     if (verifiedCount < 2) {
       return res.status(400).json({
         success: false,
         message: 'Insufficient verification. At least 2 parameters must be verified (photos, location, contact, identity)',
-        verification_status: verificationChecks,
+        verification_status: verificationStatus,
       });
     }
 
@@ -344,7 +463,7 @@ export const acceptReport = async (req, res, next) => {
     pet.status = pet.report_type === 'found' ? 'Listed Found' : 'Listed Lost';
     pet.verified_by = req.user.id;
     pet.verification_date = new Date();
-    pet.verification_notes = notes || additional_notes || `Approved by admin. Verified: ${Object.entries(verificationChecks).filter(([_, v]) => v).map(([k]) => k).join(', ')}`;
+    pet.verification_notes = sanitizedNotes || sanitizedAdditionalNotes || `Approved by admin. Verified: ${Object.entries(verificationStatus).filter(([_, v]) => v).map(([k]) => k).join(', ')}`;
 
     await pet.save();
 
@@ -385,6 +504,15 @@ export const acceptReport = async (req, res, next) => {
 export const acceptAdoptionRequest = async (req, res, next) => {
   try {
     const { id } = req.params;
+    
+    // Validate ObjectId format
+    if (!/^[0-9a-fA-F]{24}$/.test(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid adoption request ID format',
+      });
+    }
+
     const { 
       notes,
       verification_params = {}
@@ -398,6 +526,26 @@ export const acceptAdoptionRequest = async (req, res, next) => {
       adopter_id = null,
       additional_notes = ''
     } = verification_params;
+
+    // Validate adopter_id if provided
+    if (adopter_id && !/^[0-9a-fA-F]{24}$/.test(adopter_id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid adopter ID format',
+      });
+    }
+
+    // Validate and sanitize verification parameters
+    const verificationChecks = {
+      verified_adopter_identity: typeof verified_adopter_identity === 'boolean' ? verified_adopter_identity : false,
+      verified_home_check: typeof verified_home_check === 'boolean' ? verified_home_check : false,
+      verified_references: typeof verified_references === 'boolean' ? verified_references : false,
+      verified_financial_stability: typeof verified_financial_stability === 'boolean' ? verified_financial_stability : false,
+    };
+
+    // Sanitize notes
+    const sanitizedNotes = notes && typeof notes === 'string' ? notes.substring(0, 500) : null;
+    const sanitizedAdditionalNotes = additional_notes && typeof additional_notes === 'string' ? additional_notes.substring(0, 500) : '';
 
     const pet = await Pet.findById(id).populate('submitted_by', 'name email phone');
 
@@ -416,22 +564,22 @@ export const acceptAdoptionRequest = async (req, res, next) => {
       });
     }
 
-    // Verification checks for adoption - More strict requirements
-    const verificationChecks = {
-      adopter_identity: verified_adopter_identity,
-      home_check: verified_home_check,
-      references: verified_references,
-      financial_stability: verified_financial_stability,
+    // Verification status for adoption - More strict requirements
+    const verificationStatus = {
+      adopter_identity: verificationChecks.verified_adopter_identity,
+      home_check: verificationChecks.verified_home_check,
+      references: verificationChecks.verified_references,
+      financial_stability: verificationChecks.verified_financial_stability,
     };
 
     // Count verified parameters
-    const verifiedCount = Object.values(verificationChecks).filter(Boolean).length;
+    const verifiedCount = Object.values(verificationStatus).filter(Boolean).length;
     
     if (verifiedCount < 3) {
       return res.status(400).json({
         success: false,
         message: 'Insufficient verification for adoption. At least 3 parameters must be verified (identity, home check, references, financial stability)',
-        verification_status: verificationChecks,
+        verification_status: verificationStatus,
       });
     }
 
@@ -456,7 +604,7 @@ export const acceptAdoptionRequest = async (req, res, next) => {
     pet.status = 'Adopted';
     pet.verified_by = req.user.id;
     pet.verification_date = new Date();
-    pet.verification_notes = notes || additional_notes || `Adoption approved by admin. Verified: ${Object.entries(verificationChecks).filter(([_, v]) => v).map(([k]) => k).join(', ')}`;
+    pet.verification_notes = sanitizedNotes || sanitizedAdditionalNotes || `Adoption approved by admin. Verified: ${Object.entries(verificationStatus).filter(([_, v]) => v).map(([k]) => k).join(', ')}`;
 
     // Store adopter information if provided
     if (adopter_id) {
@@ -472,7 +620,7 @@ export const acceptAdoptionRequest = async (req, res, next) => {
         user: pet.submitted_by._id,
         type: 'adoption_accepted',
         title: 'Adoption Request Approved!',
-        message: `Your adoption request for ${pet.breed || pet.species} has been approved! ${notes ? `Admin notes: ${notes}` : ''}`,
+        message: `Your adoption request for ${pet.breed || pet.species} has been approved! ${sanitizedNotes ? `Admin notes: ${sanitizedNotes}` : ''}`,
         related_pet: pet._id,
         metadata: {
           status: pet.status,
@@ -516,7 +664,19 @@ export const acceptAdoptionRequest = async (req, res, next) => {
 export const rejectReport = async (req, res, next) => {
   try {
     const { id } = req.params;
+    
+    // Validate ObjectId format
+    if (!/^[0-9a-fA-F]{24}$/.test(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid report ID format',
+      });
+    }
+
     const { reason } = req.body;
+    
+    // Sanitize rejection reason
+    const sanitizedReason = reason && typeof reason === 'string' ? reason.substring(0, 500) : 'No reason provided';
 
     if (!reason) {
       return res.status(400).json({
@@ -545,7 +705,7 @@ export const rejectReport = async (req, res, next) => {
     pet.status = 'Rejected';
     pet.verified_by = req.user.id;
     pet.verification_date = new Date();
-    pet.verification_notes = `Rejected: ${reason}`;
+    pet.verification_notes = `Rejected: ${sanitizedReason}`;
 
     await pet.save();
 
@@ -656,6 +816,225 @@ export const getAdminDashboardStats = async (req, res, next) => {
     res.status(500).json({
       success: false,
       message: error.message,
+    });
+  }
+};
+
+/**
+ * Admin Chat Management - Get all chat requests
+ * GET /api/admin/chats/requests
+ */
+export const getAllChatRequests = async (req, res) => {
+  try {
+    const requests = await ChatRequest.find()
+      .populate('pet_id', 'species breed color_primary')
+      .populate('requester_id', 'name email')
+      .populate('owner_id', 'name email')
+      .sort({ createdAt: -1 });
+
+    // Transform to match frontend expectations
+    const transformedRequests = requests.map((req) => ({
+      id: req._id,
+      _id: req._id,
+      petId: req.pet_id?._id || req.pet_id,
+      requesterId: req.requester_id?._id || req.requester_id,
+      ownerId: req.owner_id?._id || req.owner_id,
+      type: req.type,
+      message: req.message,
+      status: req.status,
+      roomId: req.room_id,
+      createdAt: req.createdAt,
+      respondedAt: req.responded_at,
+    }));
+
+    res.status(200).json({
+      success: true,
+      data: transformedRequests,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to fetch chat requests',
+    });
+  }
+};
+
+/**
+ * Admin Chat Management - Get all active chats
+ * GET /api/admin/chats
+ */
+export const getAllChats = async (req, res) => {
+  try {
+    const chats = await Chat.find({ is_active: true })
+      .populate('pet_id', 'species breed color_primary report_type')
+      .populate('participants', 'name email')
+      .populate('messages.sender_id', 'name email')
+      .sort({ createdAt: -1 });
+
+    // Transform to match frontend expectations
+    const transformedChats = chats.map((chat) => ({
+      roomId: chat.room_id,
+      _id: chat._id,
+      petId: chat.pet_id?._id || chat.pet_id,
+      type: chat.pet_id?.report_type === 'found' ? 'claim' : 'adoption',
+      participants: chat.participants?.map((p) => p._id || p) || [],
+      messages: chat.messages?.map((msg) => ({
+        id: msg._id,
+        sender: {
+          id: msg.sender_id?._id || msg.sender_id,
+          name: msg.sender_id?.name || 'Unknown',
+        },
+        text: msg.message,
+        timestamp: msg.timestamp,
+      })) || [],
+      createdAt: chat.createdAt,
+    }));
+
+    res.status(200).json({
+      success: true,
+      data: transformedChats,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to fetch chats',
+    });
+  }
+};
+
+/**
+ * Admin Chat Management - Get chat statistics
+ * GET /api/admin/chats/stats
+ */
+export const getChatStats = async (req, res) => {
+  try {
+    const pendingRequests = await ChatRequest.countDocuments({ status: 'pending' });
+    const activeChats = await Chat.countDocuments({ is_active: true });
+    const totalRequests = await ChatRequest.countDocuments();
+    const approvedRequests = await ChatRequest.countDocuments({ status: 'approved' });
+    const rejectedRequests = await ChatRequest.countDocuments({ status: 'rejected' });
+
+    res.status(200).json({
+      success: true,
+      data: {
+        pending_requests: pendingRequests,
+        active_chats: activeChats,
+        total_requests: totalRequests,
+        approved_requests: approvedRequests,
+        rejected_requests: rejectedRequests,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to fetch chat stats',
+    });
+  }
+};
+
+/**
+ * Admin Chat Management - Respond to chat request
+ * POST /api/admin/chats/requests/:id/respond
+ */
+export const respondToChatRequest = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Validate ObjectId format
+    if (!/^[0-9a-fA-F]{24}$/.test(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid request ID format',
+      });
+    }
+
+    const { approved, admin_notes } = req.body;
+
+    // Validate approved field
+    if (typeof approved !== 'boolean') {
+      return res.status(400).json({
+        success: false,
+        message: 'Approved field must be a boolean',
+      });
+    }
+
+    // Sanitize admin notes
+    const sanitizedAdminNotes = admin_notes && typeof admin_notes === 'string' ? admin_notes.substring(0, 500) : null;
+
+    const request = await ChatRequest.findById(id);
+    if (!request) {
+      return res.status(404).json({
+        success: false,
+        message: 'Chat request not found',
+      });
+    }
+
+    if (request.status !== 'pending') {
+      return res.status(400).json({
+        success: false,
+        message: 'This request has already been processed',
+      });
+    }
+
+    request.status = approved ? 'approved' : 'rejected';
+    request.admin_notes = sanitizedAdminNotes;
+    request.responded_at = new Date();
+
+    if (approved) {
+      // Create chat room when approved
+      const roomId = `room-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      const chat = new Chat({
+        room_id: roomId,
+        pet_id: request.pet_id,
+        participants: [request.requester_id, request.owner_id],
+        messages: [],
+        is_active: true,
+      });
+      await chat.save();
+      request.room_id = roomId;
+    }
+
+    await request.save();
+
+    res.status(200).json({
+      success: true,
+      data: request,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to respond to chat request',
+    });
+  }
+};
+
+/**
+ * Admin Chat Management - Get chat room details
+ * GET /api/admin/chats/:roomId
+ */
+export const getChatRoom = async (req, res) => {
+  try {
+    const { roomId } = req.params;
+    const chat = await Chat.findOne({ room_id: roomId })
+      .populate('pet_id', 'species breed color_primary')
+      .populate('participants', 'name email')
+      .populate('messages.sender_id', 'name email');
+
+    if (!chat) {
+      return res.status(404).json({
+        success: false,
+        message: 'Chat room not found',
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: chat,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to fetch chat room',
     });
   }
 };
