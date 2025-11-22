@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Shield, CheckCircle, X, AlertCircle, Search, ArrowLeft } from 'lucide-react';
+import { Shield, CheckCircle, X, AlertCircle, Search, ArrowLeft, Menu } from 'lucide-react';
+import { AdminSidebar } from '@/components/layout/AdminSidebar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -34,6 +35,7 @@ export default function AdminLostPets() {
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     if (!isAdmin) {
@@ -184,26 +186,48 @@ export default function AdminLostPets() {
   }
 
   return (
-    <div className="min-h-screen bg-background p-4 md:p-8">
-      <div className="max-w-7xl mx-auto space-y-8">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/admin')}>
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <div>
-              <h1 className="text-3xl font-bold flex items-center gap-2">
-                <Shield className="h-8 w-8 text-primary" />
-                Admin - Lost Pets Management
-              </h1>
-              <p className="text-muted-foreground mt-1">Verify and manage lost pet reports</p>
-            </div>
-          </div>
-          <Badge variant="default" className="text-base px-3 py-1">
-            {filteredPets.length} Lost Pet{filteredPets.length !== 1 ? 's' : ''}
-          </Badge>
+    <div className="min-h-screen bg-gray-50">
+      {/* Fixed Sidebar - Desktop */}
+      <div className="hidden lg:block">
+        <AdminSidebar isOpen={true} onClose={() => setSidebarOpen(false)} />
+      </div>
+      
+      {/* Mobile Sidebar */}
+      <div className="lg:hidden">
+        <AdminSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      </div>
+
+      {/* Main Content */}
+      <div className="flex flex-col min-w-0 lg:ml-64">
+        {/* Mobile Menu Toggle */}
+        <div className="lg:hidden sticky top-0 z-30 bg-white border-b border-gray-200 p-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="text-gray-600 hover:text-gray-900"
+          >
+            {sidebarOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+          </Button>
         </div>
+
+        {/* Main Content Area - Scrollable */}
+        <main className="flex-1 overflow-y-auto">
+          <div className="p-6 space-y-6">
+            <div className="max-w-7xl mx-auto space-y-8">
+            {/* Header */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold flex items-center gap-2 text-gray-900">
+                  <Shield className="h-8 w-8 text-[#4CAF50]" />
+                  Lost Pets Management
+                </h1>
+                <p className="text-gray-600 mt-1">Verify and manage lost pet reports</p>
+              </div>
+              <Badge variant="default" className="text-base px-3 py-1 bg-[#4CAF50]">
+                {filteredPets.length} Lost Pet{filteredPets.length !== 1 ? 's' : ''}
+              </Badge>
+            </div>
 
         {/* Filters */}
         <Card>
@@ -487,6 +511,9 @@ export default function AdminLostPets() {
             </Card>
           </div>
         )}
+            </div>
+          </div>
+        </main>
       </div>
     </div>
   );

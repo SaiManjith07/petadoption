@@ -1,5 +1,6 @@
 import express from 'express';
 import { protect } from '../middleware/auth.js';
+import { adminRateLimiter } from '../middleware/security.js';
 import {
   getNotifications,
   getUnreadCount,
@@ -12,6 +13,9 @@ const router = express.Router();
 
 // All notification routes require authentication
 router.use(protect);
+
+// Apply more lenient rate limiting for notifications
+router.use(adminRateLimiter);
 
 /**
  * Notification Routes

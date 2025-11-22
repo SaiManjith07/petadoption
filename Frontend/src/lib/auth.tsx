@@ -11,9 +11,10 @@ interface User {
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<User>;
   register: (payload: { name: string; email: string; password: string; role?: string; full_name?: string; pincode?: string; age?: number; gender?: string; phone?: string; agree_terms?: boolean; }) => Promise<void>;
   logout: () => void;
+  refreshUser: () => Promise<void>;
   isAuthenticated: boolean;
   isAdmin: boolean;
 }
@@ -57,22 +58,50 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const login = async (email: string, password: string) => {
+    console.log('Auth: Attempting login to:', `${API_URL}/auth/login`);
     const res = await fetch(`${API_URL}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
     });
 
+    console.log('Auth: Response status:', res.status, res.statusText);
+
     if (!res.ok) {
       const err = await res.json().catch(() => null);
+      console.error('Auth: Login failed:', err);
       throw new Error(err?.message || 'Login failed');
     }
 
     const data = await res.json();
+    console.log('Auth: Login response data:', data);
     const { token, user: returnedUser } = data;
-    if (token) localStorage.setItem('token', token);
-    setUser(returnedUser);
-    localStorage.setItem('user', JSON.stringify(returnedUser));
+    
+    if (!token || !returnedUser) {
+      console.error('Auth: Missing token or user in response');
+      throw new Error('Invalid response from server');
+    }
+    
+    console.log('Auth: Returned user:', returnedUser);
+    
+    // Store token and user data
+    localStorage.setItem('token', token);
+    
+    // Ensure user object has all required fields
+    const userData = {
+      id: returnedUser.id || returnedUser._id,
+      _id: returnedUser._id || returnedUser.id,
+      name: returnedUser.name,
+      email: returnedUser.email,
+      role: returnedUser.role || 'user',
+      ...returnedUser, // Include any additional fields
+    };
+    
+    console.log('Auth: Processed user data:', userData);
+    setUser(userData);
+    localStorage.setItem('user', JSON.stringify(userData));
+    
+    return userData; // Return user data for immediate use
   };
 
   const register = async (payload: { name: string; email: string; password: string; role?: string; full_name?: string; pincode?: string; age?: number; gender?: string; phone?: string; agree_terms?: boolean; }) => {
@@ -96,6 +125,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     localStorage.setItem('user', JSON.stringify(returnedUser));
   };
 
+  const refreshUser = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    
+    try {
+      const res = await fetch(`${API_URL}/auth/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.user) {
+          setUser(data.user);
+          localStorage.setItem('user', JSON.stringify(data.user));
+        }
+      }
+    } catch (e) {
+      console.error('Error refreshing user:', e);
+    }
+  };
+
   const logout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
@@ -109,6 +158,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         login,
         register,
         logout,
+        refreshUser,
         isAuthenticated: !!user,
         isAdmin: user?.role === 'admin',
       }}

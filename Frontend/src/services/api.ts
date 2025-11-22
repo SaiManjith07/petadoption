@@ -603,63 +603,49 @@ export const adminAPI = {
 
   async getPendingReports(report_type?: 'found' | 'lost') {
     const url = `${API_URL}/admin/pending${report_type ? `?report_type=${report_type}` : ''}`;
-    try {
-      const response = await fetch(url, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
-      });
-      if (!response.ok) throw new Error('Failed to fetch pending reports');
-      const data = await response.json();
-      return data.data;
-    } catch (error) {
-      // Fallback to mock
-      return this.getPending(report_type);
+    const response = await fetch(url, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+    });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || 'Failed to fetch pending reports');
     }
+    const data = await response.json();
+    return data.data || [];
   },
 
   async acceptReport(petId: string, notes?: string, verificationParams?: any) {
     const url = `${API_URL}/admin/pending/${petId}/accept`;
-    try {
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          notes,
-          verification_params: verificationParams 
-        }),
-      });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to accept report');
-      }
-      const data = await response.json();
-      return data.data;
-    } catch (error) {
-      // Fallback: simulate acceptance
-      await mockDelay();
-      const pet = mockData.pets.find(p => p.id === petId);
-      if (!pet) throw new Error('Pet not found');
-      pet.status = pet.report_type === 'found' ? 'Listed Found' : 'Listed Lost';
-      return pet;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ 
+        notes,
+        verification_params: verificationParams 
+      }),
+    });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || 'Failed to accept report');
     }
+    const data = await response.json();
+    return data.data;
   },
 
   async getPendingAdoptionRequests() {
     const url = `${API_URL}/admin/adoptions/pending`;
-    try {
-      const response = await fetch(url, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
-      });
-      if (!response.ok) throw new Error('Failed to fetch pending adoptions');
-      const data = await response.json();
-      return data.data;
-    } catch (error) {
-      // Fallback to mock
-      await mockDelay();
-      return mockData.pets.filter(p => p.status === 'Pending Adoption');
+    const response = await fetch(url, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+    });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || 'Failed to fetch pending adoptions');
     }
+    const data = await response.json();
+    return data.data || [];
   },
 
   async acceptAdoptionRequest(petId: string, notes?: string, verificationParams?: any, adopterId?: string) {
@@ -692,26 +678,20 @@ export const adminAPI = {
 
   async rejectReport(petId: string, reason: string) {
     const url = `${API_URL}/admin/pending/${petId}/reject`;
-    try {
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ reason }),
-      });
-      if (!response.ok) throw new Error('Failed to reject report');
-      const data = await response.json();
-      return data.data;
-    } catch (error) {
-      // Fallback: simulate rejection
-      await mockDelay();
-      const pet = mockData.pets.find(p => p.id === petId);
-      if (!pet) throw new Error('Pet not found');
-      pet.status = 'Rejected';
-      return pet;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ reason }),
+    });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || 'Failed to reject report');
     }
+    const data = await response.json();
+    return data.data;
   },
 
   async approvePet(id: string) {
@@ -724,195 +704,190 @@ export const adminAPI = {
 
   async getDashboardStats() {
     const url = `${API_URL}/admin/dashboard`;
+    const response = await fetch(url, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+    });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || 'Failed to fetch dashboard stats');
+    }
+    const data = await response.json();
+    return data.data;
+  },
+
+  async getAllUsers(filters?: any) {
+    const url = `${API_URL}/admin/users${filters ? `?${new URLSearchParams(filters).toString()}` : ''}`;
+    const response = await fetch(url, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+    });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || 'Failed to fetch users');
+    }
+    const data = await response.json();
+    return data.data || [];
+  },
+
+  async getUserById(userId: string) {
+    const url = `${API_URL}/admin/users/${userId}`;
     try {
       const response = await fetch(url, {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
       });
-      if (!response.ok) throw new Error('Failed to fetch stats');
+      if (!response.ok) throw new Error('Failed to fetch user');
       const data = await response.json();
       return data.data;
     } catch (error) {
-      // Fallback to mock
-      await mockDelay();
-      initMockData();
-      return {
-        pending: {
-          lost: 3,
-          found: 2,
-          total: 5,
-        },
-        active: {
-          lost: 8,
-          found: 12,
-          total: 20,
-        },
-        matched: 15,
-        reunited: 10,
-        users: {
-          total: 150,
-          regular: 120,
-          rescuers: 28,
-          admins: 2,
-        },
-      };
+      throw error;
     }
   },
 
-  async getAllUsers(filters?: any) {
-    await mockDelay();
-    return [
-      { _id: '1', name: 'John Doe', email: 'john@example.com', role: 'user', is_active: true, createdAt: new Date() },
-      { _id: '2', name: 'Sarah Smith', email: 'sarah@example.com', role: 'rescuer', is_active: true, createdAt: new Date() },
-    ];
-  },
-
   async updateUser(userId: string, updates: any) {
-    await mockDelay();
-    return { success: true, message: 'User updated' };
+    const url = `${API_URL}/admin/users/${userId}`;
+    try {
+      const response = await fetch(url, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updates),
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to update user');
+      }
+      const data = await response.json();
+      return data.data;
+    } catch (error) {
+      throw error;
+    }
   },
 
   async deleteUser(userId: string) {
-    await mockDelay();
-    return { success: true, message: 'User deactivated' };
+    const url = `${API_URL}/admin/users/${userId}`;
+    try {
+      const response = await fetch(url, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to deactivate user');
+      }
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      throw error;
+    }
   },
 
   // Chat Management Functions
   async getAllChatRequests() {
     const url = `${API_URL}/admin/chats/requests`;
-    try {
-      const response = await fetch(url, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
-      });
-      if (!response.ok) {
-        // If 404, return empty array (endpoint might not be implemented yet)
-        if (response.status === 404) {
-          console.warn('Chat requests endpoint not found, using fallback');
-          return [];
-        }
-        throw new Error('Failed to fetch chat requests');
-      }
-      const data = await response.json();
-      return data.data || [];
-    } catch (error) {
-      // Fallback to mock
-      console.warn('Using mock data for chat requests:', error);
-      await mockDelay();
-      return mockData.chatRequests || [];
+    const response = await fetch(url, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+    });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || 'Failed to fetch chat requests');
     }
+    const data = await response.json();
+    return data.data || [];
   },
 
   async getAllChats() {
     const url = `${API_URL}/admin/chats`;
-    try {
-      const response = await fetch(url, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
-      });
-      if (!response.ok) {
-        // If 404, return empty array (endpoint might not be implemented yet)
-        if (response.status === 404) {
-          console.warn('Chats endpoint not found, using fallback');
-          return [];
-        }
-        throw new Error('Failed to fetch chats');
-      }
-      const data = await response.json();
-      return data.data || [];
-    } catch (error) {
-      // Fallback to mock
-      console.warn('Using mock data for chats:', error);
-      await mockDelay();
-      return mockData.chats || [];
+    const response = await fetch(url, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+    });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || 'Failed to fetch chats');
     }
+    const data = await response.json();
+    return data.data || [];
   },
 
   async getChatStats() {
     const url = `${API_URL}/admin/chats/stats`;
-    try {
-      const response = await fetch(url, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
-      });
-      if (!response.ok) {
-        // If 404, return default stats
-        if (response.status === 404) {
-          console.warn('Chat stats endpoint not found, using fallback');
-          return {
-            pending_requests: 0,
-            active_chats: 0,
-            total_requests: 0,
-            approved_requests: 0,
-            rejected_requests: 0,
-          };
-        }
-        throw new Error('Failed to fetch chat stats');
-      }
-      const data = await response.json();
-      return data.data;
-    } catch (error) {
-      // Fallback to mock
-      console.warn('Using mock data for chat stats:', error);
-      await mockDelay();
-      const requests = mockData.chatRequests || [];
-      const chats = mockData.chats || [];
-      return {
-        pending_requests: requests.filter((r: any) => r.status === 'pending').length,
-        active_chats: chats.length,
-        total_requests: requests.length,
-        approved_requests: requests.filter((r: any) => r.status === 'approved').length,
-        rejected_requests: requests.filter((r: any) => r.status === 'rejected').length,
-      };
+    const response = await fetch(url, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+    });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || 'Failed to fetch chat stats');
     }
+    const data = await response.json();
+    return data.data || {
+      pending_requests: 0,
+      active_chats: 0,
+      total_requests: 0,
+      approved_requests: 0,
+      rejected_requests: 0,
+    };
   },
 
   async respondToChatRequest(requestId: string, approved: boolean, adminNotes?: string) {
     const url = `${API_URL}/admin/chats/requests/${requestId}/respond`;
-    try {
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ approved, admin_notes: adminNotes }),
-      });
-      if (!response.ok) throw new Error('Failed to respond to chat request');
-      const data = await response.json();
-      return data.data;
-    } catch (error) {
-      // Fallback to mock
-      return chatAPI.respondToChatRequest(requestId, approved);
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ approved, admin_notes: adminNotes }),
+    });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || 'Failed to respond to chat request');
     }
+    const data = await response.json();
+    return data.data;
   },
 
   async getChatRoom(roomId: string) {
     const url = `${API_URL}/admin/chats/${roomId}`;
+    const response = await fetch(url, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+    });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || 'Failed to fetch chat room');
+    }
+    const data = await response.json();
+    return data.data;
+  },
+
+  async closeChat(roomId: string) {
+    const url = `${API_URL}/admin/chats/${roomId}/close`;
     try {
       const response = await fetch(url, {
+        method: 'POST',
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
       });
-      if (!response.ok) throw new Error('Failed to fetch chat room');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to close chat');
+      }
       const data = await response.json();
-      return data.data;
+      return data;
     } catch (error) {
-      // Fallback to mock
-      return chatAPI.getRoom(roomId);
+      throw error;
     }
   },
 
   async getAllPets(filters?: any) {
     const url = `${API_URL}/admin/pets${filters ? `?${new URLSearchParams(filters).toString()}` : ''}`;
-    try {
-      const response = await fetch(url, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
-      });
-      if (!response.ok) throw new Error('Failed to fetch pets');
-      const data = await response.json();
-      return data.data;
-    } catch (error) {
-      // Fallback to mock
-      await mockDelay();
-      initMockData();
-      return mockData.pets;
+    const response = await fetch(url, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+    });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || 'Failed to fetch pets');
     }
+    const data = await response.json();
+    return data.data || [];
   },
 
   async resolvePet(petId: string) {
@@ -1060,6 +1035,242 @@ export const usersAPI = {
       // Fallback to mock
       await mockDelay();
       return currentUser;
+    }
+  },
+
+  async updatePassword(currentPassword: string, newPassword: string) {
+    const url = `${API_URL}/auth/update-password`;
+    try {
+      const response = await fetch(url, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ message: 'Failed to update password' }));
+        throw new Error(error.message || 'Failed to update password');
+      }
+      const data = await response.json();
+      return data;
+    } catch (error: any) {
+      throw new Error(error.message || 'Failed to update password');
+    }
+  },
+};
+
+// Role Request API
+export const roleRequestAPI = {
+  async create(requested_role: string, reason?: string, experience?: string, availability?: string, resources?: any) {
+    const url = `${API_URL}/role-requests`;
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ requested_role, reason, experience, availability, resources }),
+      });
+      if (!response.ok) throw new Error('Failed to create role request');
+      const data = await response.json();
+      return data.data;
+    } catch (error: any) {
+      throw new Error(error.message || 'Failed to create role request');
+    }
+  },
+
+  async getMy() {
+    const url = `${API_URL}/role-requests/my`;
+    try {
+      const response = await fetch(url, {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+      });
+      if (!response.ok) throw new Error('Failed to fetch role requests');
+      const data = await response.json();
+      return data.data;
+    } catch (error) {
+      return [];
+    }
+  },
+
+  async getPending() {
+    const url = `${API_URL}/role-requests/pending`;
+    try {
+      const response = await fetch(url, {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+      });
+      if (!response.ok) throw new Error('Failed to fetch pending role requests');
+      const data = await response.json();
+      return data.data || [];
+    } catch (error) {
+      return [];
+    }
+  },
+};
+
+// Shelter Capacity API
+export const shelterAPI = {
+  async getAll(params?: any) {
+    const queryParams = new URLSearchParams();
+    if (params?.pincode) queryParams.append('pincode', params.pincode);
+    if (params?.city) queryParams.append('city', params.city);
+    if (params?.min_available) queryParams.append('min_available', params.min_available);
+    
+    const url = `${API_URL}/shelters${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    try {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error('Failed to fetch shelters');
+      const data = await response.json();
+      return data.data || [];
+    } catch (error) {
+      return [];
+    }
+  },
+
+  async createOrUpdate(shelterData: any) {
+    const url = `${API_URL}/shelters`;
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(shelterData),
+      });
+      if (!response.ok) throw new Error('Failed to update shelter capacity');
+      const data = await response.json();
+      return data.data;
+    } catch (error: any) {
+      throw new Error(error.message || 'Failed to update shelter capacity');
+    }
+  },
+};
+
+// Home Check API
+export const homeCheckAPI = {
+  async create(pet_id: string, adopter_id: string, check_type: 'pre_adoption' | 'post_adoption', scheduled_date: string) {
+    const url = `${API_URL}/home-checks`;
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ pet_id, adopter_id, check_type, scheduled_date }),
+      });
+      if (!response.ok) throw new Error('Failed to create home check');
+      const data = await response.json();
+      return data.data;
+    } catch (error: any) {
+      throw new Error(error.message || 'Failed to create home check');
+    }
+  },
+
+  async getMy() {
+    const url = `${API_URL}/home-checks/my`;
+    try {
+      const response = await fetch(url, {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+      });
+      if (!response.ok) throw new Error('Failed to fetch home checks');
+      const data = await response.json();
+      return data.data || [];
+    } catch (error) {
+      return [];
+    }
+  },
+};
+
+// Feeding Point API
+export const feedingPointAPI = {
+  async getAll(params?: any) {
+    const queryParams = new URLSearchParams();
+    if (params?.pincode) queryParams.append('pincode', params.pincode);
+    if (params?.type) queryParams.append('type', params.type);
+    if (params?.lat) queryParams.append('lat', params.lat);
+    if (params?.lng) queryParams.append('lng', params.lng);
+    if (params?.radius) queryParams.append('radius', params.radius);
+    
+    const url = `${API_URL}/feeding-points${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    try {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error('Failed to fetch feeding points');
+      const data = await response.json();
+      return data.data || [];
+    } catch (error) {
+      return [];
+    }
+  },
+
+  async create(feedingPointData: any) {
+    const url = `${API_URL}/feeding-points`;
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(feedingPointData),
+      });
+      if (!response.ok) throw new Error('Failed to create feeding point');
+      const data = await response.json();
+      return data.data;
+    } catch (error: any) {
+      throw new Error(error.message || 'Failed to create feeding point');
+    }
+  },
+};
+
+// Neighborhood Alert API
+export const alertAPI = {
+  async getByPincode(pincode: string) {
+    const url = `${API_URL}/alerts/pincode/${pincode}`;
+    try {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error('Failed to fetch alerts');
+      const data = await response.json();
+      return data.data || [];
+    } catch (error) {
+      return [];
+    }
+  },
+
+  async create(alertData: any) {
+    const url = `${API_URL}/alerts`;
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(alertData),
+      });
+      if (!response.ok) throw new Error('Failed to create alert');
+      const data = await response.json();
+      return data.data;
+    } catch (error: any) {
+      throw new Error(error.message || 'Failed to create alert');
+    }
+  },
+
+  async getMy() {
+    const url = `${API_URL}/alerts/my`;
+    try {
+      const response = await fetch(url, {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+      });
+      if (!response.ok) throw new Error('Failed to fetch alerts');
+      const data = await response.json();
+      return data.data || [];
+    } catch (error) {
+      return [];
     }
   },
 };

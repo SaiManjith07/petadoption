@@ -1,10 +1,11 @@
 import express from 'express';
 import { protect, authorize } from '../middleware/auth.js';
-import { validateObjectId } from '../middleware/security.js';
+import { validateObjectId, adminRateLimiter } from '../middleware/security.js';
 import {
   getDashboardStats,
   getAdminDashboardStats,
   getAllUsers,
+  getUserById,
   getAllPets,
   updateUser,
   deleteUser,
@@ -19,12 +20,17 @@ import {
   getChatStats,
   respondToChatRequest,
   getChatRoom,
+  closeChat,
+  getAllPendingRequests,
 } from '../controllers/adminController.js';
 
 const router = express.Router();
 
 // Protect all admin routes - only admins can access
 router.use(protect, authorize('admin'));
+
+// Apply more lenient rate limiting for admin routes
+router.use(adminRateLimiter);
 
 /**
  * Dashboard Stats
@@ -53,10 +59,12 @@ router.post('/adoptions/:id/accept', validateObjectId, acceptAdoptionRequest);
 /**
  * User Management
  * GET /api/admin/users - Get all users
+ * GET /api/admin/users/:id - Get user by ID
  * PATCH /api/admin/users/:id - Update user
  * DELETE /api/admin/users/:id - Deactivate user
  */
 router.get('/users', getAllUsers);
+router.get('/users/:id', validateObjectId, getUserById);
 router.patch('/users/:id', validateObjectId, updateUser);
 router.delete('/users/:id', validateObjectId, deleteUser);
 
@@ -75,11 +83,19 @@ router.delete('/pets/:id', validateObjectId, deletePet);
  * GET /api/admin/chats/stats - Get chat statistics
  * GET /api/admin/chats/:roomId - Get chat room details
  * POST /api/admin/chats/requests/:id/respond - Respond to chat request
+ * POST /api/admin/chats/:roomId/close - Close a chat
  */
 router.get('/chats/requests', getAllChatRequests);
 router.get('/chats', getAllChats);
 router.get('/chats/stats', getChatStats);
 router.get('/chats/:roomId', getChatRoom);
 router.post('/chats/requests/:id/respond', validateObjectId, respondToChatRequest);
+router.post('/chats/:roomId/close', closeChat);
+
+/**
+ * All Pending Requests
+ * GET /api/admin/pending-requests - Get all pending requests (role requests, feeding points, alerts)
+ */
+router.get('/pending-requests', getAllPendingRequests);
 
 export default router;

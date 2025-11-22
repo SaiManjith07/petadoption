@@ -1,81 +1,66 @@
-// Usage: node scripts/create-admin.js
-// This script creates an admin user in the Admin collection
-
 import mongoose from 'mongoose';
-import Admin from '../src/models/Admin.js';
 import dotenv from 'dotenv';
+import Admin from '../src/models/Admin.js';
+import validator from 'validator';
 
-dotenv.config();
+// Load environment variables
+dotenv.config({ path: '../.env' });
 
-const MONGODB_URI = process.env.MONGODB_URI;
-const MONGODB_DB_NAME = process.env.MONGODB_DB_NAME || 'pawsunite';
-
-const email = 'pavankumar@gmail.com';
-const password = '1234567890';
-const name = 'Pavan Kumar';
-
-async function createAdmin() {
+const createAdmin = async () => {
   try {
-    if (!MONGODB_URI) {
-      console.error('❌ MONGODB_URI not set in environment.');
-      process.exit(1);
-    }
-
-    console.log('🔄 Connecting to MongoDB...');
-    await mongoose.connect(MONGODB_URI, {
-      dbName: MONGODB_DB_NAME,
-    });
+    // Connect to MongoDB
+    const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/petadoption';
+    await mongoose.connect(mongoUri);
     console.log('✅ Connected to MongoDB');
 
+    const email = 'pavankumarkunukuntla@gmail.com';
+    const password = 'PAVANkumar@0074';
+    const name = 'Pavan Kumar';
+
+    // Normalize email
+    const normalizedEmail = validator.normalizeEmail(email);
+
     // Check if admin already exists
-    let admin = await Admin.findOne({ email });
-    if (admin) {
-      console.log('\n⚠️  Admin already exists in Admin collection!');
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      console.log(`  Email: ${admin.email}`);
-      console.log(`  Name: ${admin.name}`);
-      console.log(`  ID: ${admin._id}`);
-      console.log(`  Active: ${admin.is_active}`);
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      console.log('\n✅ Admin can login with these credentials:');
-      console.log(`   Email: ${email}`);
-      console.log(`   Password: ${password}\n`);
-    } else {
-      // Create new admin (password will be hashed by the pre-save hook)
-      admin = new Admin({
-        name,
-        email,
-        password, // Will be hashed by Admin model's pre-save hook
-        is_active: true,
-        is_verified: true,
-      });
-      await admin.save();
-      
-      console.log('\n✅ Admin created successfully in Admin collection!');
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      console.log('📋 Admin Account Details:');
-      console.log(`  Email: ${admin.email}`);
-      console.log(`  Password: ${password}`);
-      console.log(`  Name: ${admin.name}`);
-      console.log(`  ID: ${admin._id}`);
-      console.log(`  Active: ${admin.is_active}`);
-      console.log(`  Verified: ${admin.is_verified}`);
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      console.log('\n⚠️  IMPORTANT: Keep the credentials secure!');
-      console.log('   When you login with these credentials, you will be redirected to /admin dashboard.\n');
+    const existingAdmin = await Admin.findOne({ email: normalizedEmail });
+    if (existingAdmin) {
+      console.log('⚠️  Admin with this email already exists');
+      console.log('Updating password...');
+      existingAdmin.password = password; // Will be hashed by pre-save hook
+      existingAdmin.name = name;
+      existingAdmin.is_active = true;
+      existingAdmin.is_verified = true;
+      await existingAdmin.save();
+      console.log('✅ Admin password updated successfully');
+      console.log('Email:', normalizedEmail);
+      console.log('Name:', name);
+      await mongoose.disconnect();
+      return;
     }
+
+    // Create new admin
+    const admin = await Admin.create({
+      name: name,
+      email: normalizedEmail,
+      password: password, // Will be hashed by pre-save hook
+      is_active: true,
+      is_verified: true,
+    });
+
+    console.log('✅ Admin created successfully!');
+    console.log('Email:', admin.email);
+    console.log('Name:', admin.name);
+    console.log('ID:', admin._id);
+    console.log('Active:', admin.is_active);
+    console.log('Verified:', admin.is_verified);
 
     await mongoose.disconnect();
     console.log('✅ Disconnected from MongoDB');
-    process.exit(0);
   } catch (error) {
-    console.error('❌ Error creating admin:', error.message);
-    if (error.code === 11000) {
-      console.error('   Duplicate email - admin with this email already exists');
-    }
-    await mongoose.disconnect().catch(() => {});
+    console.error('❌ Error creating admin:', error);
+    await mongoose.disconnect();
     process.exit(1);
   }
-}
+};
 
+// Run the script
 createAdmin();

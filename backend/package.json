@@ -11,6 +11,7 @@
     "test": "echo 'Tests not configured yet'",
     "seed:admin": "node scripts/seed-admin.js",
     "setup:admin": "node scripts/setup-admin.js",
+    "create:admin": "node scripts/create-admin-user.js",
     "test:admin": "node scripts/test-admin-login.js",
     "fix:index": "node scripts/fix-microchip-index.js",
     "cleanup:microchips": "node scripts/cleanup-null-microchips.js",

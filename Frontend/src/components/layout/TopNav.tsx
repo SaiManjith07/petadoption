@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Menu, X, Search, Bell, User, LogOut, PawPrint, Home, ShieldCheck, Heart, Star, CheckCircle2, Trash2, MessageSquare, MapPin, Users, Sparkles, AlertCircle } from 'lucide-react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Menu, X, Search, Bell, User, LogOut, PawPrint, Home, ShieldCheck, Heart, Star, CheckCircle2, Trash2, MessageSquare, MapPin, Users, Sparkles, AlertCircle, Building2, UtensilsCrossed } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -21,10 +21,13 @@ import { formatDistanceToNow } from 'date-fns';
 export const TopNav = () => {
   const { user, logout, isAuthenticated, isAdmin } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const isHomePage = location.pathname === '/home';
+  const isAdminPage = location.pathname.startsWith('/admin');
 
   const handleLogout = () => {
     logout();
@@ -35,11 +38,11 @@ export const TopNav = () => {
     if (isAuthenticated) {
       loadNotifications();
       loadUnreadCount();
-      // Refresh notifications every 30 seconds
+      // Increase interval to 60 seconds to reduce API calls
       const interval = setInterval(() => {
         loadNotifications();
         loadUnreadCount();
-      }, 30000);
+      }, 60000); // Changed from 30s to 60s
       return () => clearInterval(interval);
     }
   }, [isAuthenticated]);
@@ -47,7 +50,7 @@ export const TopNav = () => {
   const loadNotifications = async () => {
     try {
       const data = await notificationsAPI.getAll();
-      setNotifications(data.slice(0, 10)); // Show latest 10
+      setNotifications(data.slice(0, 10));
     } catch (error) {
       console.error('Error loading notifications:', error);
     }
@@ -93,96 +96,81 @@ export const TopNav = () => {
   };
 
   const navigation = [
+    { name: 'Home', href: '/home', icon: Home },
     { name: 'Found Pets', href: '/pets/found', icon: Heart },
     { name: 'Lost Pets', href: '/pets/lost', icon: Search },
     { name: 'Adopt', href: '/pets/adopt', icon: Users },
+    { name: 'Shelter', href: '/shelter-capacity', icon: Building2 },
+    { name: 'Feedpoint', href: '/feeding-points', icon: UtensilsCrossed },
   ];
 
   return (
-    <nav className="sticky top-0 z-50 border-b-2 border-green-100 bg-white/95 backdrop-blur-md supports-[backdrop-filter]:bg-white/90 shadow-sm">
+    <nav className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex h-14 sm:h-16 items-center justify-between">
+        <div className="flex h-16 items-center justify-between">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2 sm:gap-3 group">
+          <Link to={isAuthenticated ? "/home" : "/"} className="flex items-center gap-3 group">
             <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-green-600 to-emerald-600 rounded-xl blur-sm opacity-50 group-hover:opacity-75 transition-opacity" />
-              <div className="relative h-9 w-9 sm:h-10 sm:w-10 rounded-xl bg-gradient-to-br from-green-600 to-emerald-600 flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform">
-                <PawPrint className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+              <div className="absolute inset-0 bg-gradient-to-br from-[#4CAF50] to-[#2E7D32] rounded-lg blur-sm opacity-50 group-hover:opacity-75 transition-opacity" />
+              <div className="relative h-10 w-10 rounded-lg bg-gradient-to-br from-[#4CAF50] to-[#2E7D32] flex items-center justify-center shadow-md group-hover:scale-105 transition-transform">
+                <PawPrint className="h-6 w-6 text-white" />
               </div>
             </div>
             <div className="flex flex-col">
-              <span className="text-lg sm:text-xl font-bold bg-gradient-to-r from-green-600 to-emerald-500 bg-clip-text text-transparent">
-                PetReunite
-              </span>
+              <span className="text-xl font-bold text-gray-900">PetReunite</span>
               <span className="text-xs text-gray-500 hidden sm:block">Helping pets find home</span>
             </div>
           </Link>
 
-          {/* Desktop Navigation - Only for authenticated users */}
-          {isAuthenticated && (
-            <div className="hidden md:flex md:items-center md:gap-2">
+          {/* Desktop Navigation */}
+          {isAuthenticated && !isAdminPage && (
+            <div className="hidden md:flex md:items-center md:gap-1">
               {navigation.map((item) => (
                 <NavLink
                   key={item.name}
                   to={item.href}
-                  className="group relative px-3 py-1.5 rounded-lg text-sm font-semibold text-gray-700 transition-all duration-200 hover:text-green-600 hover:bg-green-50"
-                  activeClassName="text-green-600 bg-green-50"
+                  className="group relative px-4 py-2 rounded-lg text-sm font-medium text-gray-700 transition-all duration-200 hover:text-[#4CAF50] hover:bg-[#4CAF50]/5"
+                  activeClassName="text-[#4CAF50] bg-[#4CAF50]/10"
                 >
                   <div className="flex items-center gap-2">
                     <item.icon className="h-4 w-4" />
                     <span>{item.name}</span>
                   </div>
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-green-600 to-emerald-600 scale-x-0 group-hover:scale-x-100 transition-transform origin-left rounded-full" />
                 </NavLink>
               ))}
             </div>
           )}
 
-          {/* Search & Actions */}
-          <div className="flex items-center gap-3">
-
+          {/* Right Side Actions */}
+          <div className="flex items-center gap-2">
             {isAuthenticated ? (
               <>
-                {/* Home Button */}
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  asChild
-                  className="hidden sm:flex items-center gap-2 text-gray-700 hover:text-green-600 hover:bg-green-50"
-                >
-                  <Link to="/home">
-                    <Home className="h-4 w-4" />
-                    <span className="hidden lg:inline">Home</span>
-                  </Link>
-                </Button>
-
                 {/* Notifications */}
                 <DropdownMenu open={notificationsOpen} onOpenChange={setNotificationsOpen}>
                   <DropdownMenuTrigger asChild>
                     <Button 
                       variant="ghost" 
                       size="icon" 
-                      aria-label="Notifications"
-                      className="relative text-gray-700 hover:text-green-600 hover:bg-green-50"
+                      className="relative text-gray-600 hover:text-[#4CAF50] hover:bg-[#4CAF50]/5"
                     >
                       <Bell className="h-5 w-5" />
                       {unreadCount > 0 && (
-                        <span className="absolute top-1 right-1 h-5 w-5 bg-green-600 rounded-full border-2 border-white flex items-center justify-center text-xs font-bold text-white">
+                        <span className="absolute top-1 right-1 h-4 w-4 bg-red-500 rounded-full border-2 border-white flex items-center justify-center text-xs font-bold text-white">
                           {unreadCount > 9 ? '9+' : unreadCount}
                         </span>
                       )}
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-80 p-0 max-h-[500px] overflow-y-auto">
-                    <div className="p-4 border-b">
-                      <div className="flex items-center justify-between mb-2">
-                        <DropdownMenuLabel className="p-0 text-base font-bold">Notifications</DropdownMenuLabel>
+                    <div className="p-4 border-b bg-gray-50">
+                      <div className="flex items-center justify-between">
+                        <DropdownMenuLabel className="p-0 text-base font-semibold">Notifications</DropdownMenuLabel>
                         {unreadCount > 0 && (
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={handleMarkAllAsRead}
-                            className="text-xs text-green-600 hover:text-green-700 h-auto py-1"
+                            className="text-xs text-[#4CAF50] hover:text-[#2E7D32] h-auto py-1"
                           >
                             Mark all read
                           </Button>
@@ -200,7 +188,7 @@ export const TopNav = () => {
                           <div
                             key={notif.id || notif._id}
                             className={`p-4 hover:bg-gray-50 transition-colors ${
-                              !notif.is_read ? 'bg-green-50/50' : ''
+                              !notif.is_read ? 'bg-[#4CAF50]/5' : ''
                             }`}
                           >
                             <div className="flex items-start gap-3">
@@ -222,7 +210,7 @@ export const TopNav = () => {
                                     className="h-6 w-6"
                                     onClick={() => handleMarkAsRead(notif.id || notif._id)}
                                   >
-                                    <CheckCircle2 className="h-4 w-4 text-green-600" />
+                                    <CheckCircle2 className="h-4 w-4 text-[#4CAF50]" />
                                   </Button>
                                 )}
                                 <Button
@@ -247,29 +235,28 @@ export const TopNav = () => {
                   <DropdownMenuTrigger asChild>
                     <Button 
                       variant="ghost" 
-                      className="flex items-center gap-2 px-2 hover:bg-green-50 rounded-lg"
-                      aria-label="User menu"
+                      className="flex items-center gap-2 px-2 hover:bg-[#4CAF50]/5 rounded-lg"
                     >
-                      <Avatar className="h-8 w-8 sm:h-9 sm:w-9 border-2 border-green-200">
-                        <AvatarFallback className="bg-gradient-to-br from-green-600 to-emerald-600 text-white font-semibold">
+                      <Avatar className="h-9 w-9 border-2 border-[#4CAF50]/20">
+                        <AvatarFallback className="bg-gradient-to-br from-[#4CAF50] to-[#2E7D32] text-white font-semibold text-sm">
                           {user?.name?.charAt(0)?.toUpperCase() || 'U'}
                         </AvatarFallback>
                       </Avatar>
                       <div className="hidden lg:flex flex-col items-start">
                         <span className="text-sm font-semibold text-gray-900">{user?.name}</span>
                         {isAdmin && (
-                          <Badge className="text-xs bg-green-100 text-green-700 border-green-200 px-1.5 py-0">
+                          <Badge className="text-xs bg-[#4CAF50]/10 text-[#4CAF50] border-[#4CAF50]/20 px-1.5 py-0 mt-0.5">
                             Admin
                           </Badge>
                         )}
                       </div>
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-64 p-2">
+                  <DropdownMenuContent align="end" className="w-64">
                     <DropdownMenuLabel className="p-3">
                       <div className="flex items-center gap-3">
-                        <Avatar className="h-10 w-10 border-2 border-green-200">
-                          <AvatarFallback className="bg-gradient-to-br from-green-600 to-emerald-600 text-white font-semibold">
+                        <Avatar className="h-10 w-10 border-2 border-[#4CAF50]/20">
+                          <AvatarFallback className="bg-gradient-to-br from-[#4CAF50] to-[#2E7D32] text-white font-semibold">
                             {user?.name?.charAt(0)?.toUpperCase() || 'U'}
                           </AvatarFallback>
                         </Avatar>
@@ -277,7 +264,7 @@ export const TopNav = () => {
                           <span className="font-semibold text-gray-900 truncate">{user?.name}</span>
                           <span className="text-xs text-gray-500 truncate">{user?.email}</span>
                           {isAdmin && (
-                            <Badge className="mt-1 w-fit text-xs bg-green-100 text-green-700 border-green-200">
+                            <Badge className="mt-1 w-fit text-xs bg-[#4CAF50]/10 text-[#4CAF50] border-[#4CAF50]/20">
                               <ShieldCheck className="h-3 w-3 mr-1" />
                               Admin
                             </Badge>
@@ -286,36 +273,41 @@ export const TopNav = () => {
                       </div>
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem asChild className="cursor-pointer rounded-lg">
-                      <Link to="/home" className="flex items-center gap-2">
-                        <Home className="h-4 w-4" />
-                        Home
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild className="cursor-pointer rounded-lg">
-                      <Link to="/profile" className="flex items-center gap-2">
-                        <User className="h-4 w-4" />
-                        My Profile
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild className="cursor-pointer rounded-lg">
-                      <Link to="/chats" className="flex items-center gap-2">
-                        <MessageSquare className="h-4 w-4" />
-                        My Chats
-                      </Link>
-                    </DropdownMenuItem>
-                    {isAdmin && (
-                      <DropdownMenuItem asChild className="cursor-pointer rounded-lg">
-                        <Link to="/admin" className="flex items-center gap-2">
-                          <ShieldCheck className="h-4 w-4" />
-                          Admin Panel
-                        </Link>
-                      </DropdownMenuItem>
+                    {isAdmin ? (
+                      <>
+                        <DropdownMenuItem asChild>
+                          <Link to="/admin/profile" className="flex items-center gap-2 cursor-pointer">
+                            <User className="h-4 w-4" />
+                            Admin Profile
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link to="/admin" className="flex items-center gap-2 cursor-pointer">
+                            <ShieldCheck className="h-4 w-4" />
+                            Admin Dashboard
+                          </Link>
+                        </DropdownMenuItem>
+                      </>
+                    ) : (
+                      <>
+                        <DropdownMenuItem asChild>
+                          <Link to="/home" className="flex items-center gap-2 cursor-pointer">
+                            <Home className="h-4 w-4" />
+                            Home
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link to="/profile" className="flex items-center gap-2 cursor-pointer">
+                            <User className="h-4 w-4" />
+                            My Profile
+                          </Link>
+                        </DropdownMenuItem>
+                      </>
                     )}
                     <DropdownMenuSeparator />
                     <DropdownMenuItem 
                       onClick={handleLogout} 
-                      className="cursor-pointer rounded-lg text-red-600 focus:text-red-600 focus:bg-red-50"
+                      className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50"
                     >
                       <LogOut className="mr-2 h-4 w-4" />
                       Logout
@@ -324,22 +316,12 @@ export const TopNav = () => {
                 </DropdownMenu>
               </>
             ) : (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
                 <Button 
-                  variant="ghost" 
                   asChild
-                  className="text-gray-700 hover:text-green-600 hover:bg-green-50"
+                  className="bg-gradient-to-r from-[#4CAF50] to-[#2E7D32] hover:from-[#2E7D32] hover:to-[#1B5E20] text-white font-semibold px-6 py-2 shadow-md hover:shadow-lg transition-all duration-300 rounded-lg"
                 >
                   <Link to="/auth/login">Login</Link>
-                </Button>
-                <Button 
-                  asChild
-                  className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-lg"
-                >
-                  <Link to="/auth/register">
-                    <Sparkles className="mr-2 h-4 w-4" />
-                    Sign Up
-                  </Link>
                 </Button>
               </div>
             )}
@@ -348,9 +330,8 @@ export const TopNav = () => {
             <Button
               variant="ghost"
               size="icon"
-              className="md:hidden text-gray-700 hover:text-green-600 hover:bg-green-50"
+              className="md:hidden text-gray-600 hover:text-[#4CAF50] hover:bg-[#4CAF50]/5"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              aria-label="Toggle menu"
             >
               {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </Button>
@@ -358,24 +339,16 @@ export const TopNav = () => {
         </div>
       </div>
 
-      {/* Mobile menu - Only for authenticated users */}
+      {/* Mobile menu */}
       {mobileMenuOpen && isAuthenticated && (
-        <div className="md:hidden border-t-2 border-green-100 bg-white shadow-lg">
+        <div className="md:hidden border-t border-gray-200 bg-white">
           <div className="space-y-1 px-4 pb-4 pt-3">
-            <Link
-              to="/home"
-              className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-base font-semibold text-gray-700 hover:bg-green-50 hover:text-green-600 transition-colors"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              <Home className="h-5 w-5" />
-              Home
-            </Link>
-            {navigation.map((item) => (
+            {!isAdminPage && navigation.map((item) => (
               <NavLink
                 key={item.name}
                 to={item.href}
-                className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-base font-semibold text-gray-700 hover:bg-green-50 hover:text-green-600 transition-colors"
-                activeClassName="bg-green-50 text-green-600"
+                className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-base font-medium text-gray-700 hover:bg-[#4CAF50]/5 hover:text-[#4CAF50]"
+                activeClassName="bg-[#4CAF50]/10 text-[#4CAF50]"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 <item.icon className="h-5 w-5" />
@@ -385,7 +358,7 @@ export const TopNav = () => {
             <div className="pt-2 mt-2 border-t border-gray-200">
               <Link
                 to="/profile"
-                className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-base font-semibold text-gray-700 hover:bg-green-50 hover:text-green-600 transition-colors"
+                className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-base font-medium text-gray-700 hover:bg-[#4CAF50]/5 hover:text-[#4CAF50]"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 <User className="h-5 w-5" />
@@ -394,7 +367,7 @@ export const TopNav = () => {
               {isAdmin && (
                 <Link
                   to="/admin"
-                  className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-base font-semibold text-gray-700 hover:bg-green-50 hover:text-green-600 transition-colors"
+                  className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-base font-medium text-gray-700 hover:bg-[#4CAF50]/5 hover:text-[#4CAF50]"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   <ShieldCheck className="h-5 w-5" />
@@ -406,7 +379,7 @@ export const TopNav = () => {
                   handleLogout();
                   setMobileMenuOpen(false);
                 }}
-                className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-base font-semibold text-red-600 hover:bg-red-50 w-full text-left transition-colors"
+                className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-base font-medium text-red-600 hover:bg-red-50 w-full text-left"
               >
                 <LogOut className="h-5 w-5" />
                 Logout

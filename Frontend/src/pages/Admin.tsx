@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Users, PawPrint, Heart, Search, Home, Shield, CheckCircle, X, AlertCircle, ArrowRight, MessageSquare, Clock, TrendingUp, Activity, BarChart3, Eye, Filter } from 'lucide-react';
+import { Users, PawPrint, Heart, Search, Home, Shield, CheckCircle, X, AlertCircle, ArrowRight, MessageSquare, Clock, TrendingUp, Activity, BarChart3, Eye, Filter, Download, Calendar, Menu, Building2, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -13,6 +13,7 @@ import { useAuth } from '@/lib/auth';
 import { adminAPI, getImageUrl } from '@/services/api';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
+import { AdminSidebar } from '@/components/layout/AdminSidebar';
 
 export default function Admin() {
   const { isAdmin, user } = useAuth();
@@ -27,6 +28,8 @@ export default function Admin() {
   const [chatRequests, setChatRequests] = useState([]);
   const [activeChats, setActiveChats] = useState([]);
   const [chatStats, setChatStats] = useState<any>(null);
+  const [shelterRegistrations, setShelterRegistrations] = useState<any[]>([]);
+  const [shelterRegistrationsLoading, setShelterRegistrationsLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState('');
@@ -49,14 +52,32 @@ export default function Admin() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
+  const [activeTab, setActiveTab] = useState<string>('overview');
+  const [petsLoading, setPetsLoading] = useState(false);
 
   useEffect(() => {
     if (!isAdmin) {
       navigate('/dashboard');
       return;
     }
+    // Only load dashboard data once on mount, not on every render
     loadDashboardData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAdmin, navigate]);
+
+  // Load pets when "pets" tab is activated
+  useEffect(() => {
+    if (activeTab === 'pets' && pets.length === 0 && !petsLoading) {
+      loadAllPets();
+    }
+  }, [activeTab]);
+
+  // Load shelter registrations when "shelter-reg" tab is activated
+  useEffect(() => {
+    if (activeTab === 'shelter-reg' && shelterRegistrations.length === 0 && !shelterRegistrationsLoading) {
+      loadShelterRegistrations();
+    }
+  }, [activeTab]);
 
   const loadDashboardData = async () => {
     try {
@@ -83,6 +104,74 @@ export default function Admin() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadAllPets = async () => {
+    try {
+      setPetsLoading(true);
+      const petsData = await adminAPI.getAllPets();
+      setPets(Array.isArray(petsData) ? petsData : []);
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Could not load pets',
+        variant: 'destructive',
+      });
+    } finally {
+      setPetsLoading(false);
+    }
+  };
+
+  const loadShelterRegistrations = async () => {
+    try {
+      setShelterRegistrationsLoading(true);
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+      const response = await fetch(`${API_URL}/shelter-registrations/all`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+      if (!response.ok) throw new Error('Failed to fetch shelter registrations');
+      const data = await response.json();
+      setShelterRegistrations(Array.isArray(data.data) ? data.data : []);
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Could not load shelter registrations',
+        variant: 'destructive',
+      });
+    } finally {
+      setShelterRegistrationsLoading(false);
+    }
+  };
+
+  const handleShelterAction = async (shelterId: string, action: 'approve' | 'reject', notes?: string) => {
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+      const response = await fetch(`${API_URL}/shelter-registrations/${shelterId}/${action}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ admin_notes: notes || '' }),
+      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `Failed to ${action} shelter registration`);
+      }
+      toast({
+        title: 'Success',
+        description: `Shelter registration ${action === 'approve' ? 'approved' : 'rejected'} successfully`,
+      });
+      loadShelterRegistrations();
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || `Failed to ${action} shelter registration`,
+        variant: 'destructive',
+      });
     }
   };
 
@@ -189,13 +278,15 @@ export default function Admin() {
     }
   };
 
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
         <div className="text-center">
           <div className="relative">
-            <Shield className="h-16 w-16 mx-auto text-green-600 animate-pulse" />
-            <div className="absolute inset-0 border-4 border-green-200 border-t-green-600 rounded-full animate-spin"></div>
+            <Shield className="h-16 w-16 mx-auto text-[#2E7D32] animate-pulse" />
+            <div className="absolute inset-0 border-4 border-green-200 border-t-[#2E7D32] rounded-full animate-spin"></div>
           </div>
           <p className="mt-6 text-lg font-medium text-gray-700">Loading Admin Dashboard...</p>
           <p className="mt-2 text-sm text-gray-500">Please wait while we fetch your data</p>
@@ -206,211 +297,270 @@ export default function Admin() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Professional Header */}
-      <div className="bg-white border-b border-gray-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-green-600 to-emerald-600 flex items-center justify-center shadow-lg">
-                <Shield className="h-8 w-8 text-white" />
-              </div>
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-                <p className="text-sm text-gray-600 mt-0.5">Welcome back, <span className="font-semibold text-gray-900">{user?.name}</span></p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <Badge className="px-4 py-1.5 bg-green-100 text-green-700 border-green-200 font-semibold">
-                <Shield className="h-3.5 w-3.5 mr-1.5" />
-                Administrator
-              </Badge>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={loadDashboardData}
-                className="gap-2"
-              >
-                <Activity className="h-4 w-4" />
-                Refresh
-              </Button>
-            </div>
-          </div>
-        </div>
+      {/* Fixed Sidebar - Desktop */}
+      <div className="hidden lg:block">
+        <AdminSidebar isOpen={true} onClose={() => setSidebarOpen(false)} />
+      </div>
+      
+      {/* Mobile Sidebar */}
+      <div className="lg:hidden">
+        <AdminSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Key Metrics Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {/* Pending Reports */}
-          <Card className="border-l-4 border-l-orange-500 hover:shadow-lg transition-shadow">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-medium text-gray-600">Pending Reports</CardTitle>
-                <AlertCircle className="h-5 w-5 text-orange-500" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-gray-900 mb-1">{dashboardData?.pending?.total || 0}</div>
-              <div className="flex items-center gap-2 text-xs text-gray-500">
-                <div className="h-1.5 w-1.5 rounded-full bg-orange-500"></div>
-                <span>{dashboardData?.pending?.lost || 0} lost • {dashboardData?.pending?.found || 0} found</span>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Total Users */}
-          <Card className="border-l-4 border-l-blue-500 hover:shadow-lg transition-shadow">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-medium text-gray-600">Total Users</CardTitle>
-                <Users className="h-5 w-5 text-blue-500" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-gray-900 mb-1">{dashboardData?.users?.total || 0}</div>
-              <div className="flex items-center gap-2 text-xs text-gray-500">
-                <div className="h-1.5 w-1.5 rounded-full bg-blue-500"></div>
-                <span>{dashboardData?.users?.regular || 0} regular • {dashboardData?.users?.rescuers || 0} rescuers</span>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Active Reports */}
-          <Card className="border-l-4 border-l-green-500 hover:shadow-lg transition-shadow">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-medium text-gray-600">Active Reports</CardTitle>
-                <PawPrint className="h-5 w-5 text-green-500" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-gray-900 mb-1">{dashboardData?.active?.total || 0}</div>
-              <div className="flex items-center gap-2 text-xs text-gray-500">
-                <div className="h-1.5 w-1.5 rounded-full bg-green-500"></div>
-                <span>{dashboardData?.active?.found || 0} found • {dashboardData?.active?.lost || 0} lost</span>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Active Chats */}
-          <Card className="border-l-4 border-l-purple-500 hover:shadow-lg transition-shadow">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-medium text-gray-600">Active Chats</CardTitle>
-                <MessageSquare className="h-5 w-5 text-purple-500" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-gray-900 mb-1">{chatStats?.active_chats || 0}</div>
-              <div className="flex items-center gap-2 text-xs text-gray-500">
-                <div className="h-1.5 w-1.5 rounded-full bg-purple-500"></div>
-                <span>{chatStats?.pending_requests || 0} pending requests</span>
-              </div>
-            </CardContent>
-          </Card>
+      {/* Main Content */}
+      <div className="flex flex-col min-w-0 lg:ml-64">
+        {/* Mobile Menu Toggle Button */}
+        <div className="lg:hidden sticky top-0 z-30 bg-white border-b border-gray-200 p-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="text-gray-600 hover:text-gray-900"
+          >
+            {sidebarOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+          </Button>
         </div>
 
-        {/* Quick Actions Section */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-gray-900">Quick Actions</h2>
-            <BarChart3 className="h-5 w-5 text-gray-400" />
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Link to="/admin/found-pets">
-              <Card className="group hover:shadow-xl transition-all duration-300 border-2 hover:border-green-500 cursor-pointer h-full">
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                      <PawPrint className="h-6 w-6 text-white" />
-                    </div>
-                    <ArrowRight className="h-5 w-5 text-gray-400 group-hover:text-green-600 group-hover:translate-x-1 transition-all" />
-                  </div>
-                  <CardTitle className="mt-4 text-lg font-semibold">Found Pets</CardTitle>
-                  <CardDescription>Manage and verify found pet reports</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-2xl font-bold text-green-600">{dashboardData?.pending?.found || 0}</span>
-                    <span className="text-sm text-gray-500">pending verification</span>
-                  </div>
-                  <div className="mt-2 text-sm text-gray-600">
-                    {dashboardData?.active?.found || 0} active reports
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
-
-            <Link to="/admin/lost-pets">
-              <Card className="group hover:shadow-xl transition-all duration-300 border-2 hover:border-orange-500 cursor-pointer h-full">
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                      <Search className="h-6 w-6 text-white" />
-                    </div>
-                    <ArrowRight className="h-5 w-5 text-gray-400 group-hover:text-orange-600 group-hover:translate-x-1 transition-all" />
-                  </div>
-                  <CardTitle className="mt-4 text-lg font-semibold">Lost Pets</CardTitle>
-                  <CardDescription>Manage and verify lost pet reports</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-2xl font-bold text-orange-600">{dashboardData?.pending?.lost || 0}</span>
-                    <span className="text-sm text-gray-500">pending verification</span>
-                  </div>
-                  <div className="mt-2 text-sm text-gray-600">
-                    {dashboardData?.active?.lost || 0} active reports
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
-
-            <Link to="/admin/adopt">
-              <Card className="group hover:shadow-xl transition-all duration-300 border-2 hover:border-blue-500 cursor-pointer h-full">
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                      <Home className="h-6 w-6 text-white" />
-                    </div>
-                    <ArrowRight className="h-5 w-5 text-gray-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-all" />
-                  </div>
-                  <CardTitle className="mt-4 text-lg font-semibold">Adoption Requests</CardTitle>
-                  <CardDescription>Verify and approve adoption requests</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-2xl font-bold text-blue-600">{pendingAdoptions.length}</span>
-                    <span className="text-sm text-gray-500">pending approval</span>
-                  </div>
-                  <div className="mt-2 text-sm text-gray-600">
-                    {dashboardData?.pets?.adoptable || 0} available for adoption
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
-          </div>
-        </div>
-
-
-        {/* Management Center - All Management Functions */}
-        <Card className="shadow-lg">
-          <CardHeader className="bg-gradient-to-r from-gray-50 to-white border-b">
+        {/* Main Content Area - Scrollable */}
+        <main className="flex-1 overflow-y-auto bg-gradient-to-br from-gray-50 to-gray-100">
+          <div className="p-8 space-y-8">
+          {/* Admin Dashboard Header */}
+          <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-6">
             <div className="flex items-center justify-between flex-wrap gap-4">
               <div>
-                <CardTitle className="text-2xl font-bold text-gray-900">Management Center</CardTitle>
-                <CardDescription className="text-base mt-1">Comprehensive platform management and monitoring</CardDescription>
+                <div className="flex items-center gap-3">
+                  <div className="h-12 w-12 rounded-lg bg-[#4CAF50] flex items-center justify-center">
+                    <Shield className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h1 className="text-2xl font-bold text-gray-900">Admin Control Panel</h1>
+                    <p className="text-gray-600 text-sm mt-0.5">Platform Management & Monitoring Dashboard</p>
+                  </div>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Badge variant="outline" className="px-3 py-1">
+              <div className="flex items-center gap-3">
+                <Badge variant="outline" className="bg-[#4CAF50]/10 text-[#4CAF50] border-[#4CAF50]/30 px-3 py-1.5">
                   <Activity className="h-3.5 w-3.5 mr-1.5" />
-                  Live Data
+                  Live System
                 </Badge>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={loadDashboardData}
+                  className="gap-2 border-gray-300 hover:bg-gray-50"
+                >
+                  <Activity className="h-4 w-4" />
+                  Refresh Data
+                </Button>
               </div>
             </div>
-          </CardHeader>
+          </div>
+
+          {/* Critical Metrics - Priority Actions */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* Pending Reports - High Priority */}
+            <Card className="bg-white border-l-4 border-l-orange-500 shadow-lg hover:shadow-xl transition-all">
+              <CardContent className="pt-6">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <AlertCircle className="h-5 w-5 text-orange-600" />
+                      <span className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Pending Reports</span>
+                    </div>
+                    <p className="text-4xl font-bold text-gray-900 mb-1">{dashboardData?.pending?.total || 0}</p>
+                    <div className="flex items-center gap-3 text-xs text-gray-600 mt-2">
+                      <span className="flex items-center gap-1">
+                        <span className="w-2 h-2 rounded-full bg-orange-500"></span>
+                        {dashboardData?.pending?.found || 0} Found
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+                        {dashboardData?.pending?.lost || 0} Lost
+                      </span>
+                    </div>
+                  </div>
+                  <Link to="/admin/found-pets">
+                    <Button variant="ghost" size="icon" className="text-orange-600 hover:bg-orange-50">
+                      <ArrowRight className="h-5 w-5" />
+                    </Button>
+                  </Link>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Pending Adoptions */}
+            <Card className="bg-white border-l-4 border-l-blue-500 shadow-lg hover:shadow-xl transition-all">
+              <CardContent className="pt-6">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Home className="h-5 w-5 text-blue-600" />
+                      <span className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Adoptions</span>
+                    </div>
+                    <p className="text-4xl font-bold text-gray-900 mb-1">{pendingAdoptions.length}</p>
+                    <p className="text-xs text-gray-600 mt-2">Pending approval</p>
+                  </div>
+                  <Link to="/admin/adopt">
+                    <Button variant="ghost" size="icon" className="text-blue-600 hover:bg-blue-50">
+                      <ArrowRight className="h-5 w-5" />
+                    </Button>
+                  </Link>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Total Users */}
+            <Card className="bg-white border-l-4 border-l-indigo-500 shadow-lg hover:shadow-xl transition-all">
+              <CardContent className="pt-6">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Users className="h-5 w-5 text-indigo-600" />
+                      <span className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Total Users</span>
+                    </div>
+                    <p className="text-4xl font-bold text-gray-900 mb-1">{dashboardData?.users?.total || 0}</p>
+                    <div className="flex items-center gap-3 text-xs text-gray-600 mt-2">
+                      <span>{dashboardData?.users?.regular || 0} Regular</span>
+                      <span>•</span>
+                      <span>{dashboardData?.users?.rescuers || 0} Rescuers</span>
+                    </div>
+                  </div>
+                  <Link to="/admin/users">
+                    <Button variant="ghost" size="icon" className="text-indigo-600 hover:bg-indigo-50">
+                      <ArrowRight className="h-5 w-5" />
+                    </Button>
+                  </Link>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Active Reports */}
+            <Card className="bg-white border-l-4 border-l-[#4CAF50] shadow-lg hover:shadow-xl transition-all">
+              <CardContent className="pt-6">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <PawPrint className="h-5 w-5 text-[#4CAF50]" />
+                      <span className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Active Reports</span>
+                    </div>
+                    <p className="text-4xl font-bold text-gray-900 mb-1">{dashboardData?.active?.total || 0}</p>
+                    <div className="flex items-center gap-3 text-xs text-gray-600 mt-2">
+                      <span>{dashboardData?.active?.found || 0} Found</span>
+                      <span>•</span>
+                      <span>{dashboardData?.active?.lost || 0} Lost</span>
+                    </div>
+                  </div>
+                  <Link to="/admin/found-pets">
+                    <Button variant="ghost" size="icon" className="text-[#4CAF50] hover:bg-[#4CAF50]/10">
+                      <ArrowRight className="h-5 w-5" />
+                    </Button>
+                  </Link>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* System Status & Quick Access */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* System Overview */}
+            <Card className="lg:col-span-2 bg-white shadow-lg">
+              <CardHeader className="border-b border-gray-200">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-xl font-bold">System Overview</CardTitle>
+                  <BarChart3 className="h-5 w-5 text-gray-400" />
+                </div>
+              </CardHeader>
+              <CardContent className="pt-6">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="text-center p-4 bg-gray-50 rounded-lg">
+                    <p className="text-2xl font-bold text-gray-900">{dashboardData?.pets?.found || 0}</p>
+                    <p className="text-xs text-gray-600 mt-1">Found Pets</p>
+                  </div>
+                  <div className="text-center p-4 bg-gray-50 rounded-lg">
+                    <p className="text-2xl font-bold text-gray-900">{dashboardData?.pets?.lost || 0}</p>
+                    <p className="text-xs text-gray-600 mt-1">Lost Pets</p>
+                  </div>
+                  <div className="text-center p-4 bg-gray-50 rounded-lg">
+                    <p className="text-2xl font-bold text-gray-900">{dashboardData?.pets?.adoptable || 0}</p>
+                    <p className="text-xs text-gray-600 mt-1">Adoptable</p>
+                  </div>
+                  <div className="text-center p-4 bg-gray-50 rounded-lg">
+                    <p className="text-2xl font-bold text-gray-900">{dashboardData?.matched || 0}</p>
+                    <p className="text-xs text-gray-600 mt-1">Matched</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Quick Actions */}
+            <Card className="bg-white shadow-lg">
+              <CardHeader className="border-b border-gray-200">
+                <CardTitle className="text-xl font-bold">Quick Actions</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-6 space-y-5">
+                <Link to="/admin/found-pets">
+                  <Button variant="outline" className="w-full justify-start gap-3 h-auto py-3 hover:bg-[#4CAF50]/10 hover:border-[#4CAF50]">
+                    <PawPrint className="h-5 w-5 text-[#4CAF50]" />
+                    <div className="text-left">
+                      <div className="font-semibold">Found Pets</div>
+                      <div className="text-xs text-gray-500">{dashboardData?.pending?.found || 0} pending</div>
+                    </div>
+                  </Button>
+                </Link>
+                <Link to="/admin/lost-pets">
+                  <Button variant="outline" className="w-full justify-start gap-3 h-auto py-3 hover:bg-[#4CAF50]/10 hover:border-[#4CAF50]">
+                    <Search className="h-5 w-5 text-[#4CAF50]" />
+                    <div className="text-left">
+                      <div className="font-semibold">Lost Pets</div>
+                      <div className="text-xs text-gray-500">{dashboardData?.pending?.lost || 0} pending</div>
+                    </div>
+                  </Button>
+                </Link>
+                <Link to="/admin/requests">
+                  <Button variant="outline" className="w-full justify-start gap-3 h-auto py-3 hover:bg-[#4CAF50]/10 hover:border-[#4CAF50]">
+                    <Shield className="h-5 w-5 text-[#4CAF50]" />
+                    <div className="text-left">
+                      <div className="font-semibold">Manage Requests</div>
+                      <div className="text-xs text-gray-500">All pending requests</div>
+                    </div>
+                  </Button>
+                </Link>
+                <Link to="/admin/users">
+                  <Button variant="outline" className="w-full justify-start gap-3 h-auto py-3 hover:bg-[#4CAF50]/10 hover:border-[#4CAF50]">
+                    <Users className="h-5 w-5 text-[#4CAF50]" />
+                    <div className="text-left">
+                      <div className="font-semibold">User Management</div>
+                      <div className="text-xs text-gray-500">{dashboardData?.users?.total || 0} total users</div>
+                    </div>
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Management Center - All Management Functions */}
+          <Card className="bg-white border border-gray-200 shadow-lg">
+            <CardHeader className="bg-gradient-to-r from-gray-50 to-white border-b border-gray-200">
+              <div className="flex items-center justify-between flex-wrap gap-4">
+                <div>
+                  <CardTitle className="text-2xl font-bold text-gray-900">Management Center</CardTitle>
+                  <CardDescription className="text-base mt-1">Comprehensive platform management and monitoring</CardDescription>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <Download className="h-4 w-4" />
+                    Export
+                  </Button>
+                  <Badge variant="outline" className="px-3 py-1 bg-green-50 text-green-700 border-green-200">
+                    <Activity className="h-3.5 w-3.5 mr-1.5" />
+                    Live Data
+                  </Badge>
+                </div>
+              </div>
+            </CardHeader>
           <CardContent className="pt-6">
-            <Tabs defaultValue="overview" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 mb-6 h-auto p-1 bg-gray-100">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 xl:grid-cols-9 mb-6 h-auto p-1 bg-gray-100">
                 <TabsTrigger value="overview" className="flex items-center gap-2 text-xs sm:text-sm py-2.5">
                   <BarChart3 className="h-4 w-4" />
                   <span className="hidden sm:inline">Overview</span>
@@ -451,9 +601,22 @@ export default function Admin() {
                   <PawPrint className="h-4 w-4" />
                   <span className="hidden sm:inline">All Pets</span>
                 </TabsTrigger>
+                <TabsTrigger value="shelter-reg" className="flex items-center gap-2 text-xs sm:text-sm py-2.5">
+                  <Building2 className="h-4 w-4" />
+                  <span className="hidden sm:inline">Shelter Reg.</span>
+                  {shelterRegistrations.filter((s: any) => s.status === 'pending').length > 0 && (
+                    <Badge variant="destructive" className="ml-1 text-xs px-1.5 py-0">
+                      {shelterRegistrations.filter((s: any) => s.status === 'pending').length}
+                    </Badge>
+                  )}
+                </TabsTrigger>
+                <TabsTrigger value="role-requests" className="flex items-center gap-2 text-xs sm:text-sm py-2.5">
+                  <UserPlus className="h-4 w-4" />
+                  <span className="hidden sm:inline">Role Requests</span>
+                </TabsTrigger>
               </TabsList>
 
-              {/* Overview Tab - Statistics and Chat Management */}
+              {/* Overview Tab - Platform Statistics */}
               <TabsContent value="overview" className="space-y-6">
                 {/* Platform Statistics */}
                 {dashboardData && (
@@ -514,47 +677,6 @@ export default function Admin() {
                   </div>
                 )}
 
-                {/* Chat Management Overview */}
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900">Chat Management</h3>
-                    <MessageSquare className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <Card className="border-2 border-purple-200 bg-gradient-to-br from-purple-50/50 to-pink-50/50">
-                    <CardContent className="pt-6">
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div className="bg-white rounded-lg p-4 border border-orange-200 hover:shadow-md transition-shadow">
-                          <div className="flex items-center gap-2 mb-2">
-                            <Clock className="h-4 w-4 text-orange-600" />
-                            <span className="text-sm font-medium text-gray-700">Pending</span>
-                          </div>
-                          <p className="text-2xl font-bold text-orange-600">{chatStats?.pending_requests || 0}</p>
-                        </div>
-                        <div className="bg-white rounded-lg p-4 border border-green-200 hover:shadow-md transition-shadow">
-                          <div className="flex items-center gap-2 mb-2">
-                            <MessageSquare className="h-4 w-4 text-green-600" />
-                            <span className="text-sm font-medium text-gray-700">Active</span>
-                          </div>
-                          <p className="text-2xl font-bold text-green-600">{chatStats?.active_chats || 0}</p>
-                        </div>
-                        <div className="bg-white rounded-lg p-4 border border-blue-200 hover:shadow-md transition-shadow">
-                          <div className="flex items-center gap-2 mb-2">
-                            <CheckCircle className="h-4 w-4 text-blue-600" />
-                            <span className="text-sm font-medium text-gray-700">Approved</span>
-                          </div>
-                          <p className="text-2xl font-bold text-blue-600">{chatStats?.approved_requests || 0}</p>
-                        </div>
-                        <div className="bg-white rounded-lg p-4 border border-red-200 hover:shadow-md transition-shadow">
-                          <div className="flex items-center gap-2 mb-2">
-                            <X className="h-4 w-4 text-red-600" />
-                            <span className="text-sm font-medium text-gray-700">Rejected</span>
-                          </div>
-                          <p className="text-2xl font-bold text-red-600">{chatStats?.rejected_requests || 0}</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
               </TabsContent>
 
               {/* Pending Reports Tab */}
@@ -1300,27 +1422,27 @@ export default function Admin() {
                       <option value="Listed Lost">Listed Lost</option>
                       <option value="Matched">Matched</option>
                       <option value="Reunited">Reunited</option>
+                      <option value="Available for Adoption">Available for Adoption</option>
+                      <option value="Adopted">Adopted</option>
                     </select>
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={async () => {
-                        try {
-                          const petsData = await adminAPI.getAllPets();
-                          setPets(petsData);
-                          setSearchTerm('');
-                          setTypeFilter('all');
-                          setStatusFilter('all');
-                        } catch (error) {
-                          toast({
-                            title: 'Error',
-                            description: 'Could not load pets',
-                            variant: 'destructive',
-                          });
-                        }
-                      }}
+                      onClick={loadAllPets}
+                      disabled={petsLoading}
+                      className="gap-2"
                     >
-                      Load Pets
+                      {petsLoading ? (
+                        <>
+                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600"></div>
+                          Loading...
+                        </>
+                      ) : (
+                        <>
+                          <Activity className="h-4 w-4" />
+                          Refresh
+                        </>
+                      )}
                     </Button>
                     <Button
                       variant="outline"
@@ -1337,12 +1459,22 @@ export default function Admin() {
                 </div>
 
                 {(() => {
+                  if (petsLoading) {
+                    return (
+                      <div className="text-center py-12">
+                        <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-green-600 border-r-transparent"></div>
+                        <p className="mt-4 text-gray-600">Loading all pets...</p>
+                      </div>
+                    );
+                  }
+
                   const filtered = pets.filter((p: any) => {
                     const matchesSearch = !searchTerm || 
                       p.breed?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                       p.species?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                      p.location?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                      p.status?.toLowerCase().includes(searchTerm.toLowerCase());
+                      p.last_seen_or_found_location_text?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                      p.status?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                      p.name?.toLowerCase().includes(searchTerm.toLowerCase());
                     const matchesType = typeFilter === 'all' || p.report_type === typeFilter || p.type === typeFilter;
                     const matchesStatus = statusFilter === 'all' || p.status === statusFilter;
                     return matchesSearch && matchesType && matchesStatus;
@@ -1354,7 +1486,7 @@ export default function Admin() {
                         {pets.length > 0 ? (
                           <>Showing <span className="font-semibold">{filtered.length}</span> of <span className="font-semibold">{pets.length}</span> pets</>
                         ) : (
-                          <>Click "Load Pets" to view all pets</>
+                          <>No pets found. Click "Refresh" to load all pets.</>
                         )}
                       </div>
                       <div className="overflow-x-auto">
@@ -1376,46 +1508,48 @@ export default function Admin() {
                                 <TableCell colSpan={7} className="text-center py-8 text-gray-500">
                                   {searchTerm || typeFilter !== 'all' || statusFilter !== 'all' 
                                     ? 'No pets match your search' 
-                                    : 'No pets found. Click "Load Pets" to fetch data.'}
+                                    : pets.length === 0 
+                                    ? 'No pets found. Click "Refresh" to load all pets.' 
+                                    : 'No pets match the current filters.'}
                                 </TableCell>
                               </TableRow>
                             ) : (
                               filtered.map((p: any) => (
                           <TableRow key={p._id}>
-                            <TableCell className="font-medium">{p.name}</TableCell>
+                            <TableCell className="font-medium">{p.name || p.species || 'Unnamed'}</TableCell>
                             <TableCell>
                               <Badge variant={
-                                p.type === 'found' ? 'default' :
-                                p.type === 'lost' ? 'secondary' : 'outline'
+                                p.report_type === 'found' || p.type === 'found' ? 'default' :
+                                p.report_type === 'lost' || p.type === 'lost' ? 'secondary' : 'outline'
                               }>
-                                {p.type}
+                                {p.report_type || p.type || 'N/A'}
                               </Badge>
                             </TableCell>
-                            <TableCell>{p.breed || 'Unknown'}</TableCell>
-                            <TableCell className="text-sm">{p.location?.city || 'N/A'}</TableCell>
+                            <TableCell>{p.breed || p.species || 'Unknown'}</TableCell>
+                            <TableCell className="text-sm">{p.last_seen_or_found_location_text || p.location?.city || 'N/A'}</TableCell>
                             <TableCell>
-                              <Badge variant={p.status === 'active' ? 'default' : 'outline'}>
-                                {p.status}
+                              <Badge variant={
+                                p.status === 'Listed Found' || p.status === 'Listed Lost' ? 'default' :
+                                p.status === 'Pending Verification' ? 'destructive' : 'outline'
+                              }>
+                                {p.status || 'N/A'}
                               </Badge>
                             </TableCell>
                             <TableCell className="text-sm text-gray-600">
-                              {format(new Date(p.createdAt), 'MMM dd, yyyy')}
+                              {p.date_submitted || p.createdAt 
+                                ? format(new Date(p.date_submitted || p.createdAt), 'MMM dd, yyyy')
+                                : 'N/A'}
                             </TableCell>
                             <TableCell>
-                              {p.status && p.status !== 'resolved' && (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => {
-                                    toast({
-                                      title: 'Info',
-                                      description: 'This feature will be implemented in the next update',
-                                    });
-                                  }}
-                                >
-                                  Mark Resolved
-                                </Button>
-                              )}
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => navigate(`/pets/${p._id}`)}
+                                className="gap-1"
+                              >
+                                <Eye className="h-4 w-4" />
+                                View
+                              </Button>
                             </TableCell>
                               </TableRow>
                             ))
@@ -1427,10 +1561,239 @@ export default function Admin() {
                 );
               })()}
               </TabsContent>
+
+              {/* Shelter Registrations Tab */}
+              <TabsContent value="shelter-reg" className="space-y-4">
+                {/* Search and Filter */}
+                <div className="flex flex-col sm:flex-row gap-4 mb-4">
+                  <div className="flex-1">
+                    <Input
+                      placeholder="Search by shelter name, owner, or location..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="w-full"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <select
+                      value={statusFilter}
+                      onChange={(e) => setStatusFilter(e.target.value)}
+                      className="px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-green-500"
+                    >
+                      <option value="all">All Status</option>
+                      <option value="pending">Pending</option>
+                      <option value="approved">Approved</option>
+                      <option value="rejected">Rejected</option>
+                    </select>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={loadShelterRegistrations}
+                      disabled={shelterRegistrationsLoading}
+                      className="gap-2"
+                    >
+                      {shelterRegistrationsLoading ? (
+                        <>
+                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600"></div>
+                          Loading...
+                        </>
+                      ) : (
+                        <>
+                          <Activity className="h-4 w-4" />
+                          Refresh
+                        </>
+                      )}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setSearchTerm('');
+                        setStatusFilter('all');
+                      }}
+                    >
+                      Clear
+                    </Button>
+                  </div>
+                </div>
+
+                {shelterRegistrationsLoading ? (
+                  <div className="text-center py-12">
+                    <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-green-600 border-r-transparent"></div>
+                    <p className="mt-4 text-gray-600">Loading shelter registrations...</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {(() => {
+                      const filtered = shelterRegistrations.filter((s: any) => {
+                        const matchesSearch = !searchTerm || 
+                          s.shelter_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          s.user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          s.user?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          s.location?.city?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          s.location?.address?.toLowerCase().includes(searchTerm.toLowerCase());
+                        const matchesStatus = statusFilter === 'all' || s.status === statusFilter;
+                        return matchesSearch && matchesStatus;
+                      });
+
+                      return (
+                        <>
+                          <div className="mb-4 text-sm text-gray-600">
+                            Showing <span className="font-semibold">{filtered.length}</span> of <span className="font-semibold">{shelterRegistrations.length}</span> shelter registrations
+                          </div>
+                          {filtered.length === 0 ? (
+                            <Card>
+                              <CardContent className="py-12 text-center">
+                                <Building2 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                                <h3 className="text-xl font-bold text-gray-900 mb-2">No Shelter Registrations</h3>
+                                <p className="text-gray-600">
+                                  {searchTerm || statusFilter !== 'all'
+                                    ? 'Try adjusting your search or filters'
+                                    : 'No shelter registrations found.'}
+                                </p>
+                              </CardContent>
+                            </Card>
+                          ) : (
+                            <div className="space-y-4">
+                              {filtered.map((shelter: any) => (
+                                <Card key={shelter._id}>
+                                  <CardHeader>
+                                    <div className="flex items-start justify-between">
+                                      <div className="flex items-center gap-3">
+                                        <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center">
+                                          <Building2 className="h-6 w-6 text-white" />
+                                        </div>
+                                        <div>
+                                          <CardTitle className="text-lg">{shelter.shelter_name}</CardTitle>
+                                          <CardDescription>
+                                            {shelter.user?.name || 'Unknown'} • {shelter.user?.email || 'N/A'}
+                                          </CardDescription>
+                                        </div>
+                                      </div>
+                                      <Badge
+                                        variant={
+                                          shelter.status === 'pending' ? 'default' :
+                                          shelter.status === 'approved' ? 'default' :
+                                          'destructive'
+                                        }
+                                        className={
+                                          shelter.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                                          shelter.status === 'approved' ? 'bg-green-100 text-green-700' :
+                                          'bg-red-100 text-red-700'
+                                        }
+                                      >
+                                        {shelter.status === 'pending' && <Clock className="h-3 w-3 mr-1" />}
+                                        {shelter.status === 'approved' && <CheckCircle className="h-3 w-3 mr-1" />}
+                                        {shelter.status === 'rejected' && <X className="h-3 w-3 mr-1" />}
+                                        {shelter.status || 'Pending'}
+                                      </Badge>
+                                    </div>
+                                  </CardHeader>
+                                  <CardContent>
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                                      <div>
+                                        <p className="text-sm font-semibold text-gray-700 mb-1">Location</p>
+                                        <p className="text-sm text-gray-600">
+                                          {shelter.location?.city || 'N/A'}, {shelter.location?.state || ''}
+                                        </p>
+                                        <p className="text-xs text-gray-500">{shelter.location?.pincode || ''}</p>
+                                      </div>
+                                      <div>
+                                        <p className="text-sm font-semibold text-gray-700 mb-1">Capacity</p>
+                                        <p className="text-sm text-gray-600">{shelter.capacity || shelter.total_capacity || 'N/A'} animals</p>
+                                      </div>
+                                      <div>
+                                        <p className="text-sm font-semibold text-gray-700 mb-1">Area</p>
+                                        <p className="text-sm text-gray-600">{shelter.area_sqft || 'N/A'} sq ft</p>
+                                      </div>
+                                      <div>
+                                        <p className="text-sm font-semibold text-gray-700 mb-1">Accepts Feeding</p>
+                                        <p className="text-sm text-gray-600">{shelter.accepts_feeding_data ? 'Yes' : 'No'}</p>
+                                      </div>
+                                    </div>
+                                    {shelter.facilities && shelter.facilities.length > 0 && (
+                                      <div className="mb-4">
+                                        <p className="text-sm font-semibold text-gray-700 mb-2">Facilities</p>
+                                        <div className="flex flex-wrap gap-2">
+                                          {shelter.facilities.map((facility: string, idx: number) => (
+                                            <Badge key={idx} variant="outline">{facility}</Badge>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+                                    {shelter.contact_info && (
+                                      <div className="mb-4">
+                                        <p className="text-sm font-semibold text-gray-700 mb-1">Contact</p>
+                                        <p className="text-sm text-gray-600">
+                                          {shelter.contact_info.phone || shelter.user?.phone || 'N/A'}
+                                        </p>
+                                      </div>
+                                    )}
+                                    {shelter.status === 'pending' && (
+                                      <div className="flex gap-2">
+                                        <Button
+                                          size="sm"
+                                          className="bg-green-600 hover:bg-green-700"
+                                          onClick={() => {
+                                            const notes = prompt('Add optional notes for approval:');
+                                            if (notes !== null) {
+                                              handleShelterAction(shelter._id, 'approve', notes);
+                                            }
+                                          }}
+                                        >
+                                          <CheckCircle className="mr-2 h-4 w-4" />
+                                          Approve
+                                        </Button>
+                                        <Button
+                                          size="sm"
+                                          variant="destructive"
+                                          onClick={() => {
+                                            const reason = prompt('Please provide a reason for rejection:');
+                                            if (reason && reason.trim()) {
+                                              handleShelterAction(shelter._id, 'reject', reason);
+                                            }
+                                          }}
+                                        >
+                                          <X className="mr-2 h-4 w-4" />
+                                          Reject
+                                        </Button>
+                                      </div>
+                                    )}
+                                    {shelter.admin_notes && (
+                                      <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                                        <p className="text-xs font-semibold text-gray-700 mb-1">Admin Notes</p>
+                                        <p className="text-sm text-gray-600">{shelter.admin_notes}</p>
+                                      </div>
+                                    )}
+                                  </CardContent>
+                                </Card>
+                              ))}
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
+                  </div>
+                )}
+              </TabsContent>
+
+              {/* Role Requests Tab */}
+              <TabsContent value="role-requests" className="space-y-4">
+                <div className="text-center py-12">
+                  <UserPlus className="h-16 w-16 mx-auto text-gray-400 mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Role Requests Management</h3>
+                  <p className="text-gray-600 mb-4">
+                    Manage volunteer role requests (rescuer, feeder, transporter)
+                  </p>
+                  <Button onClick={() => navigate('/admin/requests')} className="gap-2">
+                    <UserPlus className="h-4 w-4" />
+                    Go to Manage Requests
+                  </Button>
+                </div>
+              </TabsContent>
             </Tabs>
           </CardContent>
         </Card>
-      </div>
 
       {/* Reject Modal */}
       {showRejectModal && (
@@ -1647,6 +2010,9 @@ export default function Admin() {
           </Card>
         </div>
       )}
+          </div>
+        </main>
+      </div>
     </div>
   );
 }

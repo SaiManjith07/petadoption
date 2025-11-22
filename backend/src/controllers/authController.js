@@ -128,6 +128,7 @@ export const login = async (req, res, next) => {
     // Check for admin first
     let admin = await Admin.findOne({ email: normalizedEmail }).select('+password');
     if (admin) {
+      console.log('Admin found:', admin.email, 'Active:', admin.is_active);
       // Check if admin is active
       if (!admin.is_active) {
         return res.status(403).json({
@@ -137,6 +138,7 @@ export const login = async (req, res, next) => {
       }
       
       const isMatch = await admin.matchPassword(password);
+      console.log('Password match:', isMatch);
       if (!isMatch) {
         return res.status(401).json({
           success: false,
@@ -144,12 +146,14 @@ export const login = async (req, res, next) => {
         });
       }
       const token = generateToken(admin._id);
+      console.log('Admin login successful, token generated');
       return res.status(200).json({
         success: true,
         message: 'Login successful',
         token,
         user: {
           id: admin._id,
+          _id: admin._id, // Include both for compatibility
           name: admin.name,
           email: admin.email,
           role: 'admin',
@@ -238,6 +242,62 @@ export const getMe = async (req, res, next) => {
         is_verified: user.is_verified,
         is_active: user.is_active,
       },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const updatePassword = async (req, res, next) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const userId = req.user._id || req.user.id;
+
+    // Validation
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide both current and new password',
+      });
+    }
+
+    // Validate new password strength
+    const passwordValidation = validatePasswordStrength(newPassword);
+    if (!passwordValidation.valid) {
+      return res.status(400).json({
+        success: false,
+        message: passwordValidation.error,
+      });
+    }
+
+    // Get user with password
+    const user = await User.findById(userId).select('+password');
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
+
+    // Verify current password
+    const isMatch = await user.matchPassword(currentPassword);
+    if (!isMatch) {
+      return res.status(401).json({
+        success: false,
+        message: 'Current password is incorrect',
+      });
+    }
+
+    // Update password
+    user.password = newPassword;
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Password updated successfully',
     });
   } catch (error) {
     res.status(500).json({

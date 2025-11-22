@@ -23,7 +23,7 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ['user', 'rescuer', 'admin'],
+      enum: ['user', 'rescuer', 'feeder', 'transporter', 'admin'],
       default: 'user',
     },
     phone: {
@@ -42,6 +42,8 @@ const userSchema = new mongoose.Schema(
       city: String,
       state: String,
       country: String,
+      pincode: String,
+      full_address: String,
     },
     is_verified: {
       type: Boolean,

@@ -249,6 +249,85 @@ const petSchema = new mongoose.Schema(
       default: null,
     },
 
+    // Current location tracking
+    current_location_type: {
+      type: String,
+      enum: ['reporter', 'volunteer', 'shelter', 'adoption'],
+      default: 'reporter',
+    },
+    current_care_provider: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+    },
+    current_shelter: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'ShelterCapacity',
+      default: null,
+    },
+    days_in_care: {
+      type: Number,
+      default: 0,
+    },
+    care_start_date: {
+      type: Date,
+      default: null,
+    },
+
+    // Shelter offers
+    shelter_offers: [{
+      offered_by: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+      },
+      shelter_id: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'ShelterCapacity',
+      },
+      status: {
+        type: String,
+        enum: ['pending', 'accepted', 'rejected'],
+        default: 'pending',
+      },
+      offered_at: {
+        type: Date,
+        default: Date.now,
+      },
+      notes: String,
+    }],
+
+    // Volunteer offers
+    volunteer_offers: [{
+      volunteer_id: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+      },
+      status: {
+        type: String,
+        enum: ['pending', 'accepted', 'rejected'],
+        default: 'pending',
+      },
+      offered_at: {
+        type: Date,
+        default: Date.now,
+      },
+      notes: String,
+    }],
+
+    // Reporter preferences
+    reporter_wants_to_keep: {
+      type: Boolean,
+      default: false,
+    },
+    reporter_willing_to_move_to_shelter: {
+      type: Boolean,
+      default: false,
+    },
+    reporter_received_pet: {
+      type: Boolean,
+      default: false,
+    },
+
     // Soft delete
     is_active: {
       type: Boolean,

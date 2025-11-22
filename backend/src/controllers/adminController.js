@@ -3,6 +3,11 @@ import Pet from '../models/Pet.js';
 import Notification from '../models/Notification.js';
 import Chat from '../models/Chat.js';
 import ChatRequest from '../models/ChatRequest.js';
+import RoleRequest from '../models/RoleRequest.js';
+import FeedingPoint from '../models/FeedingPoint.js';
+import NeighborhoodAlert from '../models/NeighborhoodAlert.js';
+import ShelterRegistration from '../models/ShelterRegistration.js';
+import DashboardCache from '../models/DashboardCache.js';
 
 /**
  * Admin Dashboard - Get statistics and analytics
@@ -739,10 +744,28 @@ export const rejectReport = async (req, res, next) => {
 };
 
 /**
- * Admin: Get dashboard stats with pending counts
+ * Admin: Get dashboard stats with pending counts (with caching)
  */
 export const getAdminDashboardStats = async (req, res, next) => {
   try {
+    const cacheKey = 'admin_dashboard_stats';
+    const cacheExpiry = 2 * 60 * 1000; // 2 minutes cache
+    
+    // Try to get from cache first
+    const cached = await DashboardCache.findOne({ 
+      cache_key: cacheKey,
+      expires_at: { $gt: new Date() }
+    });
+    
+    if (cached) {
+      return res.status(200).json({
+        success: true,
+        data: cached.data,
+        cached: true,
+      });
+    }
+
+    // If not cached, fetch fresh data
     // Pending reports count
     const pendingLostReports = await Pet.countDocuments({
       status: 'Pending Verification',
@@ -783,34 +806,49 @@ export const getAdminDashboardStats = async (req, res, next) => {
     const totalRescuers = await User.countDocuments({ role: 'rescuer' });
     const totalAdmins = await User.countDocuments({ role: 'admin' });
 
+    const dashboardData = {
+      pending: {
+        lost: pendingLostReports,
+        found: pendingFoundReports,
+        total: pendingLostReports + pendingFoundReports,
+      },
+      active: {
+        lost: listedLostReports,
+        found: listedFoundReports,
+        total: listedLostReports + listedFoundReports,
+      },
+      matched: matchedReports,
+      reunited: reunitedReports,
+      pets: {
+        found: totalFoundPets,
+        lost: totalLostPets,
+        adoptable: adoptablePets,
+        total: totalFoundPets + totalLostPets + adoptablePets,
+      },
+      users: {
+        total: totalUsers + totalRescuers + totalAdmins,
+        regular: totalUsers,
+        rescuers: totalRescuers,
+        admins: totalAdmins,
+      },
+    };
+
+    // Cache the data
+    await DashboardCache.findOneAndUpdate(
+      { cache_key: cacheKey },
+      {
+        cache_key: cacheKey,
+        data: dashboardData,
+        expires_at: new Date(Date.now() + cacheExpiry),
+        updated_at: new Date(),
+      },
+      { upsert: true, new: true }
+    );
+
     res.status(200).json({
       success: true,
-      data: {
-        pending: {
-          lost: pendingLostReports,
-          found: pendingFoundReports,
-          total: pendingLostReports + pendingFoundReports,
-        },
-        active: {
-          lost: listedLostReports,
-          found: listedFoundReports,
-          total: listedLostReports + listedFoundReports,
-        },
-        matched: matchedReports,
-        reunited: reunitedReports,
-        pets: {
-          found: totalFoundPets,
-          lost: totalLostPets,
-          adoptable: adoptablePets,
-          total: totalFoundPets + totalLostPets + adoptablePets,
-        },
-        users: {
-          total: totalUsers + totalRescuers + totalAdmins,
-          regular: totalUsers,
-          rescuers: totalRescuers,
-          admins: totalAdmins,
-        },
-      },
+      data: dashboardData,
+      cached: false,
     });
   } catch (error) {
     res.status(500).json({
@@ -1035,6 +1073,122 @@ export const getChatRoom = async (req, res) => {
     res.status(500).json({
       success: false,
       message: error.message || 'Failed to fetch chat room',
+    });
+  }
+};
+
+/**
+ * Admin Chat Management - Close a chat
+ * POST /api/admin/chats/:roomId/close
+ */
+export const closeChat = async (req, res) => {
+  try {
+    const { roomId } = req.params;
+    const chat = await Chat.findOne({ room_id: roomId });
+
+    if (!chat) {
+      return res.status(404).json({
+        success: false,
+        message: 'Chat room not found',
+      });
+    }
+
+    chat.is_active = false;
+    await chat.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Chat closed successfully',
+      data: chat,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to close chat',
+    });
+  }
+};
+
+/**
+ * Admin: Get user by ID with full details
+ * GET /api/admin/users/:id
+ */
+export const getUserById = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    // Validate ObjectId format
+    if (!/^[0-9a-fA-F]{24}$/.test(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid user ID format',
+      });
+    }
+
+    const user = await User.findById(id).select('-password');
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: user,
+    });
+  } catch (error) {
+    console.error('Get user by ID error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'An error occurred while fetching user',
+    });
+  }
+};
+
+/**
+ * Admin: Get all pending requests (role requests, feeding points, alerts, shelter registrations)
+ */
+export const getAllPendingRequests = async (req, res, next) => {
+  try {
+    const [roleRequests, feedingPoints, alerts, shelterRegistrations] = await Promise.all([
+      RoleRequest.find({ status: 'pending' })
+        .populate('user', 'name email phone role')
+        .sort({ createdAt: -1 }),
+      FeedingPoint.find({ status: 'pending' })
+        .populate('added_by', 'name email')
+        .sort({ createdAt: -1 }),
+      NeighborhoodAlert.find({ status: 'pending' })
+        .populate('created_by', 'name email')
+        .populate('pet', 'breed species')
+        .sort({ createdAt: -1 }),
+      ShelterRegistration.find({ status: 'pending' })
+        .populate('user', 'name email phone role')
+        .populate('verified_by', 'name email')
+        .sort({ createdAt: -1 }),
+    ]);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        role_requests: roleRequests,
+        feeding_points: feedingPoints,
+        alerts: alerts,
+        shelter_registrations: shelterRegistrations,
+        totals: {
+          role_requests: roleRequests.length,
+          feeding_points: feedingPoints.length,
+          alerts: alerts.length,
+          shelter_registrations: shelterRegistrations.length,
+          total: roleRequests.length + feedingPoints.length + alerts.length + shelterRegistrations.length,
+        },
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
     });
   }
 };

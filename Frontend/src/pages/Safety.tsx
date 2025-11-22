@@ -80,13 +80,13 @@ export default function Safety() {
         </div>
 
         {/* Alert Box */}
-        <Card className="mb-8 border-warning bg-warning/10">
+        <Card className="mb-8 border-orange-200 bg-orange-50/50">
           <CardContent className="pt-6">
             <div className="flex gap-4">
-              <AlertTriangle className="h-6 w-6 text-warning flex-shrink-0" />
+              <AlertTriangle className="h-6 w-6 text-orange-600 flex-shrink-0" />
               <div>
-                <h3 className="font-semibold mb-2">Prevention is Key</h3>
-                <p className="text-sm text-muted-foreground">
+                <h3 className="font-semibold mb-2 text-gray-900">Prevention is Key</h3>
+                <p className="text-sm text-gray-700">
                   Most lost pets can be prevented with proper identification, secure enclosures,
                   and responsible supervision. Follow these guidelines to keep your pets safe.
                 </p>
@@ -146,10 +146,10 @@ export default function Safety() {
         </div>
 
         {/* General Safety Tips */}
-        <Card className="border-2">
+        <Card className="border-green-100 shadow-lg">
           <CardHeader>
             <div className="flex items-center gap-3">
-              <Shield className="h-6 w-6 text-secondary" />
+              <Shield className="h-6 w-6 text-green-600" />
               <div>
                 <CardTitle className="text-2xl">General Safety for All Pets</CardTitle>
                 <CardDescription>Universal guidelines that apply to all animals</CardDescription>
@@ -157,41 +157,89 @@ export default function Safety() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-6 md:grid-cols-2">
               <div>
-                <h3 className="font-semibold mb-2">Identification</h3>
-                <ul className="space-y-2 text-sm text-muted-foreground">
-                  <li>• Microchip with updated contact information</li>
-                  <li>• Visible ID tags with current phone number</li>
-                  <li>• Recent, clear photos for identification</li>
-                  <li>• Document unique markings or features</li>
+                <h3 className="font-semibold mb-3 text-gray-900">Identification</h3>
+                <ul className="space-y-2 text-sm text-gray-700">
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-600 font-bold">•</span>
+                    <span>Microchip with updated contact information</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-600 font-bold">•</span>
+                    <span>Visible ID tags with current phone number</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-600 font-bold">•</span>
+                    <span>Recent, clear photos for identification</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-600 font-bold">•</span>
+                    <span>Document unique markings or features</span>
+                  </li>
                 </ul>
               </div>
               <div>
-                <h3 className="font-semibold mb-2">Prevention</h3>
-                <ul className="space-y-2 text-sm text-muted-foreground">
-                  <li>• Never leave young animals unattended</li>
-                  <li>• Secure all gates, doors, and enclosures</li>
-                  <li>• Use proper restraints during transport</li>
-                  <li>• Be extra careful during loud events (fireworks, storms)</li>
+                <h3 className="font-semibold mb-3 text-gray-900">Prevention</h3>
+                <ul className="space-y-2 text-sm text-gray-700">
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-600 font-bold">•</span>
+                    <span>Never leave young animals unattended</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-600 font-bold">•</span>
+                    <span>Secure all gates, doors, and enclosures</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-600 font-bold">•</span>
+                    <span>Use proper restraints during transport</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-600 font-bold">•</span>
+                    <span>Be extra careful during loud events (fireworks, storms)</span>
+                  </li>
                 </ul>
               </div>
               <div>
-                <h3 className="font-semibold mb-2">Health & Wellness</h3>
-                <ul className="space-y-2 text-sm text-muted-foreground">
-                  <li>• Regular veterinary checkups</li>
-                  <li>• Up-to-date on all vaccinations</li>
-                  <li>• Spay/neuter to reduce roaming</li>
-                  <li>• Proper nutrition and exercise</li>
+                <h3 className="font-semibold mb-3 text-gray-900">Health & Wellness</h3>
+                <ul className="space-y-2 text-sm text-gray-700">
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-600 font-bold">•</span>
+                    <span>Regular veterinary checkups</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-600 font-bold">•</span>
+                    <span>Up-to-date on all vaccinations</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-600 font-bold">•</span>
+                    <span>Spay/neuter to reduce roaming</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-600 font-bold">•</span>
+                    <span>Proper nutrition and exercise</span>
+                  </li>
                 </ul>
               </div>
               <div>
-                <h3 className="font-semibold mb-2">Reporting</h3>
-                <ul className="space-y-2 text-sm text-muted-foreground">
-                  <li>• Report lost pets immediately</li>
-                  <li>• Check local shelters regularly</li>
-                  <li>• Use online pet finding services</li>
-                  <li>• Report any suspected abuse or neglect</li>
+                <h3 className="font-semibold mb-3 text-gray-900">Reporting</h3>
+                <ul className="space-y-2 text-sm text-gray-700">
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-600 font-bold">•</span>
+                    <span>Report lost pets immediately</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-600 font-bold">•</span>
+                    <span>Check local shelters regularly</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-600 font-bold">•</span>
+                    <span>Use online pet finding services</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-600 font-bold">•</span>
+                    <span>Report any suspected abuse or neglect</span>
+                  </li>
                 </ul>
               </div>
             </div>

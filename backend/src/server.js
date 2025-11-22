@@ -10,6 +10,7 @@ import { errorHandler } from './middleware/errorHandler.js';
 import {
   securityHeaders,
   apiRateLimiter,
+  adminRateLimiter,
   sanitizeQuery,
   requestSizeLimiter,
 } from './middleware/security.js';
@@ -24,6 +25,16 @@ import petRoutes from './routes/petRoutesV2.js';
 import adminRoutes from './routes/adminRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 import chatRoutes from './routes/chatRoutes.js';
+import userRoutes from './routes/userRoutes.js';
+import roleRequestRoutes from './routes/roleRequestRoutes.js';
+import shelterCapacityRoutes from './routes/shelterCapacityRoutes.js';
+import homeCheckRoutes from './routes/homeCheckRoutes.js';
+import feedingPointRoutes from './routes/feedingPointRoutes.js';
+import neighborhoodAlertRoutes from './routes/neighborhoodAlertRoutes.js';
+import shelterRegistrationRoutes from './routes/shelterRegistrationRoutes.js';
+import feedingRecordRoutes from './routes/feedingRecordRoutes.js';
+import foundPetWorkflowRoutes from './routes/foundPetWorkflowRoutes.js';
+import lostPetWorkflowRoutes from './routes/lostPetWorkflowRoutes.js';
 
 // Load environment variables
 dotenv.config();
@@ -75,8 +86,15 @@ app.use(
 // Query sanitization (prevent NoSQL injection)
 app.use(sanitizeQuery);
 
-// API rate limiting
-app.use('/api', apiRateLimiter);
+// API rate limiting - apply to general routes
+// Note: Admin and notification routes have their own limiters applied in their route files
+app.use('/api', (req, res, next) => {
+  // Skip if it's an admin or notification route (they have their own limiters)
+  if (req.path.startsWith('/admin') || req.path.startsWith('/notifications')) {
+    return next();
+  }
+  return apiRateLimiter(req, res, next);
+});
 
 // Serve static files from uploads directory
 app.use('/uploads', express.static(path.join(__dirname, '../../uploads')));
@@ -90,6 +108,16 @@ app.use('/api/pets', petRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/chats', chatRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/role-requests', roleRequestRoutes);
+app.use('/api/shelters', shelterCapacityRoutes);
+app.use('/api/home-checks', homeCheckRoutes);
+app.use('/api/feeding-points', feedingPointRoutes);
+app.use('/api/alerts', neighborhoodAlertRoutes);
+app.use('/api/shelter-registrations', shelterRegistrationRoutes);
+app.use('/api/feeding-records', feedingRecordRoutes);
+app.use('/api/found-pet-workflow', foundPetWorkflowRoutes);
+app.use('/api/lost-pet-workflow', lostPetWorkflowRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

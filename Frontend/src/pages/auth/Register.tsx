@@ -7,7 +7,6 @@ import { PawPrint } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/lib/auth';
 import { useToast } from '@/hooks/use-toast';
@@ -25,10 +24,9 @@ const registerSchema = z
     gender: z.enum(['Male', 'Female', 'Other', 'Prefer not to say']),
     phone: z.string().min(7, 'Enter a valid phone number'),
     countryCode: z.string().default('+91'),
-    role: z.enum(['user', 'rescuer'], {
-      required_error: 'Please select a role',
-    }),
-    agree_terms: z.literal(true, { errorMap: () => ({ message: 'You must agree to the terms' }) }),
+    address: z.string().min(5, 'Address must be at least 5 characters'),
+    landmark: z.string().min(3, 'Landmark must be at least 3 characters'),
+    role: z.enum(['user', 'rescuer']).default('user'),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords don't match",
@@ -61,8 +59,6 @@ export default function Register() {
     },
   });
 
-  const role = watch('role');
-
   const onSubmit = async (data: RegisterForm) => {
     try {
       setIsLoading(true);
@@ -82,7 +78,8 @@ export default function Register() {
         age: data.age,
         gender: data.gender,
         phone,
-        agree_terms: data.agree_terms,
+        address: data.address,
+        landmark: data.landmark,
       };
 
       await registerUser(payload);
@@ -182,161 +179,202 @@ export default function Register() {
   }, [watchedPassword]);
 
   return (
-    <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center px-4 py-12">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-4 text-center">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-            <PawPrint className="h-8 w-8 text-primary" />
-          </div>
-          <CardTitle className="text-2xl">Create Account</CardTitle>
-          <CardDescription>
+    <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center px-4 py-12 bg-gradient-to-br from-green-50 via-white to-emerald-50">
+      <Card className="w-full max-w-2xl shadow-2xl border-2 border-green-100">
+        <CardHeader className="space-y-4 text-center bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-t-lg">
+          <Link to="/" className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm group hover:bg-white/30 hover:scale-110 transition-all duration-300 cursor-pointer">
+            <PawPrint className="h-8 w-8 text-white" />
+          </Link>
+          <CardTitle className="text-2xl text-white">Create Account</CardTitle>
+          <CardDescription className="text-green-100">
             Join our community and start helping pets today
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit(onSubmit)}>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-5 p-6">
             <div className="space-y-2">
-              <Label htmlFor="name">Full Name</Label>
+              <Label htmlFor="name" className="text-gray-700 font-semibold">Full Name</Label>
               <Input
                 id="name"
                 placeholder="John Doe"
                 {...register('name')}
                 aria-invalid={!!errors.name}
+                className="h-11 border-gray-300 focus:border-green-500 focus:ring-green-500"
               />
               {errors.name && (
-                <p className="text-sm text-destructive">{errors.name.message}</p>
+                <p className="text-sm text-destructive font-medium">{errors.name.message}</p>
               )}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email" className="text-gray-700 font-semibold">Email</Label>
               <Input
                 id="email"
                 type="email"
                 placeholder="you@example.com"
                 {...register('email')}
                 aria-invalid={!!errors.email}
+                className="h-11 border-gray-300 focus:border-green-500 focus:ring-green-500"
               />
               <div className="flex items-center justify-between">
                 {errors.email && (
-                  <p className="text-sm text-destructive">{errors.email.message}</p>
+                  <p className="text-sm text-destructive font-medium">{errors.email.message}</p>
                 )}
-                {emailAvailable === true && <p className="text-sm text-green-600">Email available</p>}
-                {emailAvailable === false && <p className="text-sm text-destructive">Email already registered</p>}
+                {emailAvailable === true && <p className="text-sm text-green-600 font-medium">✓ Email available</p>}
+                {emailAvailable === false && <p className="text-sm text-destructive font-medium">✗ Email already registered</p>}
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                {...register('password')}
-                aria-invalid={!!errors.password}
-              />
-              {errors.password && (
-                <p className="text-sm text-destructive">{errors.password.message}</p>
-              )}
-              {pwdStrength && (
-                <p className={`text-sm ${pwdStrength === 'strong' ? 'text-green-600' : pwdStrength === 'medium' ? 'text-yellow-600' : 'text-destructive'}`}>Password strength: {pwdStrength}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm Password</Label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                placeholder="••••••••"
-                {...register('confirmPassword')}
-                aria-invalid={!!errors.confirmPassword}
-              />
-              {errors.confirmPassword && (
-                <p className="text-sm text-destructive">{errors.confirmPassword.message}</p>
-              )}
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="phone">Phone</Label>
+                <Label htmlFor="password" className="text-gray-700 font-semibold">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="••••••••"
+                  {...register('password')}
+                  aria-invalid={!!errors.password}
+                  className="h-11 border-gray-300 focus:border-green-500 focus:ring-green-500"
+                />
+                {errors.password && (
+                  <p className="text-sm text-destructive font-medium">{errors.password.message}</p>
+                )}
+                {pwdStrength && (
+                  <p className={`text-sm font-medium ${pwdStrength === 'strong' ? 'text-green-600' : pwdStrength === 'medium' ? 'text-yellow-600' : 'text-destructive'}`}>
+                    Password strength: <span className="capitalize">{pwdStrength}</span>
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword" className="text-gray-700 font-semibold">Confirm Password</Label>
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  placeholder="••••••••"
+                  {...register('confirmPassword')}
+                  aria-invalid={!!errors.confirmPassword}
+                  className="h-11 border-gray-300 focus:border-green-500 focus:ring-green-500"
+                />
+                {errors.confirmPassword && (
+                  <p className="text-sm text-destructive font-medium">{errors.confirmPassword.message}</p>
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="phone" className="text-gray-700 font-semibold">Phone</Label>
                 <div className="flex gap-2">
-                  <select value={countryCode} onChange={(e) => { setCountryCode(e.target.value); setValue('countryCode', e.target.value); }} className="px-3 py-2 border rounded">
+                  <select 
+                    value={countryCode} 
+                    onChange={(e) => { setCountryCode(e.target.value); setValue('countryCode', e.target.value); }} 
+                    className="px-3 py-2.5 border border-gray-300 rounded-lg focus:border-green-500 focus:ring-green-500 focus:outline-none bg-white"
+                  >
                     <option value="+91">+91 (IN)</option>
                     <option value="+1">+1 (US)</option>
                     <option value="+44">+44 (UK)</option>
                     <option value="+61">+61 (AU)</option>
                   </select>
-                  <Input id="phone" placeholder="1234567890" {...register('phone')} aria-invalid={!!errors.phone} />
+                  <Input 
+                    id="phone" 
+                    placeholder="1234567890" 
+                    {...register('phone')} 
+                    aria-invalid={!!errors.phone}
+                    className="h-11 border-gray-300 focus:border-green-500 focus:ring-green-500"
+                  />
                 </div>
                 <div className="flex items-center justify-between">
-                  {errors.phone && <p className="text-sm text-destructive">{errors.phone.message}</p>}
-                  {phoneAvailable === true && <p className="text-sm text-green-600">Phone available</p>}
-                  {phoneAvailable === false && <p className="text-sm text-destructive">Phone already registered</p>}
+                  {errors.phone && <p className="text-sm text-destructive font-medium">{errors.phone.message}</p>}
+                  {phoneAvailable === true && <p className="text-sm text-green-600 font-medium">✓ Phone available</p>}
+                  {phoneAvailable === false && <p className="text-sm text-destructive font-medium">✗ Phone already registered</p>}
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="pincode">Pincode</Label>
-                <Input id="pincode" placeholder="560001" {...register('pincode')} aria-invalid={!!errors.pincode} />
-                {errors.pincode && <p className="text-sm text-destructive">{errors.pincode.message}</p>}
+                <Label htmlFor="pincode" className="text-gray-700 font-semibold">Pincode</Label>
+                <Input 
+                  id="pincode" 
+                  placeholder="560001" 
+                  {...register('pincode')} 
+                  aria-invalid={!!errors.pincode}
+                  className="h-11 border-gray-300 focus:border-green-500 focus:ring-green-500"
+                />
+                {errors.pincode && <p className="text-sm text-destructive font-medium">{errors.pincode.message}</p>}
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="address" className="text-gray-700 font-semibold">Address</Label>
+              <Input
+                id="address"
+                placeholder="Street address, apartment, suite, etc."
+                {...register('address')}
+                aria-invalid={!!errors.address}
+                className="h-11 border-gray-300 focus:border-green-500 focus:ring-green-500"
+              />
+              {errors.address && (
+                <p className="text-sm text-destructive font-medium">{errors.address.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="landmark" className="text-gray-700 font-semibold">Landmark</Label>
+              <Input
+                id="landmark"
+                placeholder="Nearby landmark (e.g., Near City Park, Opposite Mall)"
+                {...register('landmark')}
+                aria-invalid={!!errors.landmark}
+                className="h-11 border-gray-300 focus:border-green-500 focus:ring-green-500"
+              />
+              {errors.landmark && (
+                <p className="text-sm text-destructive font-medium">{errors.landmark.message}</p>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="age">Age</Label>
-                <Input id="age" type="number" {...register('age', { valueAsNumber: true })} aria-invalid={!!errors.age} />
-                {errors.age && <p className="text-sm text-destructive">{errors.age.message}</p>}
+                <Label htmlFor="age" className="text-gray-700 font-semibold">Age</Label>
+                <Input 
+                  id="age" 
+                  type="number" 
+                  {...register('age', { valueAsNumber: true })} 
+                  aria-invalid={!!errors.age}
+                  className="h-11 border-gray-300 focus:border-green-500 focus:ring-green-500"
+                />
+                {errors.age && <p className="text-sm text-destructive font-medium">{errors.age.message}</p>}
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="gender">Gender</Label>
-                <select id="gender" {...register('gender')} className="w-full px-3 py-2 border rounded" aria-invalid={!!errors.gender}>
+                <Label htmlFor="gender" className="text-gray-700 font-semibold">Gender</Label>
+                <select 
+                  id="gender" 
+                  {...register('gender')} 
+                  className="w-full px-3 py-2.5 h-11 border border-gray-300 rounded-lg focus:border-green-500 focus:ring-green-500 focus:outline-none bg-white" 
+                  aria-invalid={!!errors.gender}
+                >
                   <option value="Male">Male</option>
                   <option value="Female">Female</option>
                   <option value="Other">Other</option>
                   <option value="Prefer not to say">Prefer not to say</option>
                 </select>
-                {errors.gender && <p className="text-sm text-destructive">{errors.gender.message}</p>}
+                {errors.gender && <p className="text-sm text-destructive font-medium">{errors.gender.message}</p>}
               </div>
-            </div>
-
-            <div className="flex items-start space-x-2">
-              <input type="checkbox" id="agree_terms" {...register('agree_terms')} />
-              <Label htmlFor="agree_terms" className="text-sm">I agree to the Terms of Service and Privacy Policy</Label>
-            </div>
-
-            <div className="space-y-3">
-              <Label>I am a</Label>
-              <RadioGroup value={role} onValueChange={(value) => setValue('role', value as any)}>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="user" id="user" />
-                  <Label htmlFor="user" className="font-normal cursor-pointer">
-                    Pet Owner - Looking for lost pets or wanting to adopt
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="rescuer" id="rescuer" />
-                  <Label htmlFor="rescuer" className="font-normal cursor-pointer">
-                    Rescuer - I found a pet and want to help
-                  </Label>
-                </div>
-              </RadioGroup>
-              {errors.role && (
-                <p className="text-sm text-destructive">{errors.role.message}</p>
-              )}
             </div>
           </CardContent>
           
-          <CardFooter className="flex flex-col space-y-4">
-            <Button type="submit" className="w-full" disabled={isLoading}>
+          <CardFooter className="flex flex-col space-y-4 p-6 pt-0">
+            <Button 
+              type="submit" 
+              className="w-full h-12 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold text-base shadow-lg hover:shadow-xl transition-all duration-300" 
+              disabled={isLoading}
+            >
               {isLoading ? 'Creating account...' : 'Create Account'}
             </Button>
             
-            <p className="text-center text-sm text-muted-foreground">
+            <p className="text-center text-sm text-gray-600">
               Already have an account?{' '}
-              <Link to="/auth/login" className="font-medium text-primary hover:underline">
+              <Link to="/auth/login" className="font-semibold text-green-600 hover:text-green-700 hover:underline transition-colors">
                 Sign in
               </Link>
             </p>

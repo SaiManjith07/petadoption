@@ -45,7 +45,21 @@ export const authRateLimiter = rateLimit({
  */
 export const apiRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // 100 requests per window
+  max: 500, // 500 requests per window (increased for admin dashboard)
+  message: {
+    success: false,
+    message: 'Too many requests, please try again later',
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+/**
+ * Rate Limiting for Admin Routes (more lenient)
+ */
+export const adminRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 1000, // 1000 requests per window for admin
   message: {
     success: false,
     message: 'Too many requests, please try again later',
@@ -177,4 +191,5 @@ export const requestSizeLimiter = (maxSize = '10mb') => {
     next();
   };
 };
+
 
