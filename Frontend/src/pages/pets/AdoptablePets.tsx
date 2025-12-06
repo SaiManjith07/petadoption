@@ -3,12 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Heart, Sparkles, ShieldCheck, PawPrint } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PetGallery } from '@/components/pets/PetGallery';
-import { petsAPI } from '@/services/api';
+import { petsApi } from '@/api/petsApi';
 import { useAuth } from '@/lib/auth';
 import { useToast } from '@/hooks/use-toast';
+import { Pet } from '@/models';
 
 export default function AdoptablePets() {
-  const [pets, setPets] = useState([]);
+  const [pets, setPets] = useState<Pet[]>([]);
   const [loading, setLoading] = useState(true);
   const { isAuthenticated } = useAuth();
   const { toast } = useToast();
@@ -21,8 +22,8 @@ export default function AdoptablePets() {
   const loadPets = async () => {
     try {
       setLoading(true);
-      const data = await petsAPI.getAll({ status: 'Available for Adoption' });
-      setPets(data.items || []);
+      const data = await petsApi.getAll({ status: 'Available for Adoption' });
+      setPets(data.results || []);
     } catch (error) {
       toast({
         title: 'Error loading pets',
@@ -47,7 +48,7 @@ export default function AdoptablePets() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-green-50/30">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-green-50/30 -m-6 lg:-m-8">
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
         {/* Hero Section */}
         <div className="bg-gradient-to-r from-green-600 via-emerald-600 to-green-700 rounded-2xl mt-6 mb-6">

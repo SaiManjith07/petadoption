@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Shield, CheckCircle, X, AlertCircle, Search, ArrowLeft, Menu } from 'lucide-react';
+import { Shield, CheckCircle, X, AlertCircle, Search, ArrowLeft, Eye, Stethoscope } from 'lucide-react';
 import { AdminSidebar } from '@/components/layout/AdminSidebar';
+import { AdminTopNav } from '@/components/layout/AdminTopNav';
+import { MedicalDetailsDialog } from '@/components/admin/MedicalDetailsDialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -9,9 +11,10 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/lib/auth';
-import { adminAPI } from '@/services/api';
+import { adminApi } from '@/api';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
+import { getImageUrl } from '@/services/api';
 
 export default function AdminLostPets() {
   const { isAdmin, user } = useAuth();
@@ -36,6 +39,8 @@ export default function AdminLostPets() {
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showMedicalDialog, setShowMedicalDialog] = useState(false);
+  const [selectedPetForMedical, setSelectedPetForMedical] = useState<{ id: number; name?: string } | null>(null);
 
   useEffect(() => {
     if (!isAdmin) {
@@ -52,26 +57,65 @@ export default function AdminLostPets() {
   const loadLostPets = async () => {
     try {
       setLoading(true);
-      // Get all lost pets (pending and listed)
-      const allPets = await adminAPI.getAllPets({ report_type: 'lost' });
-      // Filter to show pending first, then listed
-      const lostPetsList = allPets.filter((pet: any) => 
-        pet.report_type === 'lost' && 
-        ['Pending Verification', 'Listed Lost'].includes(pet.status)
+      // Get all pets (without filtering) to ensure we get pending ones
+      const allPetsData = await adminApi.getAllPets().catch(() => []);
+      
+      // Also get pending reports specifically for lost pets
+      const pendingPetsData = await adminApi.getPendingReports('lost').catch(() => []);
+      
+      // Mark pending pets from getPendingReports so we can identify them
+      const markedPendingPets = (pendingPetsData || []).map((p: any) => ({
+        ...p,
+        _isPendingLost: true, // Mark as pending lost pet
+      }));
+      
+      // Combine both sources
+      const combinedPets = [...(allPetsData || []), ...markedPendingPets];
+      
+      // Normalize the data
+      const normalizedPets = combinedPets.map((p: any) => ({
+        ...p,
+        _id: p.id || p._id,
+        createdAt: p.created_at || p.createdAt,
+      }));
+      
+      // Remove duplicates based on ID
+      const uniquePets = normalizedPets.filter((pet: any, index: number, self: any[]) =>
+        index === self.findIndex((p: any) => (p.id || p._id) === (pet.id || pet._id))
       );
+      
+      // Filter for lost pets - check multiple possible fields
+      // Include both verified and pending lost pets
+      // When a lost pet is reported, it's created with adoption_status='Pending'
+      // So we need to include Pending pets that are likely lost pets
+      const lostPetsList = uniquePets.filter((pet: any) => {
+        // Check if it's explicitly marked as Lost
+        if (pet.adoption_status === 'Lost') return true;
+        
+        // Check report_type or type fields
+        if (pet.report_type === 'lost' || pet.type === 'lost') return true;
+        
+        // Check status field
+        if (pet.status && pet.status.includes('Lost')) return true;
+        
+        // If it's marked as pending lost from getPendingReports, include it
+        if (pet._isPendingLost) return true;
+        
+        // For Pending pets, check if they have last_seen but no found_date (indicating they're lost pets)
+        if (pet.adoption_status === 'Pending' && pet.last_seen && !pet.found_date && !pet.foundDate) return true;
+        
+        return false;
+      });
+      
       setLostPets(lostPetsList);
-    } catch (error) {
-      // Fallback to pending reports only
-      try {
-        const reports = await adminAPI.getPendingReports('lost');
-        setLostPets(reports);
-      } catch (err) {
-        toast({
-          title: 'Error',
-          description: 'Could not load lost pets',
-          variant: 'destructive',
-        });
-      }
+    } catch (error: any) {
+      console.error('Error loading lost pets:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'Could not load lost pets',
+        variant: 'destructive',
+      });
+      setLostPets([]);
     } finally {
       setLoading(false);
     }
@@ -82,14 +126,33 @@ export default function AdminLostPets() {
 
     if (searchTerm) {
       filtered = filtered.filter(pet =>
+        pet.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         pet.species?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         pet.breed?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        pet.distinguishing_marks?.toLowerCase().includes(searchTerm.toLowerCase())
+        pet.location?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        pet.distinguishing_marks?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        pet.description?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
     if (statusFilter !== 'all') {
-      filtered = filtered.filter(pet => pet.status === statusFilter);
+      filtered = filtered.filter(pet => {
+        const petStatus = pet.status || pet.adoption_status || '';
+        const isPending = !pet.is_verified || 
+                         petStatus.toLowerCase().includes('pending') ||
+                         petStatus === 'Pending Verification' ||
+                         petStatus === 'Pending';
+        const isListed = petStatus === 'Listed Lost' || 
+                        petStatus === 'Lost' ||
+                        (pet.is_verified && !isPending);
+        
+        if (statusFilter === 'Pending Verification' || statusFilter === 'Pending') {
+          return isPending;
+        } else if (statusFilter === 'Listed Lost') {
+          return isListed && !isPending;
+        }
+        return petStatus === statusFilter || pet.adoption_status === statusFilter;
+      });
     }
 
     setFilteredPets(filtered);
@@ -114,7 +177,7 @@ export default function AdminLostPets() {
     }
 
     try {
-      await adminAPI.acceptReport(acceptingId, acceptNotes, verificationParams);
+      await adminApi.acceptReport(acceptingId, acceptNotes, verificationParams);
       setLostPets(lostPets.filter(p => p._id !== acceptingId));
       setShowAcceptModal(false);
       setAcceptingId(null);
@@ -155,7 +218,7 @@ export default function AdminLostPets() {
     }
 
     try {
-      await adminAPI.rejectReport(rejectingId, rejectReason);
+      await adminApi.rejectReport(rejectingId, rejectReason);
       setLostPets(lostPets.filter(p => p._id !== rejectingId));
       setShowRejectModal(false);
       setRejectingId(null);
@@ -199,17 +262,11 @@ export default function AdminLostPets() {
 
       {/* Main Content */}
       <div className="flex flex-col min-w-0 lg:ml-64">
-        {/* Mobile Menu Toggle */}
-        <div className="lg:hidden sticky top-0 z-30 bg-white border-b border-gray-200 p-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="text-gray-600 hover:text-gray-900"
-          >
-            {sidebarOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-          </Button>
-        </div>
+        <AdminTopNav 
+          onMenuToggle={() => setSidebarOpen(!sidebarOpen)} 
+          sidebarOpen={sidebarOpen}
+          onRefresh={loadLostPets}
+        />
 
         {/* Main Content Area - Scrollable */}
         <main className="flex-1 overflow-y-auto">
@@ -283,18 +340,30 @@ export default function AdminLostPets() {
                 <CardContent className="pt-6">
                   <div className="flex flex-col md:flex-row gap-6">
                     {/* Pet Images */}
-                    {pet.photos && pet.photos.length > 0 && (
+                    {(pet.images && pet.images.length > 0) || pet.image ? (
                       <div className="flex gap-2">
-                        {pet.photos.slice(0, 3).map((photo: any, idx: number) => (
+                        {pet.images && pet.images.length > 0 ? (
+                          pet.images.slice(0, 3).map((img: any, idx: number) => {
+                            const imageUrl = img.image_url || img.image || img.url;
+                            const photoUrl = imageUrl ? (imageUrl.startsWith('http') ? imageUrl : getImageUrl(imageUrl)) : 'https://via.placeholder.com/128';
+                            return (
+                              <img
+                                key={idx}
+                                src={photoUrl}
+                                alt={`Pet ${idx + 1}`}
+                                className="h-32 w-32 rounded-lg object-cover border border-gray-200"
+                              />
+                            );
+                          })
+                        ) : pet.image ? (
                           <img
-                            key={idx}
-                            src={photo.url}
-                            alt={`Pet ${idx + 1}`}
-                            className="h-32 w-32 rounded-lg object-cover"
+                            src={pet.image_url || getImageUrl(pet.image) || 'https://via.placeholder.com/128'}
+                            alt="Pet"
+                            className="h-32 w-32 rounded-lg object-cover border border-gray-200"
                           />
-                        ))}
+                        ) : null}
                       </div>
-                    )}
+                    ) : null}
 
                     {/* Pet Details */}
                     <div className="flex-1 space-y-3">
@@ -302,15 +371,20 @@ export default function AdminLostPets() {
                         <div>
                           <div className="flex items-center gap-2 mb-2">
                             <Badge variant="secondary">LOST</Badge>
-                            <Badge variant={pet.status === 'Pending Verification' ? 'destructive' : 'default'}>
-                              {pet.status}
+                            <Badge variant={
+                              (pet.status === 'Pending Verification' || pet.adoption_status === 'Pending') ? 'destructive' : 
+                              (pet.is_verified ? 'default' : 'outline')
+                            }>
+                              {pet.status || pet.adoption_status || 'Pending'}
                             </Badge>
                           </div>
                           <h3 className="text-xl font-semibold">
-                            {pet.species} - {pet.breed || 'Mixed Breed'}
+                            {pet.name || `${pet.species || 'Pet'} - ${pet.breed || 'Mixed Breed'}`}
                           </h3>
                           <p className="text-sm text-muted-foreground">
-                            <strong>Color:</strong> {pet.color_primary} {pet.color_secondary && `& ${pet.color_secondary}`}
+                            {pet.breed && <><strong>Breed:</strong> {pet.breed}</>}
+                            {pet.color && <><br /><strong>Color:</strong> {pet.color}</>}
+                            {pet.color_primary && <><br /><strong>Color:</strong> {pet.color_primary} {pet.color_secondary && `& ${pet.color_secondary}`}</>}
                           </p>
                         </div>
                       </div>
@@ -322,47 +396,77 @@ export default function AdminLostPets() {
                         </div>
                         <div>
                           <strong>Last Seen Location:</strong>
-                          <p className="text-muted-foreground">{pet.last_seen_or_found_location_text}</p>
-                          {pet.last_seen_or_found_pincode && (
-                            <p className="text-muted-foreground">Pincode: {pet.last_seen_or_found_pincode}</p>
+                          <p className="text-muted-foreground">
+                            {pet.location || pet.last_seen_or_found_location_text || 'N/A'}
+                          </p>
+                          {(pet.pincode || pet.last_seen_or_found_pincode) && (
+                            <p className="text-muted-foreground">Pincode: {pet.pincode || pet.last_seen_or_found_pincode}</p>
                           )}
                         </div>
                         <div>
                           <strong>Last Seen Date:</strong>
                           <p className="text-muted-foreground">
-                            {format(new Date(pet.last_seen_or_found_date), 'MMM dd, yyyy')}
+                            {pet.last_seen || pet.last_seen_or_found_date 
+                              ? format(new Date(pet.last_seen || pet.last_seen_or_found_date), 'MMM dd, yyyy')
+                              : (pet.created_at || pet.createdAt || pet.date_submitted)
+                              ? format(new Date(pet.created_at || pet.createdAt || pet.date_submitted), 'MMM dd, yyyy')
+                              : 'N/A'}
                           </p>
                         </div>
                         <div>
                           <strong>Reported by:</strong>
                           <p className="text-muted-foreground">
-                            {pet.submitted_by?.name} ({pet.submitted_by?.email})
+                            {pet.posted_by?.name || pet.submitted_by?.name || 'Unknown'} 
+                            ({pet.posted_by?.email || pet.submitted_by?.email || 'N/A'})
                           </p>
                         </div>
                       </div>
 
                       {/* Actions */}
-                      {pet.status === 'Pending Verification' && (
-                        <div className="flex gap-2 pt-2">
-                          <Button
-                            size="sm"
-                            className="bg-green-600 hover:bg-green-700 gap-1"
-                            onClick={() => handleAccept(pet._id)}
-                          >
-                            <CheckCircle className="h-4 w-4" />
-                            Accept & Verify
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            className="gap-1"
-                            onClick={() => handleReject(pet._id)}
-                          >
-                            <X className="h-4 w-4" />
-                            Reject
-                          </Button>
-                        </div>
-                      )}
+                      <div className="flex gap-2 pt-2 flex-wrap">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="gap-1"
+                          onClick={() => navigate(`/pets/${pet._id || pet.id}`)}
+                        >
+                          <Eye className="h-4 w-4" />
+                          View
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="gap-1"
+                          onClick={() => {
+                            setSelectedPetForMedical({ id: pet._id || pet.id, name: pet.name });
+                            setShowMedicalDialog(true);
+                          }}
+                        >
+                          <Stethoscope className="h-4 w-4" />
+                          Medical
+                        </Button>
+                        {(pet.status === 'Pending Verification' || pet.adoption_status === 'Pending' || !pet.is_verified) && (
+                          <>
+                            <Button
+                              size="sm"
+                              className="bg-green-600 hover:bg-green-700 gap-1"
+                              onClick={() => handleAccept(pet._id)}
+                            >
+                              <CheckCircle className="h-4 w-4" />
+                              Accept & Verify
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              className="gap-1"
+                              onClick={() => handleReject(pet._id)}
+                            >
+                              <X className="h-4 w-4" />
+                              Reject
+                            </Button>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </CardContent>
@@ -515,6 +619,16 @@ export default function AdminLostPets() {
           </div>
         </main>
       </div>
+
+      {/* Medical Details Dialog */}
+      {selectedPetForMedical && (
+        <MedicalDetailsDialog
+          open={showMedicalDialog}
+          onOpenChange={setShowMedicalDialog}
+          petId={selectedPetForMedical.id}
+          petName={selectedPetForMedical.name}
+        />
+      )}
     </div>
   );
 }

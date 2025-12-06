@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { chatAPI } from '@/services/api';
+import { chatApi } from '@/api/chatApi';
 import { useAuth } from '@/lib/auth';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -16,8 +16,8 @@ export default function Chat() {
   const { roomId } = useParams();
   const { user, isAdmin } = useAuth();
   const { toast } = useToast();
-  const [room, setRoom] = useState<any>(null);
-  const [messages, setMessages] = useState<any[]>([]);
+  const [room, setRoom] = useState<ChatRoom | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -35,9 +35,12 @@ export default function Chat() {
   const loadRoom = async () => {
     try {
       setLoading(true);
-      const data = await chatAPI.getRoom(roomId!);
-      setRoom(data);
-      setMessages(data.messages || []);
+      const roomData = await chatApi.getRoom(parseInt(roomId!));
+      setRoom(roomData);
+      
+      // Load messages separately
+      const messagesData = await chatApi.getMessages(parseInt(roomId!));
+      setMessages(messagesData || []);
       
       // In production, connect to WebSocket here
       // const ws = chatAPI.connectWebSocket(roomId!);
@@ -68,7 +71,7 @@ export default function Chat() {
     if (!newMessage.trim() || !roomId) return;
 
     try {
-      const message = await chatAPI.sendMessage(roomId, user?.id || '', newMessage);
+      const message = await chatApi.sendMessage(parseInt(roomId!), newMessage);
       setMessages([...messages, message]);
       setNewMessage('');
     } catch (error) {

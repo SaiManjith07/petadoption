@@ -40,8 +40,9 @@ import {
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { adminAPI } from '@/services/api';
+import { adminApi } from '@/api';
 import { AdminSidebar } from '@/components/layout/AdminSidebar';
+import { AdminTopNav } from '@/components/layout/AdminTopNav';
 
 export default function AdminUsers() {
   const navigate = useNavigate();
@@ -72,7 +73,7 @@ export default function AdminUsers() {
       if (roleFilter !== 'all') filters.role = roleFilter;
       if (statusFilter !== 'all') filters.is_active = statusFilter === 'active';
       
-      const usersData = await adminAPI.getAllUsers(filters);
+      const usersData = await adminApi.getAllUsers(filters);
       setUsers(Array.isArray(usersData) ? usersData : usersData?.data || []);
     } catch (error: any) {
       toast({
@@ -99,7 +100,7 @@ export default function AdminUsers() {
     if (!selectedUser) return;
     
     try {
-      await adminAPI.updateUser(selectedUser._id, {
+      await adminApi.updateUser(selectedUser._id, {
         role: editForm.role,
         is_active: editForm.is_active,
       });
@@ -122,7 +123,7 @@ export default function AdminUsers() {
     if (!confirm('Are you sure you want to deactivate this user?')) return;
     
     try {
-      await adminAPI.deleteUser(userId);
+      await adminApi.deleteUser(userId);
       toast({
         title: 'Success',
         description: 'User deactivated successfully',
@@ -177,17 +178,11 @@ export default function AdminUsers() {
 
       {/* Main Content */}
       <div className="flex flex-col min-w-0 lg:ml-64">
-        {/* Mobile Menu Toggle */}
-        <div className="lg:hidden sticky top-0 z-30 bg-white border-b border-gray-200 p-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="text-gray-600 hover:text-gray-900"
-          >
-            {sidebarOpen ? <X className="h-6 w-6" /> : <Users className="h-6 w-6" />}
-          </Button>
-        </div>
+        <AdminTopNav 
+          onMenuToggle={() => setSidebarOpen(!sidebarOpen)} 
+          sidebarOpen={sidebarOpen}
+          onRefresh={loadUsers}
+        />
 
         {/* Main Content Area - Scrollable */}
         <main className="flex-1 overflow-y-auto">

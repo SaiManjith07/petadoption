@@ -35,8 +35,9 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { adminAPI } from '@/services/api';
+import { adminApi } from '@/api';
 import { AdminSidebar } from '@/components/layout/AdminSidebar';
+import { AdminTopNav } from '@/components/layout/AdminTopNav';
 
 export default function AdminChats() {
   const navigate = useNavigate();
@@ -61,9 +62,9 @@ export default function AdminChats() {
     try {
       setLoading(true);
       const [requests, chats, stats] = await Promise.all([
-        adminAPI.getAllChatRequests(),
-        adminAPI.getAllChats(),
-        adminAPI.getChatStats(),
+        adminApi.getAllChatRequests(),
+        adminApi.getAllChats(),
+        adminApi.getChatStats(),
       ]);
       setChatRequests(Array.isArray(requests) ? requests : []);
       setActiveChats(Array.isArray(chats) ? chats : []);
@@ -81,7 +82,7 @@ export default function AdminChats() {
 
   const handleRespondToRequest = async (requestId: string, approved: boolean) => {
     try {
-      await adminAPI.respondToChatRequest(requestId, approved);
+      await adminApi.respondToChatRequest(requestId, approved);
       toast({
         title: 'Success',
         description: `Chat request ${approved ? 'approved' : 'rejected'}`,
@@ -98,7 +99,7 @@ export default function AdminChats() {
 
   const handleViewChat = async (chat: any) => {
     try {
-      const roomData = await adminAPI.getChatRoom(chat.roomId || chat._id);
+      const roomData = await adminApi.getChatRoom(chat.roomId || chat._id);
       setSelectedChat(roomData);
       setViewDialogOpen(true);
     } catch (error: any) {
@@ -115,7 +116,7 @@ export default function AdminChats() {
     
     try {
       // This endpoint needs to be added to backend
-      await adminAPI.closeChat(chatId);
+      await adminApi.closeChat(chatId);
       toast({
         title: 'Success',
         description: 'Chat closed successfully',
@@ -163,17 +164,11 @@ export default function AdminChats() {
 
       {/* Main Content */}
       <div className="flex flex-col min-w-0 lg:ml-64">
-        {/* Mobile Menu Toggle */}
-        <div className="lg:hidden sticky top-0 z-30 bg-white border-b border-gray-200 p-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="text-gray-600 hover:text-gray-900"
-          >
-            {sidebarOpen ? <X className="h-6 w-6" /> : <MessageSquare className="h-6 w-6" />}
-          </Button>
-        </div>
+        <AdminTopNav 
+          onMenuToggle={() => setSidebarOpen(!sidebarOpen)} 
+          sidebarOpen={sidebarOpen}
+          onRefresh={loadData}
+        />
 
         {/* Main Content Area - Scrollable */}
         <main className="flex-1 overflow-y-auto">

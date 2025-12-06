@@ -15,7 +15,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useAuth } from '@/lib/auth';
 import { NavLink } from '@/components/NavLink';
 import { Badge } from '@/components/ui/badge';
-import { notificationsAPI } from '@/services/api';
+import { notificationsApi } from '@/api';
 import { formatDistanceToNow } from 'date-fns';
 
 export const TopNav = () => {
@@ -49,7 +49,7 @@ export const TopNav = () => {
 
   const loadNotifications = async () => {
     try {
-      const data = await notificationsAPI.getAll();
+      const data = await notificationsApi.getAll();
       setNotifications(data.slice(0, 10));
     } catch (error) {
       console.error('Error loading notifications:', error);
@@ -58,16 +58,17 @@ export const TopNav = () => {
 
   const loadUnreadCount = async () => {
     try {
-      const count = await notificationsAPI.getUnreadCount();
+      const count = await notificationsApi.getUnreadCount();
       setUnreadCount(count);
     } catch (error) {
       console.error('Error loading unread count:', error);
     }
   };
 
-  const handleMarkAsRead = async (id: string) => {
+  const handleMarkAsRead = async (id: number | string) => {
     try {
-      await notificationsAPI.markRead(id);
+      const numId = typeof id === 'string' ? parseInt(id, 10) : id;
+      await notificationsApi.markRead(numId);
       loadNotifications();
       loadUnreadCount();
     } catch (error) {
@@ -77,7 +78,7 @@ export const TopNav = () => {
 
   const handleMarkAllAsRead = async () => {
     try {
-      await notificationsAPI.markAllAsRead();
+      await notificationsApi.markAllAsRead();
       loadNotifications();
       loadUnreadCount();
     } catch (error) {
@@ -85,9 +86,10 @@ export const TopNav = () => {
     }
   };
 
-  const handleDeleteNotification = async (id: string) => {
+  const handleDeleteNotification = async (id: number | string) => {
     try {
-      await notificationsAPI.delete(id);
+      const numId = typeof id === 'string' ? parseInt(id, 10) : id;
+      await notificationsApi.delete(numId);
       loadNotifications();
       loadUnreadCount();
     } catch (error) {
@@ -105,32 +107,32 @@ export const TopNav = () => {
   ];
 
   return (
-    <nav className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
+    <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-200/80 shadow-sm">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
           <Link to={isAuthenticated ? "/home" : "/"} className="flex items-center gap-3 group">
             <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-[#4CAF50] to-[#2E7D32] rounded-lg blur-sm opacity-50 group-hover:opacity-75 transition-opacity" />
-              <div className="relative h-10 w-10 rounded-lg bg-gradient-to-br from-[#4CAF50] to-[#2E7D32] flex items-center justify-center shadow-md group-hover:scale-105 transition-transform">
-                <PawPrint className="h-6 w-6 text-white" />
+              <div className="absolute inset-0 bg-gradient-to-br from-[#2BB6AF] to-[#4CAF50] rounded-xl blur-md opacity-50 group-hover:opacity-75 transition-opacity" />
+              <div className="relative h-12 w-12 rounded-xl bg-gradient-to-br from-[#2BB6AF] to-[#4CAF50] flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform">
+                <PawPrint className="h-7 w-7 text-white" />
               </div>
             </div>
             <div className="flex flex-col">
-              <span className="text-xl font-bold text-gray-900">PetReunite</span>
-              <span className="text-xs text-gray-500 hidden sm:block">Helping pets find home</span>
+              <span className="text-xl font-bold text-gray-900 group-hover:text-[#2BB6AF] transition-colors">PetReunite</span>
+              <span className="text-xs text-gray-500 hidden sm:block font-medium">Helping pets find home</span>
             </div>
           </Link>
 
           {/* Desktop Navigation */}
           {isAuthenticated && !isAdminPage && (
-            <div className="hidden md:flex md:items-center md:gap-1">
+            <div className="hidden md:flex md:items-center md:gap-2">
               {navigation.map((item) => (
                 <NavLink
                   key={item.name}
                   to={item.href}
-                  className="group relative px-4 py-2 rounded-lg text-sm font-medium text-gray-700 transition-all duration-200 hover:text-[#4CAF50] hover:bg-[#4CAF50]/5"
-                  activeClassName="text-[#4CAF50] bg-[#4CAF50]/10"
+                  className="group relative px-4 py-2.5 rounded-xl text-sm font-semibold text-gray-700 transition-all duration-200 hover:text-[#2BB6AF] hover:bg-gradient-to-r hover:from-[#2BB6AF]/10 hover:to-[#4CAF50]/5 hover:shadow-sm"
+                  activeClassName="text-[#2BB6AF] bg-gradient-to-r from-[#2BB6AF]/10 to-[#4CAF50]/5 shadow-sm"
                 >
                   <div className="flex items-center gap-2">
                     <item.icon className="h-4 w-4" />
@@ -151,11 +153,11 @@ export const TopNav = () => {
                     <Button 
                       variant="ghost" 
                       size="icon" 
-                      className="relative text-gray-600 hover:text-[#4CAF50] hover:bg-[#4CAF50]/5"
+                      className="relative text-gray-600 hover:text-[#2BB6AF] hover:bg-gradient-to-r hover:from-[#2BB6AF]/10 hover:to-[#4CAF50]/5 rounded-xl transition-all"
                     >
                       <Bell className="h-5 w-5" />
                       {unreadCount > 0 && (
-                        <span className="absolute top-1 right-1 h-4 w-4 bg-red-500 rounded-full border-2 border-white flex items-center justify-center text-xs font-bold text-white">
+                        <span className="absolute top-1 right-1 h-5 w-5 bg-gradient-to-br from-red-500 to-red-600 rounded-full border-2 border-white flex items-center justify-center text-xs font-bold text-white shadow-lg animate-pulse">
                           {unreadCount > 9 ? '9+' : unreadCount}
                         </span>
                       )}
@@ -235,17 +237,17 @@ export const TopNav = () => {
                   <DropdownMenuTrigger asChild>
                     <Button 
                       variant="ghost" 
-                      className="flex items-center gap-2 px-2 hover:bg-[#4CAF50]/5 rounded-lg"
+                      className="flex items-center gap-2 px-3 hover:bg-gradient-to-r hover:from-[#2BB6AF]/10 hover:to-[#4CAF50]/5 rounded-xl transition-all"
                     >
-                      <Avatar className="h-9 w-9 border-2 border-[#4CAF50]/20">
-                        <AvatarFallback className="bg-gradient-to-br from-[#4CAF50] to-[#2E7D32] text-white font-semibold text-sm">
+                      <Avatar className="h-10 w-10 border-2 border-[#2BB6AF]/30 shadow-md">
+                        <AvatarFallback className="bg-gradient-to-br from-[#2BB6AF] to-[#4CAF50] text-white font-semibold text-sm">
                           {user?.name?.charAt(0)?.toUpperCase() || 'U'}
                         </AvatarFallback>
                       </Avatar>
                       <div className="hidden lg:flex flex-col items-start">
                         <span className="text-sm font-semibold text-gray-900">{user?.name}</span>
                         {isAdmin && (
-                          <Badge className="text-xs bg-[#4CAF50]/10 text-[#4CAF50] border-[#4CAF50]/20 px-1.5 py-0 mt-0.5">
+                          <Badge className="text-xs bg-gradient-to-r from-purple-100 to-indigo-100 text-purple-700 border-purple-200 px-1.5 py-0 mt-0.5">
                             Admin
                           </Badge>
                         )}
@@ -319,9 +321,9 @@ export const TopNav = () => {
               <div className="flex items-center gap-3">
                 <Button 
                   asChild
-                  className="bg-gradient-to-r from-[#4CAF50] to-[#2E7D32] hover:from-[#2E7D32] hover:to-[#1B5E20] text-white font-semibold px-6 py-2 shadow-md hover:shadow-lg transition-all duration-300 rounded-lg"
+                  className="bg-gradient-to-r from-[#2BB6AF] to-[#4CAF50] hover:from-[#239a94] hover:to-[#2E7D32] text-white font-semibold px-6 py-2.5 shadow-lg hover:shadow-xl transition-all duration-300 rounded-xl"
                 >
-                  <Link to="/auth/login">Login</Link>
+                  <Link to="/auth/register">Get Started</Link>
                 </Button>
               </div>
             )}
@@ -330,7 +332,7 @@ export const TopNav = () => {
             <Button
               variant="ghost"
               size="icon"
-              className="md:hidden text-gray-600 hover:text-[#4CAF50] hover:bg-[#4CAF50]/5"
+              className="md:hidden text-gray-600 hover:text-[#2BB6AF] hover:bg-gradient-to-r hover:from-[#2BB6AF]/10 hover:to-[#4CAF50]/5 rounded-xl"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             >
               {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
@@ -341,24 +343,24 @@ export const TopNav = () => {
 
       {/* Mobile menu */}
       {mobileMenuOpen && isAuthenticated && (
-        <div className="md:hidden border-t border-gray-200 bg-white">
+        <div className="md:hidden border-t border-gray-200/80 bg-white/95 backdrop-blur-md">
           <div className="space-y-1 px-4 pb-4 pt-3">
             {!isAdminPage && navigation.map((item) => (
               <NavLink
                 key={item.name}
                 to={item.href}
-                className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-base font-medium text-gray-700 hover:bg-[#4CAF50]/5 hover:text-[#4CAF50]"
-                activeClassName="bg-[#4CAF50]/10 text-[#4CAF50]"
+                className="flex items-center gap-3 rounded-xl px-4 py-3 text-base font-semibold text-gray-700 hover:bg-gradient-to-r hover:from-[#2BB6AF]/10 hover:to-[#4CAF50]/5 hover:text-[#2BB6AF] transition-all"
+                activeClassName="bg-gradient-to-r from-[#2BB6AF]/10 to-[#4CAF50]/5 text-[#2BB6AF]"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 <item.icon className="h-5 w-5" />
                 {item.name}
               </NavLink>
             ))}
-            <div className="pt-2 mt-2 border-t border-gray-200">
+            <div className="pt-2 mt-2 border-t border-gray-200/80">
               <Link
                 to="/profile"
-                className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-base font-medium text-gray-700 hover:bg-[#4CAF50]/5 hover:text-[#4CAF50]"
+                className="flex items-center gap-3 rounded-xl px-4 py-3 text-base font-semibold text-gray-700 hover:bg-gradient-to-r hover:from-[#2BB6AF]/10 hover:to-[#4CAF50]/5 hover:text-[#2BB6AF] transition-all"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 <User className="h-5 w-5" />
@@ -367,7 +369,7 @@ export const TopNav = () => {
               {isAdmin && (
                 <Link
                   to="/admin"
-                  className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-base font-medium text-gray-700 hover:bg-[#4CAF50]/5 hover:text-[#4CAF50]"
+                  className="flex items-center gap-3 rounded-xl px-4 py-3 text-base font-semibold text-gray-700 hover:bg-gradient-to-r hover:from-purple-100 hover:to-indigo-100 hover:text-purple-700 transition-all"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   <ShieldCheck className="h-5 w-5" />
@@ -379,7 +381,7 @@ export const TopNav = () => {
                   handleLogout();
                   setMobileMenuOpen(false);
                 }}
-                className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-base font-medium text-red-600 hover:bg-red-50 w-full text-left"
+                className="flex items-center gap-3 rounded-xl px-4 py-3 text-base font-semibold text-red-600 hover:bg-red-50 w-full text-left transition-all"
               >
                 <LogOut className="h-5 w-5" />
                 Logout

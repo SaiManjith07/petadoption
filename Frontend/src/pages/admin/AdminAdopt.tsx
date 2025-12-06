@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/lib/auth';
-import { adminAPI } from '@/services/api';
+import { adminApi } from '@/api';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 
@@ -50,7 +50,7 @@ export default function AdminAdopt() {
   const loadAdoptionRequests = async () => {
     try {
       setLoading(true);
-      const requests = await adminAPI.getPendingAdoptionRequests();
+      const requests = await adminApi.getPendingAdoptionRequests();
       setAdoptionRequests(requests);
     } catch (error) {
       toast({
@@ -100,7 +100,7 @@ export default function AdminAdopt() {
     }
 
     try {
-      await adminAPI.acceptAdoptionRequest(acceptingId, acceptNotes, verificationParams, adopterId || undefined);
+      await adminApi.acceptAdoptionRequest(acceptingId, acceptNotes, verificationParams, adopterId || undefined);
       setAdoptionRequests(adoptionRequests.filter(r => r._id !== acceptingId));
       setShowAcceptModal(false);
       setAcceptingId(null);

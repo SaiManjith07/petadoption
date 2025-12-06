@@ -47,8 +47,9 @@ export default function Login() {
       // Small delay to ensure state is updated
       setTimeout(() => {
         const userRole = userData?.role || 'user';
-        console.log('User role:', userRole);
-        if (userRole === 'admin') {
+        const isStaff = userData?.is_staff || false;
+        console.log('User role:', userRole, 'is_staff:', isStaff);
+        if (userRole === 'admin' || userRole === 'sub_admin' || isStaff) {
           console.log('Navigating to admin panel');
           navigate('/admin');
         } else {
@@ -155,7 +156,7 @@ export default function Login() {
           </div>
 
           {/* Login Form Card */}
-          <div className="w-full max-w-lg">
+          <div className="w-full max-w-[450px] mx-auto bg-white p-6 md:p-[40px] rounded-xl shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
             <div className="mb-8">
               <h2 className="text-4xl font-bold text-gray-900 mb-2">Login</h2>
               <p className="text-gray-600 text-base">Enter your credentials to access your account</p>
@@ -163,8 +164,8 @@ export default function Login() {
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
               {/* Email/Username Field */}
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-sm font-semibold text-gray-700">
+              <div className="mb-5">
+                <Label htmlFor="email" className="text-[14px] font-semibold text-[#333333] mb-2 block">
                   Email Address
                 </Label>
                 <div className="relative">
@@ -174,9 +175,10 @@ export default function Login() {
                     placeholder="Enter your email"
                     {...register('email')}
                     aria-invalid={!!errors.email}
-                    className="h-12 pl-4 pr-12 border-2 border-gray-200 focus:border-[#4CAF50] focus:ring-2 focus:ring-[#4CAF50]/20 rounded-lg text-base bg-gray-50 focus:bg-white transition-all"
+                    aria-label="Email address"
+                    className="h-auto py-3 px-4 text-[15px] bg-[#F5F7FA] border-2 border-transparent rounded-lg w-full transition-all duration-300 focus:bg-white focus:border-[#4CAF50] focus:outline-none focus:shadow-[0_0_0_3px_rgba(76,175,80,0.1)]"
                   />
-                  <Mail className="absolute right-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
+                  <Mail className="absolute right-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-[#666666] pointer-events-none transition-colors duration-200 hover:text-[#4CAF50]" aria-hidden="true" />
                 </div>
                 {errors.email && (
                   <p className="text-xs text-red-600 font-medium mt-1">{errors.email.message}</p>
@@ -184,14 +186,17 @@ export default function Login() {
               </div>
 
               {/* Password Field */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="password" className="text-sm font-semibold text-gray-700">
+              <div className="mb-5">
+                <div className="flex items-center justify-between mb-2">
+                  <Label htmlFor="password" className="text-[14px] font-semibold text-[#333333] block">
                     Password
                   </Label>
-                  <Button variant="link" className="px-0 text-xs text-gray-600 hover:text-[#4CAF50] h-auto py-0" asChild>
-                    <Link to="/auth/forgot-password">Forgot Password?</Link>
-                  </Button>
+                  <Link 
+                    to="/auth/forgot-password" 
+                    className="text-[13px] text-[#4CAF50] font-medium no-underline hover:underline transition-all"
+                  >
+                    Forgot Password?
+                  </Link>
                 </div>
                 <div className="relative">
                   <Input
@@ -200,18 +205,19 @@ export default function Login() {
                     placeholder="Enter your password"
                     {...register('password')}
                     aria-invalid={!!errors.password}
-                    className="h-12 pl-4 pr-24 border-2 border-gray-200 focus:border-[#4CAF50] focus:ring-2 focus:ring-[#4CAF50]/20 rounded-lg text-base bg-gray-50 focus:bg-white transition-all"
+                    aria-label="Password"
+                    className="h-auto py-3 px-4 pr-24 text-[15px] bg-[#F5F7FA] border-2 border-transparent rounded-lg w-full transition-all duration-300 focus:bg-white focus:border-[#4CAF50] focus:outline-none focus:shadow-[0_0_0_3px_rgba(76,175,80,0.1)]"
                   />
                   <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="text-gray-400 hover:text-gray-600 transition-colors p-1"
+                      className="text-[#666666] hover:text-[#4CAF50] transition-colors duration-200 p-1 min-w-[44px] min-h-[44px] flex items-center justify-center"
                       aria-label={showPassword ? 'Hide password' : 'Show password'}
                     >
                       {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                     </button>
-                    <Lock className="h-5 w-5 text-gray-400 pointer-events-none" />
+                    <Lock className="h-5 w-5 text-[#666666] pointer-events-none" aria-hidden="true" />
                   </div>
                 </div>
                 {errors.password && (
@@ -222,7 +228,7 @@ export default function Login() {
               {/* Login Button */}
               <Button
                 type="submit"
-                className="w-full h-12 bg-gradient-to-r from-[#4CAF50] to-[#2E7D32] hover:from-[#2E7D32] hover:to-[#1B5E20] text-white font-semibold text-base rounded-lg shadow-md hover:shadow-lg transition-all duration-300 mt-6"
+                className="w-full bg-[#4CAF50] text-white text-base font-semibold py-[14px] px-6 rounded-lg border-none cursor-pointer transition-all duration-300 shadow-[0_2px_4px_rgba(0,0,0,0.1)] hover:bg-[#45a049] hover:shadow-[0_4px_8px_rgba(0,0,0,0.15)] hover:-translate-y-[1px] active:bg-[#3d8b40] active:translate-y-0 disabled:bg-[#cccccc] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 disabled:hover:shadow-[0_2px_4px_rgba(0,0,0,0.1)] mt-6"
                 disabled={isLoading}
               >
                 {isLoading ? (
@@ -239,51 +245,15 @@ export default function Login() {
               <div className="text-center pt-4">
                 <p className="text-sm text-gray-600">
                   Don't have an account?{' '}
-                  <Link to="/auth/register" className="text-[#4CAF50] hover:text-[#2E7D32] font-semibold transition-colors">
+                  <Link 
+                    to="/auth/register" 
+                    className="text-[#4CAF50] font-semibold no-underline hover:underline transition-all"
+                  >
                     Register here
                   </Link>
                 </p>
               </div>
             </form>
-
-            {/* Social Login Section */}
-            <div className="mt-10">
-              <p className="text-center text-sm text-gray-600 mb-5">or login with social platforms</p>
-              <div className="flex justify-center gap-4">
-                {/* Google */}
-                <button
-                  type="button"
-                  className="h-14 w-14 rounded-full bg-white hover:bg-gray-50 flex items-center justify-center transition-colors border-2 border-gray-200 shadow-sm hover:shadow-md"
-                  aria-label="Login with Google"
-                >
-                  <span className="text-lg font-bold text-gray-700">G</span>
-                </button>
-                {/* Facebook */}
-                <button
-                  type="button"
-                  className="h-14 w-14 rounded-full bg-white hover:bg-gray-50 flex items-center justify-center transition-colors border-2 border-gray-200 shadow-sm hover:shadow-md"
-                  aria-label="Login with Facebook"
-                >
-                  <span className="text-lg font-bold text-gray-700">f</span>
-                </button>
-                {/* GitHub */}
-                <button
-                  type="button"
-                  className="h-14 w-14 rounded-full bg-white hover:bg-gray-50 flex items-center justify-center transition-colors border-2 border-gray-200 shadow-sm hover:shadow-md"
-                  aria-label="Login with GitHub"
-                >
-                  <span className="text-lg font-bold text-gray-700">G</span>
-                </button>
-                {/* LinkedIn */}
-                <button
-                  type="button"
-                  className="h-14 w-14 rounded-full bg-white hover:bg-gray-50 flex items-center justify-center transition-colors border-2 border-gray-200 shadow-sm hover:shadow-md"
-                  aria-label="Login with LinkedIn"
-                >
-                  <span className="text-xs font-bold text-gray-700">in</span>
-                </button>
-              </div>
-            </div>
           </div>
         </div>
       </div>

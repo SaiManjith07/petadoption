@@ -61,7 +61,21 @@ export const LiveMatchResults = ({ matches, onSelectMatch }: LiveMatchResultsPro
                   </div>
                   <div className="flex items-center gap-2">
                     <Calendar className="h-3 w-3" />
-                    <span>{format(new Date(match.date_found_or_lost), 'MMM d, yyyy')}</span>
+                    <span>
+                      {match.date_found_or_lost 
+                        ? (() => {
+                            try {
+                              const date = new Date(match.date_found_or_lost);
+                              if (isNaN(date.getTime())) {
+                                return 'Date not available';
+                              }
+                              return format(date, 'MMM d, yyyy');
+                            } catch (e) {
+                              return 'Date not available';
+                            }
+                          })()
+                        : 'Date not available'}
+                    </span>
                   </div>
                 </div>
                 <Button

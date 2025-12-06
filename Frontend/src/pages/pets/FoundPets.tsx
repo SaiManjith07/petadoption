@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { PlusCircle, ArrowLeft, Heart, Sparkles, ShieldCheck, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PetGallery } from '@/components/pets/PetGallery';
-import { petsAPI, chatAPI } from '@/services/api';
+import { petsApi } from '@/api';
+import { chatApi } from '@/api';
 import { useAuth } from '@/lib/auth';
 import { useToast } from '@/hooks/use-toast';
 
@@ -21,11 +22,19 @@ export default function FoundPets() {
   const loadPets = async () => {
     try {
       setLoading(true);
-      const data = await petsAPI.getAll({ 
-        report_type: 'found',
-        status: 'Listed Found' 
+      const data = await petsApi.getAll({ 
+        status: 'Found'
       });
-      setPets(data.items || []);
+      // Handle both paginated and direct array responses
+      const petsData = data.results || data.data || data.items || data || [];
+      // Normalize pet data
+      const normalizedPets = Array.isArray(petsData) ? petsData.map((p: any) => ({
+        ...p,
+        id: p.id || p._id,
+        _id: p.id || p._id,
+        createdAt: p.created_at || p.createdAt,
+      })) : [];
+      setPets(normalizedPets);
     } catch (error) {
       toast({
         title: 'Error loading pets',
@@ -48,7 +57,11 @@ export default function FoundPets() {
     }
 
     try {
-      const { roomId } = await chatAPI.createRoom(pet.id, 'current-user-id');
+      const room = await chatApi.createRoom({
+        pet_id: pet.id || pet._id,
+        participant_ids: [user?.id || user?._id || ''],
+      });
+      const roomId = room.id || room._id;
       toast({
         title: 'Chat room created',
         description: 'You can now communicate with the rescuer and admin',
@@ -64,7 +77,7 @@ export default function FoundPets() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-green-50/30">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-green-50/30 -m-6 lg:-m-8">
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
         {/* Hero Section */}
         <div className="bg-gradient-to-r from-green-600 via-emerald-600 to-green-700 rounded-2xl mt-6 mb-6">

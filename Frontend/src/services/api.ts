@@ -998,25 +998,30 @@ export const usersAPI = {
   async updateUser(userId: string, updates: any) {
     const url = `${API_URL}/users/${userId}`;
     try {
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+      
       const response = await fetch(url, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify(updates),
       });
+      
       if (!response.ok) {
         const error = await response.json().catch(() => ({ message: 'Failed to update user' }));
-        throw new Error(error.message || 'Failed to update user');
+        throw new Error(error.message || error.detail || 'Failed to update user');
       }
+      
       const data = await response.json();
       return data;
     } catch (error: any) {
-      // Fallback to mock
-      await mockDelay();
-      console.log('User update (mock):', updates);
-      return { success: true, message: 'User updated', user: { ...currentUser, ...updates } };
+      console.error('Error updating user:', error);
+      throw error;
     }
   },
 
@@ -1066,15 +1071,22 @@ export const roleRequestAPI = {
   async create(requested_role: string, reason?: string, experience?: string, availability?: string, resources?: any) {
     const url = `${API_URL}/role-requests`;
     try {
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
       const response = await fetch(url, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ requested_role, reason, experience, availability, resources }),
       });
-      if (!response.ok) throw new Error('Failed to create role request');
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ message: 'Failed to create role request' }));
+        throw new Error(error.message || error.detail || 'Failed to create role request');
+      }
       const data = await response.json();
       return data.data;
     } catch (error: any) {
@@ -1085,13 +1097,28 @@ export const roleRequestAPI = {
   async getMy() {
     const url = `${API_URL}/role-requests/my`;
     try {
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        console.warn('No access token found for role requests');
+        return [];
+      }
       const response = await fetch(url, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
       });
-      if (!response.ok) throw new Error('Failed to fetch role requests');
+      if (!response.ok) {
+        if (response.status === 401) {
+          console.warn('Unauthorized access to role requests');
+          return [];
+        }
+        throw new Error(`Failed to fetch role requests: ${response.status}`);
+      }
       const data = await response.json();
-      return data.data;
+      return data.data || [];
     } catch (error) {
+      console.error('Error fetching role requests:', error);
       return [];
     }
   },
@@ -1099,13 +1126,28 @@ export const roleRequestAPI = {
   async getPending() {
     const url = `${API_URL}/role-requests/pending`;
     try {
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        console.warn('No access token found for pending role requests');
+        return [];
+      }
       const response = await fetch(url, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
       });
-      if (!response.ok) throw new Error('Failed to fetch pending role requests');
+      if (!response.ok) {
+        if (response.status === 401) {
+          console.warn('Unauthorized access to pending role requests');
+          return [];
+        }
+        throw new Error(`Failed to fetch pending role requests: ${response.status}`);
+      }
       const data = await response.json();
       return data.data || [];
     } catch (error) {
+      console.error('Error fetching pending role requests:', error);
       return [];
     }
   },
@@ -1198,27 +1240,43 @@ export const feedingPointAPI = {
     
     const url = `${API_URL}/feeding-points${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
     try {
-      const response = await fetch(url);
-      if (!response.ok) throw new Error('Failed to fetch feeding points');
+      const response = await fetch(url, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      if (!response.ok) {
+        console.error('Failed to fetch feeding points:', response.status);
+        return [];
+      }
       const data = await response.json();
-      return data.data || [];
+      // Backend returns {'data': [...]} format
+      return Array.isArray(data) ? data : (data.data || data || []);
     } catch (error) {
+      console.error('Error fetching feeding points:', error);
       return [];
     }
   },
 
   async create(feedingPointData: any) {
-    const url = `${API_URL}/feeding-points`;
+    const url = `${API_URL}/feeding-points/create/`;
     try {
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
       const response = await fetch(url, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(feedingPointData),
       });
-      if (!response.ok) throw new Error('Failed to create feeding point');
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ message: 'Failed to create feeding point' }));
+        throw new Error(error.message || error.detail || 'Failed to create feeding point');
+      }
       const data = await response.json();
       return data.data;
     } catch (error: any) {

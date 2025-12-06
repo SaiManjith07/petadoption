@@ -1,295 +1,355 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
-  PlusCircle, Search, Heart, FileText, TrendingUp, ArrowRight, ShieldCheck, 
-  Users, Star, Clock, MapPin, CheckCircle2, Image as ImageIcon, Zap, Activity, 
-  Home, Users2, PawPrint, UserPlus, BedDouble, ClipboardCheck, Droplet, Radio, 
-  AlertCircle, Building2, HandHeart, Truck, Building, Utensils, Sparkles,
-  BarChart3, Target, Award, Bell
+  Heart, Search as SearchIcon, PawPrint, ArrowRight, MapPin, Calendar, MessageCircle, X
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { useAuth } from '@/lib/auth';
-import { petsAPI } from '@/services/api';
-import { format } from 'date-fns';
+import { petsApi } from '@/api';
 import { useToast } from '@/hooks/use-toast';
+import { getImageUrl } from '@/services/api';
+import { format } from 'date-fns';
 
 export default function UserHome() {
-  const { user, isAuthenticated, isAdmin } = useAuth();
-  const navigate = useNavigate();
+  const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   
-  const [myPets, setMyPets] = useState([]);
+  const [availablePets, setAvailablePets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [myShelter, setMyShelter] = useState<any>(null);
-  const [isVolunteer, setIsVolunteer] = useState(false);
-  const [stats, setStats] = useState({
-    total: 0,
-    found: 0,
-    lost: 0,
-    reunited: 0,
-    pending: 0,
-  });
-
-  useEffect(() => {
-    if (!isAuthenticated) {
-      navigate('/');
-      return;
-    }
-    if (isAdmin) {
-      navigate('/admin');
-      return;
-    }
-  }, [isAuthenticated, isAdmin, navigate]);
+  const [activeFilter, setActiveFilter] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     if (isAuthenticated && user) {
-      loadDashboardData();
-      checkUserStatus();
+      loadPets();
     }
   }, [isAuthenticated, user]);
 
-  const checkUserStatus = async () => {
-    try {
-      const role = (user as any)?.role;
-      setIsVolunteer(['rescuer', 'feeder', 'transporter'].includes(role));
-      
-      const shelterRes = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000/api'}/shelter-registrations/my`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
-      });
-      if (shelterRes.ok) {
-        const data = await shelterRes.json();
-        setMyShelter(data.data);
-      }
-    } catch (error) {
-      console.error('Error checking user status:', error);
-    }
-  };
-
-  const loadDashboardData = async () => {
+  const loadPets = async () => {
     try {
       setLoading(true);
-      const { items } = await petsAPI.getAll();
-      const userPets = items.filter((p: any) => {
-        const submittedById = typeof p.submitted_by === 'object' 
-          ? (p.submitted_by._id || p.submitted_by.id)
-          : p.submitted_by;
-        const userId = (user as any)?._id || user?.id;
-        return submittedById && userId && String(submittedById) === String(userId);
+      const petsResponse = await petsApi.getAll({ 
+        page: 1,
       });
-      userPets.sort((a: any, b: any) => {
-        const dateA = new Date(a.date_submitted || a.createdAt || 0).getTime();
-        const dateB = new Date(b.date_submitted || b.createdAt || 0).getTime();
-        return dateB - dateA;
-      });
-      setMyPets(userPets);
-
-      // Calculate stats
-      const found = userPets.filter((p: any) => p.report_type === 'found').length;
-      const lost = userPets.filter((p: any) => p.report_type === 'lost').length;
-      const reunited = userPets.filter((p: any) => 
-        p.status === 'Reunited' || p.status === 'Matched'
-      ).length;
-      const pending = userPets.filter((p: any) => 
-        p.status?.includes('Pending')
-      ).length;
-
-      setStats({
-        total: userPets.length,
-        found,
-        lost,
-        reunited,
-        pending,
-      });
+      
+      const pets = petsResponse.results || petsResponse.data || petsResponse.items || [];
+      
+      const verifiedPets = pets
+        .filter((p: any) => p.is_verified !== false);
+      
+      setAvailablePets(verifiedPets);
     } catch (error) {
-      console.error('Error loading dashboard:', error);
+      console.error('Error loading pets:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load pets',
+        variant: 'destructive',
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  const primaryActions = [
-    {
-      title: 'Report Found Pet',
-      description: 'Found a pet? Help reunite it with its family',
-      icon: Heart,
-      href: '/pets/new/found',
-      gradient: 'from-green-500 to-emerald-600',
-      bgGradient: 'from-green-50 to-emerald-50',
-      buttonText: 'Report Now',
-      priority: 'high',
-    },
-    {
-      title: 'Report Lost Pet',
-      description: 'Lost your pet? Get instant matches from our database',
-      icon: Search,
-      href: '/pets/new/lost',
-      gradient: 'from-orange-500 to-amber-600',
-      bgGradient: 'from-orange-50 to-amber-50',
-      buttonText: 'Report Now',
-      priority: 'high',
-    },
-    {
-      title: 'Adopt a Pet',
-      description: 'Find your perfect companion and give them a loving home',
-      icon: PawPrint,
-      href: '/pets/adopt',
-      gradient: 'from-blue-500 to-indigo-600',
-      bgGradient: 'from-blue-50 to-indigo-50',
-      buttonText: 'Browse Pets',
-      priority: 'medium',
-    },
-  ];
-
-  const volunteerOptions = [
-    {
-      title: 'Become Volunteer',
-      description: 'Join as rescuer, feeder, or transporter',
-      icon: UserPlus,
-      href: '/become-volunteer',
-      gradient: 'from-purple-500 to-violet-600',
-      show: !isVolunteer,
-    },
-    {
-      title: 'Register Shelter',
-      description: 'Provide shelter for lost pets',
-      icon: Building,
-      href: '/register-shelter',
-      gradient: 'from-teal-500 to-cyan-600',
-      show: !myShelter,
-    },
-  ];
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white flex items-center justify-center">
-          <div className="text-center">
-          <div className="h-16 w-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-[#4CAF50] to-[#2E7D32] flex items-center justify-center animate-pulse shadow-lg">
-            <PawPrint className="h-8 w-8 text-white" />
-          </div>
-          <p className="text-lg font-semibold text-gray-700">Loading your dashboard...</p>
+  const getStatusBadge = (pet: any) => {
+    const status = pet.report_type || pet.status || pet.adoption_status || '';
+    if (status.toLowerCase().includes('found')) {
+      return (
+        <div className="absolute top-4 right-4 px-4 py-2 rounded-[20px] text-[13px] font-semibold backdrop-blur-[10px] bg-[rgba(76,175,80,0.9)] text-white">
+          Found
         </div>
-      </div>
-    );
-  }
+      );
+    } else if (status.toLowerCase().includes('lost')) {
+      return (
+        <div className="absolute top-4 right-4 px-4 py-2 rounded-[20px] text-[13px] font-semibold backdrop-blur-[10px] bg-[rgba(255,152,0,0.9)] text-white">
+          Lost
+        </div>
+      );
+    } else if (status.toLowerCase().includes('adopt') || status.toLowerCase().includes('available')) {
+      return (
+        <div className="absolute top-4 right-4 px-4 py-2 rounded-[20px] text-[13px] font-semibold backdrop-blur-[10px] bg-[rgba(76,175,80,0.9)] text-white">
+          Adoptable
+        </div>
+      );
+    }
+    return null;
+  };
+
+  const getPetImage = (pet: any) => {
+    if (pet.photos && Array.isArray(pet.photos) && pet.photos.length > 0) {
+      const photo = pet.photos[0];
+      const photoPath = typeof photo === 'string' 
+        ? photo 
+        : photo?.url || photo?.file_url || photo?.image_url || photo;
+      return getImageUrl(photoPath) || 'https://via.placeholder.com/400x300?text=No+Image';
+    }
+    return pet.image_url || pet.image || 'https://via.placeholder.com/400x300?text=No+Image';
+  };
+
+  const getPetName = (pet: any) => {
+    let name = pet.name || '';
+    // Remove "Lost" or "Found" prefix if present
+    if (name.toLowerCase().startsWith('lost ')) {
+      name = name.substring(5);
+    } else if (name.toLowerCase().startsWith('found ')) {
+      name = name.substring(6);
+    }
+    return name || 'Unnamed Pet';
+  };
+
+  const getPetType = (pet: any) => {
+    const category = pet.category?.name || pet.species || pet.category || 'Unknown';
+    return category.charAt(0).toUpperCase() + category.slice(1).toLowerCase();
+  };
+
+  const getTimeAgo = (date: string | Date) => {
+    if (!date) return 'Recently posted';
+    try {
+      const postDate = new Date(date);
+      const now = new Date();
+      const diffInDays = Math.floor((now.getTime() - postDate.getTime()) / (1000 * 60 * 60 * 24));
+      
+      if (diffInDays === 0) return 'Posted today';
+      if (diffInDays === 1) return 'Posted 1 day ago';
+      if (diffInDays < 7) return `Posted ${diffInDays} days ago`;
+      return format(postDate, 'MMM d, yyyy');
+    } catch {
+      return 'Recently posted';
+    }
+  };
+
+  const filteredPets = availablePets.filter((pet: any) => {
+    // Filter by status (All Pets, Found, Lost)
+    if (activeFilter === 'found') {
+      const status = pet.report_type || pet.status || pet.adoption_status || '';
+      if (!status.toLowerCase().includes('found')) return false;
+    } else if (activeFilter === 'lost') {
+      const status = pet.report_type || pet.status || pet.adoption_status || '';
+      if (!status.toLowerCase().includes('lost')) return false;
+    }
+    // activeFilter === 'all' passes through
+
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      const petName = getPetName(pet).toLowerCase();
+      const petType = getPetType(pet).toLowerCase();
+      const petBreed = (pet.breed || '').toLowerCase();
+      const petLocation = (pet.location || pet.address || '').toLowerCase();
+      const petDescription = (pet.description || '').toLowerCase();
+      const petColor = (pet.color || pet.color_primary || pet.primary_color || '').toLowerCase();
+      
+      const matchesSearch = 
+        petName.includes(query) ||
+        petType.includes(query) ||
+        petBreed.includes(query) ||
+        petLocation.includes(query) ||
+        petDescription.includes(query) ||
+        petColor.includes(query);
+      
+      if (!matchesSearch) return false;
+    }
+
+    return true;
+  });
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#F0F9F0] via-white to-[#F5FDF5]">
-      {/* Hero Section - Simple and Professional */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
-            <div className="flex-1">
-              <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-3">
-                Welcome back, <span className="text-[#4CAF50]">{user?.name}</span>!
-              </h1>
-              <p className="text-lg text-gray-600 mb-6 max-w-2xl">
-                Help pets find their way home. Browse adoptable pets or explore community features.
-              </p>
-            </div>
-            <div className="flex-shrink-0">
-              <div className="bg-gradient-to-br from-[#4CAF50] to-[#2E7D32] rounded-2xl p-8 shadow-lg">
-                <div className="text-center">
-                  <div className="text-5xl font-bold text-white mb-2">{stats.total}</div>
-                  <div className="text-sm text-white/90 font-medium">Total Reports</div>
-                </div>
-              </div>
-            </div>
-          </div>
+    <div className="min-h-screen bg-white">
+      {/* Welcome Section */}
+      <div className="bg-white py-10 md:py-[60px] px-6 md:px-10 lg:px-[80px] text-center">
+        <h1 className="text-3xl md:text-[42px] font-bold text-[#2C3E50] mb-3">
+          Welcome back, {user?.name || 'User'}!
+        </h1>
+        <p className="text-base md:text-lg text-[#7F8C8D] font-normal">
+          Help pets find their way home.
+        </p>
+
+        {/* Simple Action Buttons */}
+        <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8">
+          <Button
+            onClick={() => navigate('/pets/report-found')}
+            className="bg-[#4CAF50] text-white text-base font-semibold py-[14px] px-8 rounded-xl border-none cursor-pointer transition-all duration-300 hover:bg-[#45a049] hover:-translate-y-[2px] hover:shadow-[0_6px_20px_rgba(76,175,80,0.4)]"
+          >
+            <Heart className="mr-2 h-5 w-5" />
+            Report Found Pet
+          </Button>
+          <Button
+            onClick={() => navigate('/pets/report-lost')}
+            className="bg-[#FF9800] text-white text-base font-semibold py-[14px] px-8 rounded-xl border-none cursor-pointer transition-all duration-300 hover:bg-[#F57C00] hover:-translate-y-[2px] hover:shadow-[0_6px_20px_rgba(255,152,0,0.4)]"
+          >
+            <SearchIcon className="mr-2 h-5 w-5" />
+            Report Lost Pet
+          </Button>
         </div>
       </div>
 
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
-        {/* Primary Actions - Highlighted */}
-        <div className="mb-10">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900">Quick Actions</h2>
-              <p className="text-gray-500 mt-1">Get started with these important actions</p>
-            </div>
+      {/* Pets Near You Section */}
+      <div className="bg-[#F8FAFB] py-[60px] px-[80px]">
+        <div className="max-w-[1200px] mx-auto">
+          {/* Header */}
+          <div className="text-center mb-8">
+            <h2 className="text-[32px] font-bold text-[#2C3E50] mb-2">
+              Pets Available / Found Near You
+            </h2>
+            <p className="text-base text-[#7F8C8D] mb-8">
+              Recently added pets from the community
+            </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {primaryActions.map((action, index) => (
-              <Card 
-                key={index} 
-                className={`group relative overflow-hidden border border-gray-200 hover:border-[#4CAF50] transition-all duration-300 hover:shadow-xl cursor-pointer bg-white ${
-                  action.priority === 'high' ? 'md:col-span-1' : ''
+
+          {/* Search Bar */}
+          <div className="mb-6 max-w-2xl mx-auto">
+            <div className="relative">
+              <SearchIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-[#7F8C8D] pointer-events-none" />
+              <Input
+                type="text"
+                placeholder="Search by name, breed, location, color, or description..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-12 pr-12 py-6 text-base rounded-[16px] border-2 border-[#E8ECEF] focus:border-[#4CAF50] focus:ring-2 focus:ring-[#4CAF50]/20 bg-white shadow-sm transition-all duration-300"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-4 top-1/2 transform -translate-y-1/2 p-1 rounded-full hover:bg-gray-100 transition-colors"
+                  aria-label="Clear search"
+                >
+                  <X className="h-5 w-5 text-[#7F8C8D]" />
+                </button>
+              )}
+            </div>
+            {searchQuery && (
+              <p className="text-sm text-[#7F8C8D] mt-2 text-center">
+                {filteredPets.length} {filteredPets.length === 1 ? 'pet' : 'pets'} found for "{searchQuery}"
+              </p>
+            )}
+          </div>
+
+          {/* Filter Tabs */}
+          <div className="flex flex-wrap gap-2 md:gap-3 justify-center mb-6 md:mb-8">
+            {[
+              { label: 'All Pets', value: 'all' },
+              { label: 'Found', value: 'found' },
+              { label: 'Lost', value: 'lost' },
+            ].map((tab) => (
+              <button
+                key={tab.value}
+                onClick={() => setActiveFilter(tab.value)}
+                className={`px-4 md:px-6 py-2 md:py-2.5 rounded-[24px] border-2 text-xs md:text-sm font-medium transition-all duration-300 cursor-pointer ${
+                  activeFilter === tab.value
+                    ? 'bg-[#4CAF50] text-white border-[#4CAF50] shadow-md'
+                    : 'bg-white text-[#5F6368] border-[#E8ECEF] hover:border-[#4CAF50] hover:bg-[#F0FFF4]'
                 }`}
               >
-                <CardHeader className="relative z-10 pb-4">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className={`h-14 w-14 rounded-2xl bg-gradient-to-br ${action.gradient} flex items-center justify-center shadow-md group-hover:scale-110 transition-transform`}>
-                      <action.icon className="h-7 w-7 text-white" />
-                    </div>
-                    <Badge className={`${action.priority === 'high' ? 'bg-red-50 text-red-700 border-red-200' : 'bg-blue-50 text-blue-700 border-blue-200'}`}>
-                      {action.priority === 'high' ? 'Priority' : 'Popular'}
-                    </Badge>
-                  </div>
-                  <CardTitle className="text-xl font-bold mb-2 text-gray-900">{action.title}</CardTitle>
-                  <CardDescription className="text-gray-600">{action.description}</CardDescription>
-                </CardHeader>
-                <CardContent className="relative z-10 pt-0">
-                  <Button
-                    asChild
-                    className={`w-full bg-gradient-to-r ${action.gradient} hover:opacity-90 text-white shadow-md hover:shadow-lg transition-all`}
-                  >
-                    <Link to={action.href} className="flex items-center justify-center gap-2">
-                      {action.buttonText}
-                      <ArrowRight className="h-4 w-4" />
-                    </Link>
-                  </Button>
-                </CardContent>
-              </Card>
+                {tab.label}
+              </button>
             ))}
           </div>
-        </div>
 
-        {/* Volunteer & Shelter Options */}
-        {volunteerOptions.some(opt => opt.show) && (
-          <div className="mb-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Get Involved</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {volunteerOptions.filter(opt => opt.show).map((option, index) => (
-                <Link key={index} to={option.href}>
-                  <Card className="group hover:shadow-xl transition-all duration-300 border-2 hover:border-[#4CAF50] cursor-pointer h-full">
-                    <CardHeader>
-                      <div className="flex items-center justify-between">
-                        <div className={`h-12 w-12 rounded-xl bg-gradient-to-br ${option.gradient} flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg`}>
-                          <option.icon className="h-6 w-6 text-white" />
-                        </div>
-                        <ArrowRight className="h-5 w-5 text-gray-400 group-hover:text-[#4CAF50] group-hover:translate-x-1 transition-all" />
-                      </div>
-                      <CardTitle className="mt-4 text-lg font-semibold">{option.title}</CardTitle>
-                      <CardDescription>{option.description}</CardDescription>
-                    </CardHeader>
-                  </Card>
-                </Link>
-              ))}
+          {/* Loading State */}
+          {loading ? (
+            <div className="text-center py-16">
+              <div className="inline-block h-12 w-12 border-4 border-gray-200 border-t-[#4CAF50] rounded-full animate-spin"></div>
+              <p className="mt-4 text-[#7F8C8D]">Loading pets...</p>
             </div>
-          </div>
-        )}
+          ) : filteredPets.length === 0 ? (
+            <div className="text-center py-16">
+              <div className="text-6xl mb-4">🐾</div>
+              <h3 className="text-2xl font-bold text-[#2C3E50] mb-2">No pets found nearby</h3>
+              <p className="text-[#7F8C8D] mb-6">Check back later or adjust your search filters</p>
+              <Button
+                onClick={() => navigate('/pets/report-found')}
+                className="bg-[#4CAF50] text-white font-semibold px-6 py-3 rounded-xl hover:bg-[#45a049]"
+              >
+                Report a Pet
+              </Button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {filteredPets.map((pet) => {
+                const petId = pet.id || pet._id;
+                const petImage = getPetImage(pet);
+                const petName = getPetName(pet);
+                const petType = getPetType(pet);
+                const petBreed = pet.breed || 'Mixed Breed';
+                const petLocation = pet.location || pet.address || 'Location not provided';
+                const postDate = pet.created_at || pet.date_submitted || pet.createdAt;
 
-        {/* Community Features */}
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Community Features</h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            {[
-              { icon: BedDouble, label: 'Shelters', href: '/shelter-capacity' },
-              { icon: Utensils, label: 'Feeding', href: '/feeding-points' },
-              { icon: ClipboardCheck, label: 'Home Checks', href: '/home-check-tracker' },
-              { icon: Radio, label: 'Alerts', href: '/neighborhood-alerts' },
-              { icon: ShieldCheck, label: 'Verification', href: '/ngo-verification' },
-              { icon: Users, label: 'Profile', href: '/profile' },
-            ].map((feature, index) => (
-              <Link key={index} to={feature.href}>
-                <Card className="hover:shadow-lg transition-all cursor-pointer text-center p-6 border-2 hover:border-[#4CAF50] group">
-                  <feature.icon className="h-10 w-10 mx-auto mb-3 text-[#4CAF50] group-hover:scale-110 transition-transform" />
-                  <p className="text-sm font-semibold text-gray-900">{feature.label}</p>
-                </Card>
-                  </Link>
-            ))}
-          </div>
+                return (
+                  <Card
+                    key={petId}
+                    className="relative rounded-[20px] overflow-hidden bg-white shadow-[0_4px_16px_rgba(0,0,0,0.08)] transition-all duration-300 cursor-pointer hover:-translate-y-2 hover:shadow-[0_12px_32px_rgba(0,0,0,0.15)]"
+                  >
+                    {/* Image Section */}
+                    <div className="relative h-[320px] w-full bg-[#F5F5F5] overflow-hidden">
+                      <img
+                        src={petImage}
+                        alt={petName}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = 'https://via.placeholder.com/400x300?text=No+Image';
+                        }}
+                      />
+                      {getStatusBadge(pet)}
+                    </div>
+
+                    {/* Content Section */}
+                    <CardContent className="p-5 bg-white">
+                      {/* Pet Type */}
+                      <div className="flex items-center gap-2 mb-2">
+                        <PawPrint className="h-5 w-5 text-[#4CAF50]" />
+                        <span className="text-base font-semibold text-[#2C3E50] capitalize">
+                          {petType}
+                        </span>
+                      </div>
+
+                      {/* Pet Name */}
+                      <h3 className="text-xl font-bold text-[#2C3E50] mb-2">
+                        {petName}
+                      </h3>
+
+                      {/* Pet Breed */}
+                      <p className="text-sm text-[#7F8C8D] mb-3">
+                        {petBreed}
+                      </p>
+
+                      {/* Location Info */}
+                      <div className="flex items-center gap-1.5 text-sm text-[#5F6368] mb-2">
+                        <MapPin className="h-4 w-4 text-[#FF9800]" />
+                        <span className="font-medium line-clamp-1">{petLocation}</span>
+                      </div>
+
+                      {/* Date Info */}
+                      <div className="flex items-center gap-1.5 text-[13px] text-[#95A5A6] mt-2">
+                        <Calendar className="h-3.5 w-3.5" />
+                        <span>{getTimeAgo(postDate)}</span>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="flex gap-3 mt-4 pt-4 border-t border-[#E8ECEF]">
+                        <Button
+                          asChild
+                          className="flex-1 bg-[#4CAF50] text-white text-sm font-semibold py-2.5 px-5 rounded-[10px] border-none cursor-pointer transition-all duration-300 hover:bg-[#45a049]"
+                        >
+                          <Link to={`/pets/${petId}`}>
+                            View Details
+                          </Link>
+                        </Button>
+                        <Button
+                          variant="outline"
+                          className="px-4 py-2.5 bg-[#F8FAFB] text-[#4CAF50] text-sm font-semibold rounded-[10px] border-2 border-[#E8ECEF] cursor-pointer transition-all duration-300 hover:bg-[#E8F5E9] hover:border-[#4CAF50]"
+                        >
+                          <MessageCircle className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
     </div>

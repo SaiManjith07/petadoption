@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { PlusCircle, ArrowLeft, Search, Sparkles, ShieldCheck, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PetGallery } from '@/components/pets/PetGallery';
-import { petsAPI } from '@/services/api';
+import { petsApi } from '@/api';
 import { useToast } from '@/hooks/use-toast';
 
 export default function LostPets() {
@@ -19,11 +19,19 @@ export default function LostPets() {
   const loadPets = async () => {
     try {
       setLoading(true);
-      const data = await petsAPI.getAll({ 
-        report_type: 'lost',
-        status: 'Listed Lost' 
+      const data = await petsApi.getAll({ 
+        status: 'Lost'
       });
-      setPets(data.items || []);
+      // Handle both paginated and direct array responses
+      const petsData = data.results || data.data || data.items || data || [];
+      // Normalize pet data
+      const normalizedPets = Array.isArray(petsData) ? petsData.map((p: any) => ({
+        ...p,
+        id: p.id || p._id,
+        _id: p.id || p._id,
+        createdAt: p.created_at || p.createdAt,
+      })) : [];
+      setPets(normalizedPets);
     } catch (error) {
       toast({
         title: 'Error loading pets',
@@ -36,7 +44,7 @@ export default function LostPets() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-green-50/30">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-green-50/30 -m-6 lg:-m-8">
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
         {/* Hero Section */}
         <div className="bg-gradient-to-r from-green-600 via-emerald-600 to-green-700 rounded-2xl mt-6 mb-6">

@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { format } from 'date-fns';
 
 export default function HomeCheckTracker() {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, isAdmin } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [homeChecks, setHomeChecks] = useState<any[]>([]);
@@ -19,10 +19,23 @@ export default function HomeCheckTracker() {
   const [filterStatus, setFilterStatus] = useState<string>('all');
 
   useEffect(() => {
-    if (isAuthenticated) {
+    if (!isAuthenticated) {
+      navigate('/auth/login');
+      return;
+    }
+    if (!isAdmin) {
+      toast({
+        title: 'Access Denied',
+        description: 'This page is only accessible to admin users.',
+        variant: 'destructive',
+      });
+      navigate('/home');
+      return;
+    }
+    if (isAuthenticated && isAdmin) {
       loadHomeChecks();
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, isAdmin, navigate]);
 
   const loadHomeChecks = async () => {
     try {

@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { petsAPI, uploadsAPI } from '@/services/api';
+import { petsApi } from '@/api/petsApi';
 import { useAuth } from '@/lib/auth';
 import { useToast } from '@/hooks/use-toast';
 
@@ -18,13 +18,17 @@ const foundPetSchema = z.object({
   species: z.string().min(1, 'Please select a species'),
   breed: z.string().min(2, 'Please enter the breed'),
   color: z.string().min(2, 'Please describe the color'),
-  sex: z.string().min(1, 'Please select sex'),
+  gender: z.string().min(1, 'Please select gender'),
   estimated_age: z.string().optional(),
-  size: z.string().optional(),
+  weight: z.string().optional(),
+  tag_registration_number: z.string().optional(),
   microchip_id: z.string().optional(),
   collar_tag: z.string().optional(),
   distinguishing_marks: z.string().min(10, 'Please provide detailed description'),
   location_found: z.string().min(3, 'Please enter the location'),
+  location_map_url: z.string().optional(),
+  location_latitude: z.string().optional(),
+  location_longitude: z.string().optional(),
   date_found: z.string().min(1, 'Please select the date'),
 });
 
@@ -77,24 +81,55 @@ export default function ReportFound() {
     try {
       setIsSubmitting(true);
 
-      // Create pet report with files directly
-      await petsAPI.create({
-        report_type: 'found',
-        species: data.species,
-        breed: data.breed,
-        sex: data.sex || 'Unknown',
-        estimated_age: data.estimated_age || 'unknown',
-        size: data.size || 'Unknown',
-        color_primary: data.color,
-        microchip_id: data.microchip_id || null,
-        collar_tag: data.collar_tag || null,
-        distinguishing_marks: data.distinguishing_marks,
-        last_seen_or_found_location_text: data.location_found,
-        last_seen_or_found_date: data.date_found,
-        contact_preference: 'Email',
-        allow_public_listing: true,
-        photos: photos, // Send File objects directly
-      });
+      // Build description from multiple fields
+      const descriptionParts = [
+        data.distinguishing_marks,
+        data.color && `Color: ${data.color}`,
+        data.microchip_id && `Microchip ID: ${data.microchip_id}`,
+        data.collar_tag && `Collar Tag: ${data.collar_tag}`,
+      ].filter(Boolean);
+      const description = descriptionParts.join('\n');
+
+      // Convert age string to number if possible
+      let age: number | null = null;
+      if (data.estimated_age) {
+        const ageMatch = data.estimated_age.match(/\d+/);
+        if (ageMatch) {
+          age = parseInt(ageMatch[0], 10);
+        }
+      }
+
+      // Create FormData for multipart/form-data (for file uploads)
+      const formData = new FormData();
+      
+      // Map fields to Pet model
+      formData.append('name', `Found ${data.species || 'Pet'}`);
+      formData.append('breed', data.breed);
+      if (age) formData.append('age', age.toString());
+      formData.append('gender', data.gender || 'Unknown');
+      if (data.weight) formData.append('weight', data.weight);
+      if (data.tag_registration_number) formData.append('tag_registration_number', data.tag_registration_number);
+      if (data.location_map_url) formData.append('location_map_url', data.location_map_url);
+      if (data.location_latitude) formData.append('location_latitude', data.location_latitude);
+      if (data.location_longitude) formData.append('location_longitude', data.location_longitude);
+      formData.append('description', description);
+      formData.append('adoption_status', 'Found');
+      formData.append('location', data.location_found);
+      if (data.date_found) {
+        formData.append('last_seen', new Date(data.date_found).toISOString());
+      }
+      
+      // Add category (species) - leave empty for now, admin can set it later
+      // Or we could create/find category by name, but for now leave it null
+      
+      // Add images - first photo as main image
+      if (photos.length > 0) {
+        formData.append('image', photos[0]);
+        // Note: Additional images can be added later via PetImage model
+      }
+
+      // Create pet using new API - will be created with 'Pending' status for admin approval
+      await petsApi.create(formData, 'found');
 
       toast({
         title: 'Report submitted!',
@@ -237,14 +272,14 @@ export default function ReportFound() {
                 </div>
               </div>
 
-                  {/* Second Row - Sex and Color */}
+                  {/* Second Row - Gender and Color */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Sex */}
+                {/* Gender */}
                 <div className="space-y-2">
-                  <Label htmlFor="sex" className="text-sm font-semibold">Sex *</Label>
-                  <Select onValueChange={(value) => setValue('sex', value)}>
+                  <Label htmlFor="gender" className="text-sm font-semibold">Gender *</Label>
+                  <Select onValueChange={(value) => setValue('gender', value)}>
                     <SelectTrigger className="h-11">
-                      <SelectValue placeholder="Select sex" />
+                      <SelectValue placeholder="Select Gender" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="Male">Male</SelectItem>
@@ -252,8 +287,8 @@ export default function ReportFound() {
                       <SelectItem value="Unknown">Unknown</SelectItem>
                     </SelectContent>
                   </Select>
-                  {errors.sex && (
-                    <p className="text-sm text-destructive mt-1">{errors.sex.message}</p>
+                  {errors.gender && (
+                    <p className="text-sm text-destructive mt-1">{errors.gender.message}</p>
                   )}
                 </div>
 
@@ -281,7 +316,7 @@ export default function ReportFound() {
                     <h3 className="text-lg font-semibold text-gray-900">Physical Characteristics</h3>
                   </div>
                   
-                  {/* Third Row - Age and Size */}
+                  {/* Third Row - Age and Weight */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Estimated Age */}
                 <div className="space-y-2">
@@ -300,21 +335,18 @@ export default function ReportFound() {
                   </Select>
                 </div>
 
-                {/* Size */}
+                {/* Weight */}
                 <div className="space-y-2">
-                  <Label htmlFor="size" className="text-sm font-semibold">Size</Label>
-                  <Select onValueChange={(value) => setValue('size', value)}>
-                    <SelectTrigger className="h-11">
-                      <SelectValue placeholder="Select size" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Small">Small</SelectItem>
-                      <SelectItem value="Medium">Medium</SelectItem>
-                      <SelectItem value="Large">Large</SelectItem>
-                      <SelectItem value="Extra Large">Extra Large</SelectItem>
-                      <SelectItem value="Unknown">Unknown</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="weight" className="text-sm font-semibold">Weight (kg)</Label>
+                  <Input
+                    id="weight"
+                    type="number"
+                    step="0.1"
+                    placeholder="e.g., 15.5"
+                    className="h-11"
+                    {...register('weight')}
+                  />
+                  <p className="text-xs text-gray-500">Enter weight in kilograms</p>
                 </div>
               </div>
 
@@ -322,14 +354,14 @@ export default function ReportFound() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Tag/Registration Number */}
                 <div className="space-y-2">
-                  <Label htmlFor="microchip_id" className="text-sm font-semibold">Tag/Registration Number</Label>
+                  <Label htmlFor="tag_registration_number" className="text-sm font-semibold">Tag/Registration Number (optional)</Label>
                   <Input
-                    id="microchip_id"
+                    id="tag_registration_number"
                     placeholder="e.g., Tag ID, Registration No., License No."
                     className="h-11"
-                    {...register('microchip_id')}
+                    {...register('tag_registration_number')}
                   />
-                  <p className="text-xs text-gray-500">Enter any tag ID, registration number, license number, or microchip ID</p>
+                  <p className="text-xs text-gray-500">Enter any tag ID, registration number, or license number</p>
                 </div>
 
                 {/* Collar/Tag Info */}
@@ -369,7 +401,7 @@ export default function ReportFound() {
                   </div>
                   
                   {/* Location and Date */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
                 {/* Location */}
                 <div className="space-y-2">
                   <Label htmlFor="location_found" className="text-sm font-semibold">Location Found *</Label>
@@ -384,7 +416,54 @@ export default function ReportFound() {
                   )}
                 </div>
 
-                {/* Date */}
+                {/* Location Options */}
+                <div className="space-y-3 p-4 border rounded-lg bg-gray-50">
+                  <Label className="text-sm font-semibold">Additional Location Information (Optional)</Label>
+                  <p className="text-xs text-gray-500 mb-3">You can provide location in one of the following ways:</p>
+                  
+                  <div className="space-y-3">
+                    {/* Map URL Option */}
+                    <div className="space-y-2">
+                      <Label htmlFor="location_map_url" className="text-xs font-medium">Map URL (Google Maps, etc.)</Label>
+                      <Input
+                        id="location_map_url"
+                        type="url"
+                        placeholder="https://maps.google.com/..."
+                        className="h-10 text-sm"
+                        {...register('location_map_url')}
+                      />
+                    </div>
+
+                    {/* Coordinates Option */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-2">
+                        <Label htmlFor="location_latitude" className="text-xs font-medium">Latitude</Label>
+                        <Input
+                          id="location_latitude"
+                          type="number"
+                          step="any"
+                          placeholder="e.g., 28.6139"
+                          className="h-10 text-sm"
+                          {...register('location_latitude')}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="location_longitude" className="text-xs font-medium">Longitude</Label>
+                        <Input
+                          id="location_longitude"
+                          type="number"
+                          step="any"
+                          placeholder="e.g., 77.2090"
+                          className="h-10 text-sm"
+                          {...register('location_longitude')}
+                        />
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-400">Or use a map app to get coordinates and paste them here</p>
+                  </div>
+                </div>
+
+                {/* Date Found */}
                 <div className="space-y-2">
                   <Label htmlFor="date_found" className="text-sm font-semibold">Date Found *</Label>
                   <Input

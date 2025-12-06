@@ -11,7 +11,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/lib/auth';
-import { adminAPI, roleRequestAPI, feedingPointAPI, alertAPI } from '@/services/api';
+import { adminApi } from '@/api';
+import { roleRequestAPI, feedingPointAPI, alertAPI } from '@/services/api';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -47,25 +48,29 @@ export default function AdminRequests() {
   const loadAllRequests = async () => {
     try {
       setLoading(true);
-      const url = `${import.meta.env.VITE_API_URL || 'http://localhost:8000/api'}/admin/pending-requests`;
-      const response = await fetch(url, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
-      });
+      // Use apiClient for proper authentication
+      const apiClient = (await import('@/api/apiClient')).default;
+      const response = await apiClient.get('/admin/pending-requests/');
       
-      if (response.ok) {
-        const data = await response.json();
-        setAllRequests(data.data || data);
-      } else {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || 'Failed to load requests');
-      }
+      setAllRequests(response.data.data || response.data || {
+        role_requests: [],
+        shelter_registrations: [],
+        feeding_points: [],
+        alerts: [],
+      });
     } catch (error: any) {
+      console.error('Error loading requests:', error);
       toast({
         title: 'Error',
-        description: error.message || 'Failed to load requests',
+        description: error.response?.data?.message || error.message || 'Failed to load requests',
         variant: 'destructive',
+      });
+      // Set empty data on error
+      setAllRequests({
+        role_requests: [],
+        shelter_registrations: [],
+        feeding_points: [],
+        alerts: [],
       });
     } finally {
       setLoading(false);

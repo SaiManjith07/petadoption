@@ -8,55 +8,83 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 0 0% 97%;
-    --foreground: 0 0% 17%;
-
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 17%;
-
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 17%;
-
-    --primary: 122 39% 49%;
+    /* New Design System - Pet Community Platform */
+    /* Primary Colors */
+    --primary: 175 70% 42%; /* Teal #2BB6AF */
     --primary-foreground: 0 0% 100%;
+    
+    --secondary: 20 100% 64%; /* Orange #FF8F47 */
+    --secondary-foreground: 0 0% 100%;
+    
+    --success: 142 52% 55%; /* Green #42C77A */
+    --success-foreground: 0 0% 100%;
+    
+    --warning: 45 97% 61%; /* Yellow #FDCB3C */
+    --warning-foreground: 0 0% 17%;
+    
+    --error: 0 100% 68%; /* Red #FF5757 */
+    --error-foreground: 0 0% 100%;
 
-    --secondary: 43 100% 92%;
-    --secondary-foreground: 0 0% 17%;
+    /* Neutral Palette */
+    --background: 210 20% 98%; /* #F7F9FA */
+    --foreground: 0 0% 7%; /* #111111 - Title */
+    
+    --card: 0 0% 100%; /* #FFFFFF */
+    --card-foreground: 0 0% 7%; /* #111111 */
+    
+    --text-body: 0 0% 29%; /* #4B4B4B - Body text */
+    --text-muted: 0 0% 55%; /* #8C8C8C - Muted text */
+    --border: 0 0% 88%; /* #E0E0E0 */
+    
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 7%;
 
-    --muted: 43 30% 95%;
-    --muted-foreground: 0 0% 30%;
+    --muted: 210 15% 95%;
+    --muted-foreground: 0 0% 29%;
 
-    --accent: 20 100% 63%;
+    --accent: 20 100% 64%;
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 84% 60%;
+    --destructive: 0 100% 68%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 122 39% 49%;
-    --success-foreground: 0 0% 100%;
-
-    --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 17%;
-
-    --pending: 45 93% 47%;
+    --pending: 45 97% 61%;
     --pending-foreground: 0 0% 17%;
 
-    --border: 43 20% 90%;
-    --input: 43 20% 90%;
-    --ring: 122 39% 49%;
+    --input: 0 0% 88%;
+    --ring: 175 70% 42%;
 
-    --radius: 0.75rem;
+    /* Border Radius */
+    --radius: 0.5rem; /* 8px - Inputs */
+    --radius-card: 0.75rem; /* 12px - Cards */
+    --radius-button: 0.625rem; /* 10px - Buttons */
     
-    --shadow-soft: 0 2px 8px -2px hsl(0 0% 17% / 0.08);
-    --shadow-medium: 0 4px 16px -4px hsl(0 0% 17% / 0.12);
-    --shadow-strong: 0 8px 24px -6px hsl(0 0% 17% / 0.16);
+    /* Shadows */
+    --shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.06);
+    --shadow-medium: 0 6px 18px rgba(0, 0, 0, 0.10);
+    --shadow-strong: 0 8px 24px rgba(0, 0, 0, 0.15);
     
-    --gradient-warm: linear-gradient(135deg, hsl(122 39% 49%), hsl(123 46% 34%));
-    --gradient-hero: linear-gradient(180deg, hsl(0 0% 97%), hsl(43 100% 92%));
+    /* Gradients */
+    --gradient-warm: linear-gradient(135deg, hsl(175 70% 42%), hsl(20 100% 64%));
+    --gradient-hero: linear-gradient(180deg, hsl(210 20% 98%), hsl(175 70% 95%));
     
-    /* Custom color variables for buttons and specific elements */
-    --button-primary: 123 46% 34%;
+    /* Custom color variables for buttons */
+    --button-primary: 175 70% 42%;
     --button-primary-foreground: 0 0% 100%;
+    --button-primary-hover: 175 70% 38%;
+    
+    /* Spacing System */
+    --spacing-xs: 0.25rem; /* 4px */
+    --spacing-sm: 0.5rem; /* 8px */
+    --spacing-md: 0.75rem; /* 12px */
+    --spacing-lg: 1rem; /* 16px */
+    --spacing-xl: 1.25rem; /* 20px */
+    --spacing-2xl: 1.5rem; /* 24px */
+    --spacing-3xl: 2rem; /* 32px */
+    --spacing-4xl: 2.5rem; /* 40px */
+    --spacing-5xl: 3rem; /* 48px */
+    --spacing-6xl: 3.5rem; /* 56px */
+    --spacing-7xl: 4rem; /* 64px */
     
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
@@ -161,6 +189,16 @@ All colors MUST be HSL.
   }
   
   html::-webkit-scrollbar {
+    display: none;  /* Chrome, Safari and Opera */
+  }
+  
+  /* Utility class to hide scrollbar */
+  .scrollbar-hide {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
     display: none;  /* Chrome, Safari and Opera */
   }
 }

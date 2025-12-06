@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Registration Verification - PetReunite</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 10px;
+            padding: 40px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .logo {
+            font-size: 32px;
+            font-weight: bold;
+            color: #2BB6AF;
+            margin-bottom: 10px;
+        }
+        .verification-code {
+            background-color: #E8F8EE;
+            border: 2px dashed #4CAF50;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            margin: 30px 0;
+        }
+        .code {
+            font-size: 36px;
+            font-weight: bold;
+            color: #2BB6AF;
+            letter-spacing: 8px;
+            font-family: 'Courier New', monospace;
+            margin: 15px 0;
+        }
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+            text-align: center;
+            color: #6b7280;
+            font-size: 14px;
+        }
+        .warning {
+            background-color: #fef3c7;
+            border: 1px solid #f59e0b;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 20px 0;
+            color: #92400e;
+        }
+        .features {
+            background-color: #E8F8EE;
+            border: 1px solid #4CAF50;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .pet-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="pet-icon">🐾</div>
+            <div class="logo">PetReunite</div>
+            <h1 style="color: #2BB6AF; margin-top: 10px;">Admin Registration Verification</h1>
+        </div>
+        
+        <p>Hello <strong>{{to_name}}</strong>,</p>
+        
+        <p>Thank you for registering as an administrator with <strong>PetReunite</strong>! To complete your registration and start managing the platform, please verify your email address using the PIN below.</p>
+        
+        <div class="verification-code">
+            <p style="margin: 0 0 10px 0; color: #6b7280; font-size: 16px;">Your 6-digit verification PIN is:</p>
+            <div class="code">{{pin}}</div>
+            <p style="margin: 10px 0 0 0; color: #6b7280; font-size: 14px;">This PIN expires in 15 minutes</p>
+        </div>
+        
+        <p>Please enter this 6-digit PIN in the verification form to complete your admin registration and set your password.</p>
+        
+        <div class="warning">
+            <strong>⚠️ Important Security Notice:</strong>
+            <ul style="margin: 10px 0; padding-left: 20px;">
+                <li>This PIN expires in <strong>15 minutes</strong></li>
+                <li>This PIN can only be used <strong>once</strong></li>
+                <li>If you didn't request this admin registration, please ignore this email</li>
+                <li>Never share your verification PIN with anyone</li>
+            </ul>
+        </div>
+        
+        <div class="features">
+            <p><strong>🐾 Once verified, you'll have access to:</strong></p>
+            <ul style="margin: 10px 0; padding-left: 20px;">
+                <li>📊 Admin Dashboard with comprehensive analytics</li>
+                <li>✅ Approve/Reject Found & Lost Pet Reports</li>
+                <li>👥 Manage Users, Volunteers, and Shelters</li>
+                <li>📍 Manage Feeding Points and Shelter Locations</li>
+                <li>💬 Monitor Platform Chats and Messages</li>
+                <li>📋 Handle Role Requests and Applications</li>
+                <li>🏥 Register and Manage Pet Medical Records</li>
+            </ul>
+        </div>
+        
+        <div class="footer">
+            <p>Best regards,<br>
+            <strong>PetReunite Admin Team</strong></p>
+            
+            <p style="font-size: 12px; color: #9ca3af; margin-top: 15px;">
+                This email was sent to {{to_email}}<br>
+                If you have any questions or need assistance, please contact our support team.
+            </p>
+            
+            <p style="font-size: 11px; color: #d1d5db; margin-top: 20px;">
+                © 2025 PetReunite. All rights reserved.<br>
+                Helping pets find their way home 🐾
+            </p>
+        </div>
+    </div>
+</body>
+</html>
+

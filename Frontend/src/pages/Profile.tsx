@@ -15,9 +15,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/lib/auth';
-import { petsAPI, usersAPI, getImageUrl } from '@/services/api';
+import { petsApi, authApi } from '@/api';
+import { getImageUrl } from '@/services/api';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
+import { shelterApi } from '@/api';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
@@ -69,41 +71,79 @@ export default function Profile() {
   const loadMyPets = useCallback(async () => {
     try {
       setLoading(true);
-      const { items } = await petsAPI.getAll();
-      const userPets = items.filter((p: any) => {
-        const submittedById = typeof p.submitted_by === 'object' 
-          ? (p.submitted_by._id || p.submitted_by.id)
-          : p.submitted_by;
-        const userId = user?._id || user?.id;
-        const isMyPet = submittedById && userId && String(submittedById) === String(userId);
-        const isLostOrFound = p.report_type === 'lost' || p.report_type === 'found' || 
-                             p.status?.includes('Lost') || p.status?.includes('Found');
-        return isMyPet && isLostOrFound;
+      const response = await petsApi.getAll();
+      // Handle different response formats from backend
+      const pets = response.results || response.data || response.items || [];
+      
+      const userId = user?._id || user?.id;
+      if (!userId) {
+        console.warn('User ID not found');
+        setMyPets([]);
+        return;
+      }
+      
+      const userPets = pets.filter((p: any) => {
+        // Check multiple possible fields for user identification
+        const postedById = typeof p.posted_by === 'object' 
+          ? (p.posted_by._id || p.posted_by.id)
+          : (typeof p.submitted_by === 'object'
+            ? (p.submitted_by._id || p.submitted_by.id)
+            : (p.submitted_by || p.posted_by));
+        
+        const isMyPet = postedById && String(postedById) === String(userId);
+        
+        // Include all pet types (lost, found, adoption)
+        const isRelevantPet = p.report_type === 'lost' || 
+                             p.report_type === 'found' || 
+                             p.report_type === 'adoption' ||
+                             p.status?.includes('Lost') || 
+                             p.status?.includes('Found') ||
+                             p.adoption_status === 'Lost' || 
+                             p.adoption_status === 'Found' ||
+                             p.adoption_status === 'Available for Adoption';
+        
+        return isMyPet && isRelevantPet;
       });
+      
+      // Sort by date (most recent first)
       userPets.sort((a: any, b: any) => {
-        const dateA = new Date(a.date_submitted || a.createdAt || 0).getTime();
-        const dateB = new Date(b.date_submitted || b.createdAt || 0).getTime();
+        const dateA = new Date(a.date_submitted || a.created_at || a.createdAt || 0).getTime();
+        const dateB = new Date(b.date_submitted || b.created_at || b.createdAt || 0).getTime();
         return dateB - dateA;
       });
+      
+      // Normalize pet IDs
       const normalizedPets = userPets.map((pet: any) => {
         if (!pet.id && pet._id) {
           pet.id = pet._id;
         }
         return pet;
       });
+      
       setMyPets(normalizedPets);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading pets:', error);
+      toast({
+        title: 'Error',
+        description: error?.message || 'Failed to load your pet reports. Please try again.',
+        variant: 'destructive',
+      });
+      setMyPets([]);
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, toast]);
 
   useEffect(() => {
     if (user) {
       loadMyPets();
       loadAdditionalData();
-      // Initialize personal info from user data
+    }
+  }, [user, loadMyPets]);
+
+  // Sync personalInfo with user data whenever user changes
+  useEffect(() => {
+    if (user && !isEditing) {
       setPersonalInfo({
         name: user?.name || '',
         email: user?.email || '',
@@ -117,37 +157,47 @@ export default function Profile() {
         },
       });
     }
-  }, [user, loadMyPets]);
+  }, [user, isEditing]);
 
   const loadAdditionalData = async () => {
     try {
       const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('accessToken');
+
+      if (!token) {
+        console.warn('No access token found, skipping additional data load');
+        return;
+      }
 
       // Load shelter registration
       try {
-        const shelterRes = await fetch(`${API_URL}/shelter-registrations/my`, {
-          headers: { 'Authorization': `Bearer ${token}` },
-        });
-        if (shelterRes.ok) {
-          const shelterData = await shelterRes.json();
-          setMyShelter(shelterData.data);
-        }
+        const shelterData = await shelterApi.getMyShelter();
+        setMyShelter(shelterData);
       } catch (error) {
         console.error('Error loading shelter:', error);
+        // Don't throw, just log - shelter is optional
       }
 
       // Load role requests
       try {
         const roleRes = await fetch(`${API_URL}/role-requests/my`, {
-          headers: { 'Authorization': `Bearer ${token}` },
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
         });
         if (roleRes.ok) {
           const roleData = await roleRes.json();
           setMyRoleRequests(roleData.data || []);
+        } else if (roleRes.status === 401) {
+          console.warn('Unauthorized access to role requests - token may be expired');
+          // Don't set error, just skip loading role requests
+        } else {
+          console.error('Error loading role requests:', roleRes.status, roleRes.statusText);
         }
       } catch (error) {
         console.error('Error loading role requests:', error);
+        // Don't throw, just log - role requests are optional
       }
     } catch (error) {
       console.error('Error loading additional data:', error);
@@ -156,11 +206,30 @@ export default function Profile() {
 
   useEffect(() => {
     // Calculate statistics
-    const found = myPets.filter((p: any) => p.report_type === 'found').length;
-    const lost = myPets.filter((p: any) => p.report_type === 'lost').length;
-    const adopted = myPets.filter((p: any) => p.status === 'Adopted' || p.status === 'Available for Adoption').length;
-    const reunited = myPets.filter((p: any) => p.status === 'Reunited' || p.status === 'Matched').length;
-    const pending = myPets.filter((p: any) => p.status?.includes('Pending')).length;
+    const found = myPets.filter((p: any) => 
+      p.report_type === 'found' || 
+      p.status === 'Found' || 
+      p.adoption_status === 'Found'
+    ).length;
+    const lost = myPets.filter((p: any) => 
+      p.report_type === 'lost' || 
+      p.status === 'Lost' || 
+      p.adoption_status === 'Lost'
+    ).length;
+    const adopted = myPets.filter((p: any) => 
+      p.status === 'Adopted' || 
+      p.status === 'Available for Adoption' ||
+      p.adoption_status === 'Adopted'
+    ).length;
+    const reunited = myPets.filter((p: any) => 
+      p.status === 'Reunited' || 
+      p.status === 'Matched' ||
+      p.adoption_status === 'Reunited'
+    ).length;
+    const pending = myPets.filter((p: any) => 
+      p.status?.includes('Pending') || 
+      p.adoption_status?.includes('Pending')
+    ).length;
 
     setStats({
       totalReports: myPets.length,
@@ -175,16 +244,7 @@ export default function Profile() {
   const handleSave = async () => {
     try {
       setSaving(true);
-      const userId = user?._id || user?.id;
-      if (!userId) {
-        toast({
-          title: 'Error',
-          description: 'User ID not found',
-          variant: 'destructive',
-        });
-        return;
-      }
-
+      
       // Prepare update data
       const updateData: any = {
         name: personalInfo.name,
@@ -194,13 +254,15 @@ export default function Profile() {
         address: personalInfo.address,
       };
 
-      await usersAPI.updateUser(userId, updateData);
+      // Use authApi.updateProfile which updates the current user's profile
+      await authApi.updateProfile(updateData);
       
-      // Refresh user data
+      // Refresh user data to get the latest from server
       if (refreshUser) {
         await refreshUser();
       }
       
+      // Close editing mode - the useEffect will sync personalInfo with updated user
       setIsEditing(false);
       toast({
         title: 'Success',
@@ -210,7 +272,7 @@ export default function Profile() {
       console.error('Error updating profile:', error);
       toast({
         title: 'Error',
-        description: error?.message || 'Failed to update profile',
+        description: error?.response?.data?.message || error?.message || 'Failed to update profile',
         variant: 'destructive',
       });
     } finally {
@@ -256,7 +318,29 @@ export default function Profile() {
 
     try {
       setChangingPassword(true);
-      await usersAPI.updatePassword(passwordData.currentPassword, passwordData.newPassword);
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+      const token = localStorage.getItem('accessToken');
+      
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      const response = await fetch(`${API_URL}/users/change-password/`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          current_password: passwordData.currentPassword,
+          new_password: passwordData.newPassword,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ message: 'Failed to update password' }));
+        throw new Error(error.message || error.detail || 'Failed to update password');
+      }
       
       setPasswordData({
         currentPassword: '',
@@ -270,9 +354,10 @@ export default function Profile() {
         description: 'Password updated successfully',
       });
     } catch (error: any) {
+      console.error('Error updating password:', error);
       toast({
         title: 'Error',
-        description: error?.message || 'Failed to update password',
+        description: error?.message || 'Failed to update password. Please check your current password.',
         variant: 'destructive',
       });
     } finally {
@@ -283,17 +368,33 @@ export default function Profile() {
   const handleDelete = async (id: string) => {
     if (confirm('Are you sure you want to delete this report?')) {
       try {
-        await petsAPI.delete(id);
-        setMyPets(myPets.filter((p: any) => (p.id || p._id) !== id));
+        const petId = typeof id === 'string' ? parseInt(id, 10) : id;
+        if (isNaN(petId)) {
+          throw new Error('Invalid pet ID');
+        }
+        await petsApi.delete(petId);
+        setMyPets(myPets.filter((p: any) => {
+          const petIdNum = p.id || p._id;
+          return String(petIdNum) !== String(id);
+        }));
         loadMyPets();
-      } catch (error) {
+        toast({
+          title: 'Success',
+          description: 'Pet report deleted successfully',
+        });
+      } catch (error: any) {
         console.error('Error deleting pet:', error);
+        toast({
+          title: 'Error',
+          description: error?.message || 'Failed to delete pet report',
+          variant: 'destructive',
+        });
       }
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gray-50 -m-6 lg:-m-8 py-8">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold tracking-tight text-gray-900">My Profile</h1>
@@ -659,81 +760,74 @@ export default function Profile() {
 
           {/* Activity Tab */}
           <TabsContent value="activity" className="space-y-6">
+            {/* Your Activity Section */}
+            <div className="mb-8">
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Your Activity</h2>
+              <p className="text-gray-600">Overview of your pet reports and contributions</p>
+            </div>
+            
             {/* Statistics Cards */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              <Card>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5 mb-8">
+              <Card className="border-2 border-gray-200 hover:border-blue-500/50 transition-all">
                 <CardContent className="pt-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-gray-600">Total Reports</p>
-                      <p className="text-2xl font-bold text-gray-900 mt-1">{stats.totalReports}</p>
+                      <p className="text-sm font-medium text-gray-600 mb-1">Total Reports</p>
+                      <p className="text-3xl font-bold text-gray-900">{stats.totalReports}</p>
                     </div>
-                    <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center">
+                    <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center">
                       <FileText className="h-6 w-6 text-blue-600" />
                     </div>
                   </div>
                 </CardContent>
               </Card>
-              <Card>
+              <Card className="border-2 border-gray-200 hover:border-green-500/50 transition-all">
                 <CardContent className="pt-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-gray-600">Found Pets</p>
-                      <p className="text-2xl font-bold text-gray-900 mt-1">{stats.foundPets}</p>
+                      <p className="text-sm font-medium text-gray-600 mb-1">Found Pets</p>
+                      <p className="text-3xl font-bold text-gray-900">{stats.foundPets}</p>
                     </div>
-                    <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center">
+                    <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-green-100 to-green-200 flex items-center justify-center">
                       <Heart className="h-6 w-6 text-green-600" />
                     </div>
                   </div>
                 </CardContent>
               </Card>
-              <Card>
+              <Card className="border-2 border-gray-200 hover:border-orange-500/50 transition-all">
                 <CardContent className="pt-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-gray-600">Lost Pets</p>
-                      <p className="text-2xl font-bold text-gray-900 mt-1">{stats.lostPets}</p>
+                      <p className="text-sm font-medium text-gray-600 mb-1">Lost Reports</p>
+                      <p className="text-3xl font-bold text-gray-900">{stats.lostPets}</p>
                     </div>
-                    <div className="h-12 w-12 rounded-full bg-orange-100 flex items-center justify-center">
+                    <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-orange-100 to-orange-200 flex items-center justify-center">
                       <Search className="h-6 w-6 text-orange-600" />
                     </div>
                   </div>
                 </CardContent>
               </Card>
-              <Card>
+              <Card className="border-2 border-gray-200 hover:border-purple-500/50 transition-all">
                 <CardContent className="pt-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-gray-600">Reunited</p>
-                      <p className="text-2xl font-bold text-gray-900 mt-1">{stats.reunitedPets}</p>
+                      <p className="text-sm font-medium text-gray-600 mb-1">Reunited</p>
+                      <p className="text-3xl font-bold text-gray-900">{stats.reunitedPets}</p>
                     </div>
-                    <div className="h-12 w-12 rounded-full bg-purple-100 flex items-center justify-center">
+                    <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-purple-100 to-purple-200 flex items-center justify-center">
                       <CheckCircle2 className="h-6 w-6 text-purple-600" />
                     </div>
                   </div>
                 </CardContent>
               </Card>
-              <Card>
+              <Card className="border-2 border-gray-200 hover:border-yellow-500/50 transition-all">
                 <CardContent className="pt-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-gray-600">Adopted</p>
-                      <p className="text-2xl font-bold text-gray-900 mt-1">{stats.adoptedPets}</p>
+                      <p className="text-sm font-medium text-gray-600 mb-1">Pending</p>
+                      <p className="text-3xl font-bold text-gray-900">{stats.pendingReports}</p>
                     </div>
-                    <div className="h-12 w-12 rounded-full bg-indigo-100 flex items-center justify-center">
-                      <Home className="h-6 w-6 text-indigo-600" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-gray-600">Pending</p>
-                      <p className="text-2xl font-bold text-gray-900 mt-1">{stats.pendingReports}</p>
-                    </div>
-                    <div className="h-12 w-12 rounded-full bg-yellow-100 flex items-center justify-center">
+                    <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-yellow-100 to-yellow-200 flex items-center justify-center">
                       <Clock className="h-6 w-6 text-yellow-600" />
                     </div>
                   </div>

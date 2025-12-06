@@ -9,11 +9,15 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useAuth } from '@/lib/auth';
-import { adminAPI, getImageUrl } from '@/services/api';
+import { adminApi } from '@/api';
+import { getImageUrl } from '@/services/api';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { AdminSidebar } from '@/components/layout/AdminSidebar';
+import { AdminTopNav } from '@/components/layout/AdminTopNav';
 
 export default function Admin() {
   const { isAdmin, user } = useAuth();
@@ -30,6 +34,8 @@ export default function Admin() {
   const [chatStats, setChatStats] = useState<any>(null);
   const [shelterRegistrations, setShelterRegistrations] = useState<any[]>([]);
   const [shelterRegistrationsLoading, setShelterRegistrationsLoading] = useState(false);
+  const [roleRequests, setRoleRequests] = useState<any[]>([]);
+  const [roleRequestsLoading, setRoleRequestsLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState('');
@@ -52,8 +58,24 @@ export default function Admin() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
-  const [activeTab, setActiveTab] = useState<string>('overview');
   const [petsLoading, setPetsLoading] = useState(false);
+  const [selectedPet, setSelectedPet] = useState<any>(null);
+  const [showPetDialog, setShowPetDialog] = useState(false);
+  const [currentHash, setCurrentHash] = useState<string>('');
+  const [selectedRoleRequest, setSelectedRoleRequest] = useState<any>(null);
+  const [showRoleRequestDialog, setShowRoleRequestDialog] = useState(false);
+  const [roleRequestActionNotes, setRoleRequestActionNotes] = useState('');
+  const [roleRequestActionType, setRoleRequestActionType] = useState<'approve' | 'reject' | null>(null);
+
+  // Track hash changes
+  useEffect(() => {
+    const updateHash = () => {
+      setCurrentHash(window.location.hash);
+    };
+    updateHash();
+    window.addEventListener('hashchange', updateHash);
+    return () => window.removeEventListener('hashchange', updateHash);
+  }, []);
 
   useEffect(() => {
     if (!isAdmin) {
@@ -65,41 +87,110 @@ export default function Admin() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAdmin, navigate]);
 
-  // Load pets when "pets" tab is activated
+  // Load pets when navigating to #pets section and scroll to it
   useEffect(() => {
-    if (activeTab === 'pets' && pets.length === 0 && !petsLoading) {
+    const hash = window.location.hash;
+    if (hash === '#pets') {
+      if (pets.length === 0 && !petsLoading) {
       loadAllPets();
     }
-  }, [activeTab]);
+      // Scroll to the pets section
+      setTimeout(() => {
+        const element = document.getElementById('pets');
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 100);
+    }
+  }, [pets.length, petsLoading]);
 
-  // Load shelter registrations when "shelter-reg" tab is activated
+  // Load shelter registrations when navigating to #shelter-reg section
   useEffect(() => {
-    if (activeTab === 'shelter-reg' && shelterRegistrations.length === 0 && !shelterRegistrationsLoading) {
+    const hash = window.location.hash;
+    if (hash === '#shelter-reg') {
+      if (shelterRegistrations.length === 0 && !shelterRegistrationsLoading) {
       loadShelterRegistrations();
     }
-  }, [activeTab]);
+      // Scroll to the shelter-reg section
+      setTimeout(() => {
+        const element = document.getElementById('shelter-reg');
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 100);
+    }
+  }, [shelterRegistrations.length, shelterRegistrationsLoading]);
+
+  // Load role requests when navigating to #role-requests section
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (hash === '#role-requests') {
+      if (roleRequests.length === 0 && !roleRequestsLoading) {
+        loadRoleRequests();
+      }
+      // Scroll to the role-requests section
+      setTimeout(() => {
+        const element = document.getElementById('role-requests');
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 100);
+    }
+  }, [roleRequests.length, roleRequestsLoading]);
 
   const loadDashboardData = async () => {
     try {
       setLoading(true);
       const [dashData, pendingData, adoptionData, chatRequestsData, chatsData, chatStatsData] = await Promise.all([
-        adminAPI.getDashboardStats(),
-        adminAPI.getPendingReports(),
-        adminAPI.getPendingAdoptionRequests(),
-        adminAPI.getAllChatRequests(),
-        adminAPI.getAllChats(),
-        adminAPI.getChatStats(),
+        adminApi.getDashboardStats(),
+        adminApi.getPendingReports(),
+        adminApi.getPendingAdoptionRequests(),
+        adminApi.getAllChatRequests(),
+        adminApi.getAllChats(),
+        adminApi.getChatStats(),
       ]);
-      setDashboardData(dashData);
-      setPendingReports(pendingData);
-      setPendingAdoptions(adoptionData);
-      setChatRequests(chatRequestsData);
-      setActiveChats(chatsData);
-      setChatStats(chatStatsData);
-    } catch (error) {
+      
+      // Normalize dashboard data structure to match frontend expectations
+      const normalizedDashData = dashData ? {
+        pets: {
+          found: dashData.pets?.found || 0,
+          lost: dashData.pets?.lost || 0,
+          adoptable: dashData.pets?.available || dashData.pets?.available_pets || 0,
+          total: dashData.pets?.total || 0,
+          pending: dashData.pets?.pending || 0,
+        },
+        users: {
+          total: dashData.users?.total || 0,
+          active: dashData.users?.active || 0,
+          regular: (dashData.users?.total || 0) - (dashData.users?.active || 0),
+          rescuers: 0, // Will be calculated if needed
+        },
+        pending: {
+          total: dashData.pets?.pending || 0,
+          found: dashData.pets?.found || 0,
+          lost: dashData.pets?.lost || 0,
+        },
+        active: {
+          total: (dashData.pets?.found || 0) + (dashData.pets?.lost || 0),
+          found: dashData.pets?.found || 0,
+          lost: dashData.pets?.lost || 0,
+        },
+        matched: 0, // Will be calculated if needed
+        applications: dashData.applications || {},
+        chats: dashData.chats || {},
+      } : null;
+      
+      setDashboardData(normalizedDashData);
+      setPendingReports(Array.isArray(pendingData) ? pendingData : []);
+      setPendingAdoptions(Array.isArray(adoptionData) ? adoptionData : []);
+      setChatRequests(Array.isArray(chatRequestsData) ? chatRequestsData : []);
+      setActiveChats(Array.isArray(chatsData) ? chatsData : []);
+      setChatStats(chatStatsData || {});
+    } catch (error: any) {
+      console.error('Error loading dashboard data:', error);
       toast({
         title: 'Error',
-        description: 'Could not load dashboard data',
+        description: error.message || 'Could not load dashboard data',
         variant: 'destructive',
       });
     } finally {
@@ -110,14 +201,22 @@ export default function Admin() {
   const loadAllPets = async () => {
     try {
       setPetsLoading(true);
-      const petsData = await adminAPI.getAllPets();
-      setPets(Array.isArray(petsData) ? petsData : []);
+      const petsData = await adminApi.getAllPets();
+      // Ensure we have an array and normalize field names
+      const normalizedPets = Array.isArray(petsData) ? petsData.map((p: any) => ({
+        ...p,
+        _id: p.id || p._id, // Support both id formats
+        createdAt: p.created_at || p.createdAt,
+      })) : [];
+      setPets(normalizedPets);
     } catch (error: any) {
+      console.error('Error loading pets:', error);
       toast({
         title: 'Error',
         description: error.message || 'Could not load pets',
         variant: 'destructive',
       });
+      setPets([]);
     } finally {
       setPetsLoading(false);
     }
@@ -127,24 +226,85 @@ export default function Admin() {
     try {
       setShelterRegistrationsLoading(true);
       const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+      const accessToken = localStorage.getItem('accessToken');
       const response = await fetch(`${API_URL}/shelter-registrations/all`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${accessToken}`,
         },
       });
       if (!response.ok) throw new Error('Failed to fetch shelter registrations');
       const data = await response.json();
-      setShelterRegistrations(Array.isArray(data.data) ? data.data : []);
+      setShelterRegistrations(Array.isArray(data.data) ? data.data : Array.isArray(data) ? data : []);
     } catch (error: any) {
       toast({
         title: 'Error',
         description: error.message || 'Could not load shelter registrations',
         variant: 'destructive',
       });
+      setShelterRegistrations([]);
     } finally {
       setShelterRegistrationsLoading(false);
     }
   };
+
+  const [roleRequestSearchTerm, setRoleRequestSearchTerm] = useState('');
+  const [roleRequestStatusFilter, setRoleRequestStatusFilter] = useState<string>('all');
+  const [roleRequestRoleFilter, setRoleRequestRoleFilter] = useState<string>('all');
+  const [filteredRoleRequests, setFilteredRoleRequests] = useState<any[]>([]);
+
+  const loadRoleRequests = async () => {
+    try {
+      setRoleRequestsLoading(true);
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+      const accessToken = localStorage.getItem('accessToken');
+      const response = await fetch(`${API_URL}/role-requests/all/`, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+        },
+      });
+      if (!response.ok) throw new Error('Failed to fetch role requests');
+      const data = await response.json();
+      const requests = Array.isArray(data.data) ? data.data : Array.isArray(data) ? data : [];
+      setRoleRequests(requests);
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Could not load role requests',
+        variant: 'destructive',
+      });
+      setRoleRequests([]);
+    } finally {
+      setRoleRequestsLoading(false);
+    }
+  };
+
+  // Filter role requests
+  useEffect(() => {
+    let filtered = [...roleRequests];
+
+    // Search filter
+    if (roleRequestSearchTerm) {
+      filtered = filtered.filter((req: any) =>
+        req.user?.name?.toLowerCase().includes(roleRequestSearchTerm.toLowerCase()) ||
+        req.user?.email?.toLowerCase().includes(roleRequestSearchTerm.toLowerCase()) ||
+        req.requested_role?.toLowerCase().includes(roleRequestSearchTerm.toLowerCase()) ||
+        req.reason?.toLowerCase().includes(roleRequestSearchTerm.toLowerCase()) ||
+        req.experience?.toLowerCase().includes(roleRequestSearchTerm.toLowerCase())
+      );
+    }
+
+    // Status filter
+    if (roleRequestStatusFilter !== 'all') {
+      filtered = filtered.filter((req: any) => req.status === roleRequestStatusFilter);
+    }
+
+    // Role filter
+    if (roleRequestRoleFilter !== 'all') {
+      filtered = filtered.filter((req: any) => req.requested_role === roleRequestRoleFilter);
+    }
+
+    setFilteredRoleRequests(filtered);
+  }, [roleRequests, roleRequestSearchTerm, roleRequestStatusFilter, roleRequestRoleFilter]);
 
   const handleShelterAction = async (shelterId: string, action: 'approve' | 'reject', notes?: string) => {
     try {
@@ -152,7 +312,7 @@ export default function Admin() {
       const response = await fetch(`${API_URL}/shelter-registrations/${shelterId}/${action}`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ admin_notes: notes || '' }),
@@ -175,10 +335,69 @@ export default function Admin() {
     }
   };
 
-  const handleDeactivateUser = async (userId: string) => {
+  const handleRoleRequestAction = async (requestId: string | number, action: 'approve' | 'reject', notes?: string) => {
     try {
-      await adminAPI.deleteUser(userId);
-      setUsers(users.filter(u => u._id !== userId));
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+      const response = await fetch(`${API_URL}/role-requests/${requestId}/${action}/`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ admin_notes: notes || '' }),
+      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `Failed to ${action} role request`);
+      }
+      toast({
+        title: 'Success',
+        description: `Role request ${action === 'approve' ? 'approved' : 'rejected'} successfully`,
+      });
+      setShowRoleRequestDialog(false);
+      setSelectedRoleRequest(null);
+      setRoleRequestActionNotes('');
+      setRoleRequestActionType(null);
+      loadRoleRequests();
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || `Failed to ${action} role request`,
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const openRoleRequestAction = (request: any, action: 'approve' | 'reject') => {
+    setSelectedRoleRequest(request);
+    setRoleRequestActionType(action);
+    setRoleRequestActionNotes('');
+    setShowRoleRequestDialog(true);
+  };
+
+  const submitRoleRequestAction = () => {
+    if (!selectedRoleRequest || !roleRequestActionType) return;
+    
+    if (roleRequestActionType === 'reject' && !roleRequestActionNotes.trim()) {
+      toast({
+        title: 'Error',
+        description: 'Please provide a reason for rejection',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    handleRoleRequestAction(
+      selectedRoleRequest._id || selectedRoleRequest.id,
+      roleRequestActionType,
+      roleRequestActionNotes
+    );
+  };
+
+  const handleDeactivateUser = async (userId: string | number) => {
+    try {
+      await adminApi.deleteUser(userId);
+      setUsers(users.filter((u: any) => (u.id || u._id) !== userId));
       toast({
         title: 'Success',
         description: 'User deactivated successfully',
@@ -209,14 +428,14 @@ export default function Admin() {
 
     try {
       if (acceptType === 'report') {
-        await adminAPI.acceptReport(acceptingId, acceptNotes, verificationParams);
+        await adminApi.acceptReport(acceptingId, acceptNotes, verificationParams);
         setPendingReports(pendingReports.filter(r => r._id !== acceptingId));
         toast({
           title: 'Success',
           description: 'Report accepted and listed',
         });
       } else {
-        await adminAPI.acceptAdoptionRequest(acceptingId, acceptNotes, verificationParams, adopterId || undefined);
+        await adminApi.acceptAdoptionRequest(acceptingId, acceptNotes, verificationParams, adopterId || undefined);
         setPendingAdoptions(pendingAdoptions.filter(a => a._id !== acceptingId));
         toast({
           title: 'Success',
@@ -259,7 +478,7 @@ export default function Admin() {
     }
 
     try {
-      await adminAPI.rejectReport(reportId, rejectReason);
+      await adminApi.rejectReport(reportId, rejectReason);
       setPendingReports(pendingReports.filter(r => r._id !== reportId));
       setShowRejectModal(false);
       setRejectingId(null);
@@ -282,11 +501,11 @@ export default function Admin() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+      <div className="flex items-center justify-center min-h-screen bg-white">
         <div className="text-center">
           <div className="relative">
-            <Shield className="h-16 w-16 mx-auto text-[#2E7D32] animate-pulse" />
-            <div className="absolute inset-0 border-4 border-green-200 border-t-[#2E7D32] rounded-full animate-spin"></div>
+            <Shield className="h-16 w-16 mx-auto text-[#4CAF50] animate-pulse" />
+            <div className="absolute inset-0 border-4 border-[#E8F8EE] border-t-[#4CAF50] rounded-full animate-spin"></div>
           </div>
           <p className="mt-6 text-lg font-medium text-gray-700">Loading Admin Dashboard...</p>
           <p className="mt-2 text-sm text-gray-500">Please wait while we fetch your data</p>
@@ -296,8 +515,8 @@ export default function Admin() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Fixed Sidebar - Desktop */}
+    <div className="min-h-screen bg-white">
+      {/* Fixed Sidebar */}
       <div className="hidden lg:block">
         <AdminSidebar isOpen={true} onClose={() => setSidebarOpen(false)} />
       </div>
@@ -309,78 +528,41 @@ export default function Admin() {
 
       {/* Main Content */}
       <div className="flex flex-col min-w-0 lg:ml-64">
-        {/* Mobile Menu Toggle Button */}
-        <div className="lg:hidden sticky top-0 z-30 bg-white border-b border-gray-200 p-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="text-gray-600 hover:text-gray-900"
-          >
-            {sidebarOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-          </Button>
-        </div>
+        {/* Top Navigation */}
+        <AdminTopNav 
+          onMenuToggle={() => setSidebarOpen(!sidebarOpen)} 
+          sidebarOpen={sidebarOpen}
+          onRefresh={loadDashboardData}
+        />
 
         {/* Main Content Area - Scrollable */}
-        <main className="flex-1 overflow-y-auto bg-gradient-to-br from-gray-50 to-gray-100">
-          <div className="p-8 space-y-8">
-          {/* Admin Dashboard Header */}
-          <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-6">
-            <div className="flex items-center justify-between flex-wrap gap-4">
-              <div>
-                <div className="flex items-center gap-3">
-                  <div className="h-12 w-12 rounded-lg bg-[#4CAF50] flex items-center justify-center">
-                    <Shield className="h-6 w-6 text-white" />
-                  </div>
-                  <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Admin Control Panel</h1>
-                    <p className="text-gray-600 text-sm mt-0.5">Platform Management & Monitoring Dashboard</p>
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <Badge variant="outline" className="bg-[#4CAF50]/10 text-[#4CAF50] border-[#4CAF50]/30 px-3 py-1.5">
-                  <Activity className="h-3.5 w-3.5 mr-1.5" />
-                  Live System
-                </Badge>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={loadDashboardData}
-                  className="gap-2 border-gray-300 hover:bg-gray-50"
-                >
-                  <Activity className="h-4 w-4" />
-                  Refresh Data
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          {/* Critical Metrics - Priority Actions */}
+        <main className="flex-1 overflow-y-auto bg-white">
+          <div className="p-6 lg:p-8 space-y-6 lg:space-y-8">
+          {/* Dashboard Content - Only show when not viewing #shelter-reg */}
+          {currentHash !== '#shelter-reg' && (
+            <>
+          {/* Key Metrics at a Glance - 4 Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {/* Pending Reports - High Priority */}
-            <Card className="bg-white border-l-4 border-l-orange-500 shadow-lg hover:shadow-xl transition-all">
-              <CardContent className="pt-6">
-                <div className="flex items-start justify-between mb-4">
+            {/* Pending Reports Card */}
+            <Card className="bg-white rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-gray-100 hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] transition-all duration-300">
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <AlertCircle className="h-5 w-5 text-orange-600" />
-                      <span className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Pending Reports</span>
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="h-10 w-10 rounded-xl bg-orange-50 flex items-center justify-center">
+                        <AlertCircle className="h-5 w-5 text-orange-500" />
                     </div>
-                    <p className="text-4xl font-bold text-gray-900 mb-1">{dashboardData?.pending?.total || 0}</p>
-                    <div className="flex items-center gap-3 text-xs text-gray-600 mt-2">
-                      <span className="flex items-center gap-1">
-                        <span className="w-2 h-2 rounded-full bg-orange-500"></span>
-                        {dashboardData?.pending?.found || 0} Found
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <span className="w-2 h-2 rounded-full bg-amber-500"></span>
-                        {dashboardData?.pending?.lost || 0} Lost
-                      </span>
+                      <span className="text-sm font-semibold text-gray-600">Pending Reports</span>
+                    </div>
+                    <p className="text-4xl font-bold text-gray-900 mb-2">{dashboardData?.pending?.total || 0}</p>
+                    <div className="flex items-center gap-3 text-xs text-gray-500">
+                      <span>{dashboardData?.pending?.found || 0} Found</span>
+                      <span>•</span>
+                      <span>{dashboardData?.pending?.lost || 0} Lost</span>
                     </div>
                   </div>
                   <Link to="/admin/found-pets">
-                    <Button variant="ghost" size="icon" className="text-orange-600 hover:bg-orange-50">
+                    <Button variant="ghost" size="icon" className="text-gray-400 hover:text-orange-500 hover:bg-orange-50 rounded-xl">
                       <ArrowRight className="h-5 w-5" />
                     </Button>
                   </Link>
@@ -388,20 +570,22 @@ export default function Admin() {
               </CardContent>
             </Card>
 
-            {/* Pending Adoptions */}
-            <Card className="bg-white border-l-4 border-l-blue-500 shadow-lg hover:shadow-xl transition-all">
-              <CardContent className="pt-6">
-                <div className="flex items-start justify-between mb-4">
+            {/* Adoptions Card */}
+            <Card className="bg-white rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-gray-100 hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] transition-all duration-300">
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Home className="h-5 w-5 text-blue-600" />
-                      <span className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Adoptions</span>
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="h-10 w-10 rounded-xl bg-blue-50 flex items-center justify-center">
+                        <Home className="h-5 w-5 text-blue-500" />
                     </div>
-                    <p className="text-4xl font-bold text-gray-900 mb-1">{pendingAdoptions.length}</p>
-                    <p className="text-xs text-gray-600 mt-2">Pending approval</p>
+                      <span className="text-sm font-semibold text-gray-600">Adoptions</span>
+                    </div>
+                    <p className="text-4xl font-bold text-gray-900 mb-2">{pendingAdoptions.length}</p>
+                    <p className="text-xs text-gray-500">Pending approval</p>
                   </div>
                   <Link to="/admin/adopt">
-                    <Button variant="ghost" size="icon" className="text-blue-600 hover:bg-blue-50">
+                    <Button variant="ghost" size="icon" className="text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-xl">
                       <ArrowRight className="h-5 w-5" />
                     </Button>
                   </Link>
@@ -409,24 +593,26 @@ export default function Admin() {
               </CardContent>
             </Card>
 
-            {/* Total Users */}
-            <Card className="bg-white border-l-4 border-l-indigo-500 shadow-lg hover:shadow-xl transition-all">
-              <CardContent className="pt-6">
-                <div className="flex items-start justify-between mb-4">
+            {/* Total Users Card */}
+            <Card className="bg-white rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-gray-100 hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] transition-all duration-300">
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Users className="h-5 w-5 text-indigo-600" />
-                      <span className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Total Users</span>
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="h-10 w-10 rounded-xl bg-purple-50 flex items-center justify-center">
+                        <Users className="h-5 w-5 text-purple-500" />
                     </div>
-                    <p className="text-4xl font-bold text-gray-900 mb-1">{dashboardData?.users?.total || 0}</p>
-                    <div className="flex items-center gap-3 text-xs text-gray-600 mt-2">
+                      <span className="text-sm font-semibold text-gray-600">Total Users</span>
+                    </div>
+                    <p className="text-4xl font-bold text-gray-900 mb-2">{dashboardData?.users?.total || 0}</p>
+                    <div className="flex items-center gap-3 text-xs text-gray-500">
                       <span>{dashboardData?.users?.regular || 0} Regular</span>
                       <span>•</span>
                       <span>{dashboardData?.users?.rescuers || 0} Rescuers</span>
                     </div>
                   </div>
                   <Link to="/admin/users">
-                    <Button variant="ghost" size="icon" className="text-indigo-600 hover:bg-indigo-50">
+                    <Button variant="ghost" size="icon" className="text-gray-400 hover:text-purple-500 hover:bg-purple-50 rounded-xl">
                       <ArrowRight className="h-5 w-5" />
                     </Button>
                   </Link>
@@ -434,24 +620,26 @@ export default function Admin() {
               </CardContent>
             </Card>
 
-            {/* Active Reports */}
-            <Card className="bg-white border-l-4 border-l-[#4CAF50] shadow-lg hover:shadow-xl transition-all">
-              <CardContent className="pt-6">
-                <div className="flex items-start justify-between mb-4">
+            {/* Active Reports Card */}
+            <Card className="bg-white rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-gray-100 hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] transition-all duration-300">
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="h-10 w-10 rounded-xl bg-[#E8F8EE] flex items-center justify-center">
                       <PawPrint className="h-5 w-5 text-[#4CAF50]" />
-                      <span className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Active Reports</span>
                     </div>
-                    <p className="text-4xl font-bold text-gray-900 mb-1">{dashboardData?.active?.total || 0}</p>
-                    <div className="flex items-center gap-3 text-xs text-gray-600 mt-2">
+                      <span className="text-sm font-semibold text-gray-600">Active Reports</span>
+                    </div>
+                    <p className="text-4xl font-bold text-gray-900 mb-2">{dashboardData?.active?.total || 0}</p>
+                    <div className="flex items-center gap-3 text-xs text-gray-500">
                       <span>{dashboardData?.active?.found || 0} Found</span>
                       <span>•</span>
                       <span>{dashboardData?.active?.lost || 0} Lost</span>
                     </div>
                   </div>
                   <Link to="/admin/found-pets">
-                    <Button variant="ghost" size="icon" className="text-[#4CAF50] hover:bg-[#4CAF50]/10">
+                    <Button variant="ghost" size="icon" className="text-gray-400 hover:text-[#4CAF50] hover:bg-[#E8F8EE] rounded-xl">
                       <ArrowRight className="h-5 w-5" />
                     </Button>
                   </Link>
@@ -460,936 +648,60 @@ export default function Admin() {
             </Card>
           </div>
 
-          {/* System Status & Quick Access */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* System Overview */}
-            <Card className="lg:col-span-2 bg-white shadow-lg">
-              <CardHeader className="border-b border-gray-200">
+          {/* System Overview Analytics */}
+          <Card className="bg-white rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-gray-100">
+            <CardHeader className="border-b border-gray-100 pb-4">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-xl font-bold">System Overview</CardTitle>
-                  <BarChart3 className="h-5 w-5 text-gray-400" />
-                </div>
-              </CardHeader>
-              <CardContent className="pt-6">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="text-center p-4 bg-gray-50 rounded-lg">
-                    <p className="text-2xl font-bold text-gray-900">{dashboardData?.pets?.found || 0}</p>
-                    <p className="text-xs text-gray-600 mt-1">Found Pets</p>
-                  </div>
-                  <div className="text-center p-4 bg-gray-50 rounded-lg">
-                    <p className="text-2xl font-bold text-gray-900">{dashboardData?.pets?.lost || 0}</p>
-                    <p className="text-xs text-gray-600 mt-1">Lost Pets</p>
-                  </div>
-                  <div className="text-center p-4 bg-gray-50 rounded-lg">
-                    <p className="text-2xl font-bold text-gray-900">{dashboardData?.pets?.adoptable || 0}</p>
-                    <p className="text-xs text-gray-600 mt-1">Adoptable</p>
-                  </div>
-                  <div className="text-center p-4 bg-gray-50 rounded-lg">
-                    <p className="text-2xl font-bold text-gray-900">{dashboardData?.matched || 0}</p>
-                    <p className="text-xs text-gray-600 mt-1">Matched</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Quick Actions */}
-            <Card className="bg-white shadow-lg">
-              <CardHeader className="border-b border-gray-200">
-                <CardTitle className="text-xl font-bold">Quick Actions</CardTitle>
-              </CardHeader>
-              <CardContent className="pt-6 space-y-5">
-                <Link to="/admin/found-pets">
-                  <Button variant="outline" className="w-full justify-start gap-3 h-auto py-3 hover:bg-[#4CAF50]/10 hover:border-[#4CAF50]">
-                    <PawPrint className="h-5 w-5 text-[#4CAF50]" />
-                    <div className="text-left">
-                      <div className="font-semibold">Found Pets</div>
-                      <div className="text-xs text-gray-500">{dashboardData?.pending?.found || 0} pending</div>
-                    </div>
-                  </Button>
-                </Link>
-                <Link to="/admin/lost-pets">
-                  <Button variant="outline" className="w-full justify-start gap-3 h-auto py-3 hover:bg-[#4CAF50]/10 hover:border-[#4CAF50]">
-                    <Search className="h-5 w-5 text-[#4CAF50]" />
-                    <div className="text-left">
-                      <div className="font-semibold">Lost Pets</div>
-                      <div className="text-xs text-gray-500">{dashboardData?.pending?.lost || 0} pending</div>
-                    </div>
-                  </Button>
-                </Link>
-                <Link to="/admin/requests">
-                  <Button variant="outline" className="w-full justify-start gap-3 h-auto py-3 hover:bg-[#4CAF50]/10 hover:border-[#4CAF50]">
-                    <Shield className="h-5 w-5 text-[#4CAF50]" />
-                    <div className="text-left">
-                      <div className="font-semibold">Manage Requests</div>
-                      <div className="text-xs text-gray-500">All pending requests</div>
-                    </div>
-                  </Button>
-                </Link>
-                <Link to="/admin/users">
-                  <Button variant="outline" className="w-full justify-start gap-3 h-auto py-3 hover:bg-[#4CAF50]/10 hover:border-[#4CAF50]">
-                    <Users className="h-5 w-5 text-[#4CAF50]" />
-                    <div className="text-left">
-                      <div className="font-semibold">User Management</div>
-                      <div className="text-xs text-gray-500">{dashboardData?.users?.total || 0} total users</div>
-                    </div>
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Management Center - All Management Functions */}
-          <Card className="bg-white border border-gray-200 shadow-lg">
-            <CardHeader className="bg-gradient-to-r from-gray-50 to-white border-b border-gray-200">
-              <div className="flex items-center justify-between flex-wrap gap-4">
                 <div>
-                  <CardTitle className="text-2xl font-bold text-gray-900">Management Center</CardTitle>
-                  <CardDescription className="text-base mt-1">Comprehensive platform management and monitoring</CardDescription>
+                  <CardTitle className="text-xl font-bold text-gray-900">System Overview</CardTitle>
+                  <CardDescription className="text-sm text-gray-500 mt-1">Platform analytics and insights</CardDescription>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" className="gap-2">
-                    <Download className="h-4 w-4" />
-                    Export
-                  </Button>
-                  <Badge variant="outline" className="px-3 py-1 bg-green-50 text-green-700 border-green-200">
-                    <Activity className="h-3.5 w-3.5 mr-1.5" />
-                    Live Data
-                  </Badge>
+                <div className="h-10 w-10 rounded-xl bg-[#E8F8EE] flex items-center justify-center">
+                  <BarChart3 className="h-5 w-5 text-[#4CAF50]" />
                 </div>
               </div>
             </CardHeader>
           <CardContent className="pt-6">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 xl:grid-cols-9 mb-6 h-auto p-1 bg-gray-100">
-                <TabsTrigger value="overview" className="flex items-center gap-2 text-xs sm:text-sm py-2.5">
-                  <BarChart3 className="h-4 w-4" />
-                  <span className="hidden sm:inline">Overview</span>
-                </TabsTrigger>
-                <TabsTrigger value="pending-reports" className="flex items-center gap-2 text-xs sm:text-sm py-2.5">
-                  <AlertCircle className="h-4 w-4" />
-                  <span className="hidden sm:inline">Reports</span>
-                  {(dashboardData?.pending?.total || 0) > 0 && (
-                    <Badge variant="destructive" className="ml-1 text-xs px-1.5 py-0">{dashboardData.pending.total}</Badge>
-                  )}
-                </TabsTrigger>
-                <TabsTrigger value="pending-adoptions" className="flex items-center gap-2 text-xs sm:text-sm py-2.5">
-                  <Home className="h-4 w-4" />
-                  <span className="hidden sm:inline">Adoptions</span>
-                  {pendingAdoptions.length > 0 && (
-                    <Badge variant="destructive" className="ml-1 text-xs px-1.5 py-0">{pendingAdoptions.length}</Badge>
-                  )}
-                </TabsTrigger>
-                <TabsTrigger value="chat-requests" className="flex items-center gap-2 text-xs sm:text-sm py-2.5">
-                  <MessageSquare className="h-4 w-4" />
-                  <span className="hidden sm:inline">Chat Requests</span>
-                  {(chatStats?.pending_requests || 0) > 0 && (
-                    <Badge variant="destructive" className="ml-1 text-xs px-1.5 py-0">{chatStats?.pending_requests || 0}</Badge>
-                  )}
-                </TabsTrigger>
-                <TabsTrigger value="active-chats" className="flex items-center gap-2 text-xs sm:text-sm py-2.5">
-                  <MessageSquare className="h-4 w-4" />
-                  <span className="hidden sm:inline">Active Chats</span>
-                  {(chatStats?.active_chats || 0) > 0 && (
-                    <Badge variant="default" className="ml-1 text-xs px-1.5 py-0">{chatStats?.active_chats || 0}</Badge>
-                  )}
-                </TabsTrigger>
-                <TabsTrigger value="users" className="flex items-center gap-2 text-xs sm:text-sm py-2.5">
-                  <Users className="h-4 w-4" />
-                  <span className="hidden sm:inline">Users</span>
-                </TabsTrigger>
-                <TabsTrigger value="pets" className="flex items-center gap-2 text-xs sm:text-sm py-2.5">
-                  <PawPrint className="h-4 w-4" />
-                  <span className="hidden sm:inline">All Pets</span>
-                </TabsTrigger>
-                <TabsTrigger value="shelter-reg" className="flex items-center gap-2 text-xs sm:text-sm py-2.5">
-                  <Building2 className="h-4 w-4" />
-                  <span className="hidden sm:inline">Shelter Reg.</span>
-                  {shelterRegistrations.filter((s: any) => s.status === 'pending').length > 0 && (
-                    <Badge variant="destructive" className="ml-1 text-xs px-1.5 py-0">
-                      {shelterRegistrations.filter((s: any) => s.status === 'pending').length}
-                    </Badge>
-                  )}
-                </TabsTrigger>
-                <TabsTrigger value="role-requests" className="flex items-center gap-2 text-xs sm:text-sm py-2.5">
-                  <UserPlus className="h-4 w-4" />
-                  <span className="hidden sm:inline">Role Requests</span>
-                </TabsTrigger>
-              </TabsList>
-
-              {/* Overview Tab - Platform Statistics */}
-              <TabsContent value="overview" className="space-y-6">
-                {/* Platform Statistics */}
-                {dashboardData && (
-                  <div>
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-semibold text-gray-900">Platform Statistics</h3>
-                      <TrendingUp className="h-5 w-5 text-gray-400" />
-                    </div>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <Card className="bg-gradient-to-br from-emerald-50 to-green-50 border-emerald-200 hover:shadow-md transition-shadow">
-                        <CardContent className="pt-6">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="text-sm font-medium text-gray-600">Found Pets</p>
-                              <p className="text-2xl font-bold text-gray-900 mt-1">{dashboardData.pets?.found || 0}</p>
+                <div className="text-center p-4 bg-[#E8F8EE] rounded-xl border border-[#4CAF50]/10">
+                  <p className="text-3xl font-bold text-gray-900">{dashboardData?.pets?.found || 0}</p>
+                  <p className="text-xs text-gray-600 mt-2 font-medium">Found Pets</p>
                             </div>
-                            <Heart className="h-8 w-8 text-emerald-600 opacity-50" />
+                <div className="text-center p-4 bg-[#E8F8EE] rounded-xl border border-[#4CAF50]/10">
+                  <p className="text-3xl font-bold text-gray-900">{dashboardData?.pets?.lost || 0}</p>
+                  <p className="text-xs text-gray-600 mt-2 font-medium">Lost Pets</p>
+                          </div>
+                <div className="text-center p-4 bg-[#E8F8EE] rounded-xl border border-[#4CAF50]/10">
+                  <p className="text-3xl font-bold text-gray-900">{dashboardData?.pets?.adoptable || 0}</p>
+                  <p className="text-xs text-gray-600 mt-2 font-medium">Adoptable</p>
+                            </div>
+                <div className="text-center p-4 bg-[#E8F8EE] rounded-xl border border-[#4CAF50]/10">
+                  <p className="text-3xl font-bold text-gray-900">{dashboardData?.matched || 0}</p>
+                  <p className="text-xs text-gray-600 mt-2 font-medium">Matched</p>
+                          </div>
                           </div>
                         </CardContent>
                       </Card>
 
-                      <Card className="bg-gradient-to-br from-amber-50 to-orange-50 border-amber-200 hover:shadow-md transition-shadow">
-                        <CardContent className="pt-6">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="text-sm font-medium text-gray-600">Lost Pets</p>
-                              <p className="text-2xl font-bold text-gray-900 mt-1">{dashboardData.pets?.lost || 0}</p>
-                            </div>
-                            <Search className="h-8 w-8 text-amber-600 opacity-50" />
-                          </div>
-                        </CardContent>
-                      </Card>
+          {/* Management Center removed - all functionalities moved to sidebar */}
+            </>
+          )}
 
-                      <Card className="bg-gradient-to-br from-cyan-50 to-blue-50 border-cyan-200 hover:shadow-md transition-shadow">
-                        <CardContent className="pt-6">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="text-sm font-medium text-gray-600">Adoptable</p>
-                              <p className="text-2xl font-bold text-gray-900 mt-1">{dashboardData.pets?.adoptable || 0}</p>
-                            </div>
-                            <Home className="h-8 w-8 text-cyan-600 opacity-50" />
-                          </div>
-                        </CardContent>
-                      </Card>
-
-                      <Card className="bg-gradient-to-br from-pink-50 to-rose-50 border-pink-200 hover:shadow-md transition-shadow">
-                        <CardContent className="pt-6">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="text-sm font-medium text-gray-600">Matched</p>
-                              <p className="text-2xl font-bold text-gray-900 mt-1">{dashboardData.matched || 0}</p>
-                            </div>
-                            <Heart className="h-8 w-8 text-pink-600 opacity-50" />
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  </div>
-                )}
-
-              </TabsContent>
-
-              {/* Pending Reports Tab */}
-              <TabsContent value="pending-reports" className="space-y-4">
-                {/* Search and Filter */}
-                <div className="flex flex-col sm:flex-row gap-4 mb-4">
-                  <div className="flex-1">
-                    <Input
-                      placeholder="Search by breed, species, location, or reporter name..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full"
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    <select
-                      value={typeFilter}
-                        onChange={(e) => setTypeFilter(e.target.value)}
-                        className="px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-green-500"
-                      >
-                        <option value="all">All Types</option>
-                        <option value="found">Found</option>
-                        <option value="lost">Lost</option>
-                      </select>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setSearchTerm('');
-                        setTypeFilter('all');
-                      }}
-                    >
-                      Clear
-                    </Button>
-                  </div>
-                </div>
-
-                {(() => {
-                  const filtered = pendingReports.filter((report: any) => {
-                    const matchesSearch = !searchTerm || 
-                      report.breed?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                      report.species?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                      report.last_seen_or_found_location_text?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                      report.submitted_by?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                      report.submitted_by?.email?.toLowerCase().includes(searchTerm.toLowerCase());
-                    const matchesType = typeFilter === 'all' || report.report_type === typeFilter;
-                    return matchesSearch && matchesType;
-                  });
-
-                  return filtered.length === 0 ? (
-                    <div className="text-center py-12 bg-gray-50 rounded-lg">
-                      <CheckCircle className="h-16 w-16 mx-auto text-green-500 mb-4" />
-                      <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                        {searchTerm || typeFilter !== 'all' ? 'No Results Found' : 'All Clear!'}
-                      </h3>
-                      <p className="text-gray-600">
-                        {searchTerm || typeFilter !== 'all' 
-                          ? 'Try adjusting your search or filters'
-                          : 'No pending reports. All reports have been verified.'}
-                      </p>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="mb-4 text-sm text-gray-600">
-                        Showing <span className="font-semibold">{filtered.length}</span> of <span className="font-semibold">{pendingReports.length}</span> pending reports
-                      </div>
-                      <div className="space-y-4">
-                        {filtered.map((report: any) => (
-                          <Card key={report._id} className="hover:shadow-md transition-shadow">
-                            <CardContent className="pt-6">
-                              <div className="flex items-start justify-between gap-4">
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-3 mb-3">
-                                    <Badge variant={report.report_type === 'found' ? 'default' : 'secondary'} className="text-xs">
-                                      {report.report_type.toUpperCase()}
-                                    </Badge>
-                                    <h3 className="font-semibold text-lg text-gray-900">
-                                      {report.species} - {report.breed || 'Mixed'}
-                                    </h3>
-                                  </div>
-                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                                    <div>
-                                      <span className="text-gray-500">Description:</span>
-                                      <p className="text-gray-900 font-medium">{report.distinguishing_marks}</p>
-                                    </div>
-                                    <div>
-                                      <span className="text-gray-500">Location:</span>
-                                      <p className="text-gray-900 font-medium">
-                                        {report.last_seen_or_found_location_text}
-                                        {report.last_seen_or_found_pincode && ` (${report.last_seen_or_found_pincode})`}
-                                      </p>
-                                    </div>
-                                    <div>
-                                      <span className="text-gray-500">Date:</span>
-                                      <p className="text-gray-900 font-medium">
-                                        {format(new Date(report.last_seen_or_found_date), 'MMM dd, yyyy')}
-                                      </p>
-                                    </div>
-                                    <div>
-                                      <span className="text-gray-500">Reported by:</span>
-                                      <p className="text-gray-900 font-medium">
-                                        {report.submitted_by?.name} ({report.submitted_by?.email})
-                                      </p>
-                                    </div>
-                                  </div>
-                                  {report.photos && report.photos.length > 0 && (
-                                    <div className="mt-3 flex gap-2">
-                                      {report.photos.slice(0, 3).map((photo: any, idx: number) => {
-                                        const photoPath = typeof photo === 'string' ? photo : photo.url;
-                                        const photoUrl = getImageUrl(photoPath) || 'https://via.placeholder.com/80';
-                                        return (
-                                          <img
-                                            key={idx}
-                                            src={photoUrl}
-                                            alt={`Pet ${idx + 1}`}
-                                            className="h-20 w-20 rounded-lg object-cover border border-gray-200"
-                                          />
-                                        );
-                                      })}
-                                    </div>
-                                  )}
-                                </div>
-                                <div className="flex flex-col gap-2">
-                                  <Button
-                                    size="sm"
-                                    className="bg-green-600 hover:bg-green-700 gap-2"
-                                    onClick={() => handleAcceptReport(report._id)}
-                                  >
-                                    <CheckCircle className="h-4 w-4" />
-                                    Accept
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="destructive"
-                                    className="gap-2"
-                                    onClick={() => {
-                                      setRejectingId(report._id);
-                                      setShowRejectModal(true);
-                                    }}
-                                  >
-                                    <X className="h-4 w-4" />
-                                    Reject
-                                  </Button>
-                                </div>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        ))}
-                      </div>
-                    </>
-                  );
-                })()}
-              </TabsContent>
-
-              {/* Pending Adoptions Tab */}
-              <TabsContent value="pending-adoptions" className="space-y-4">
-                {/* Search and Filter */}
-                <div className="flex flex-col sm:flex-row gap-4 mb-4">
-                  <div className="flex-1">
-                    <Input
-                      placeholder="Search by breed, species, location, or adopter name..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full"
-                    />
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setSearchTerm('')}
-                  >
-                    Clear
-                  </Button>
-                </div>
-
-                {(() => {
-                  const filtered = pendingAdoptions.filter((adoption: any) => {
-                    return !searchTerm || 
-                      adoption.breed?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                      adoption.species?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                      adoption.last_seen_or_found_location_text?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                      adoption.submitted_by?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                      adoption.submitted_by?.email?.toLowerCase().includes(searchTerm.toLowerCase());
-                  });
-
-                  return filtered.length === 0 ? (
-                    <div className="text-center py-12 bg-gray-50 rounded-lg">
-                      <CheckCircle className="h-16 w-16 mx-auto text-green-500 mb-4" />
-                      <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                        {searchTerm ? 'No Results Found' : 'All Clear!'}
-                      </h3>
-                      <p className="text-gray-600">
-                        {searchTerm ? 'Try adjusting your search' : 'No pending adoption requests.'}
-                      </p>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="mb-4 text-sm text-gray-600">
-                        Showing <span className="font-semibold">{filtered.length}</span> of <span className="font-semibold">{pendingAdoptions.length}</span> pending adoptions
-                      </div>
-                      <div className="space-y-4">
-                        {filtered.map((adoption: any) => (
-                          <Card key={adoption._id} className="hover:shadow-md transition-shadow">
-                            <CardContent className="pt-6">
-                              <div className="flex items-start justify-between gap-4">
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-3 mb-3">
-                                    <Badge variant="default" className="text-xs">ADOPTION</Badge>
-                                    <h3 className="font-semibold text-lg text-gray-900">
-                                      {adoption.species} - {adoption.breed || 'Mixed'}
-                                    </h3>
-                                  </div>
-                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                                    <div>
-                                      <span className="text-gray-500">Description:</span>
-                                      <p className="text-gray-900 font-medium">{adoption.distinguishing_marks}</p>
-                                    </div>
-                                    <div>
-                                      <span className="text-gray-500">Location:</span>
-                                      <p className="text-gray-900 font-medium">{adoption.last_seen_or_found_location_text || 'N/A'}</p>
-                                    </div>
-                                    <div>
-                                      <span className="text-gray-500">Requested by:</span>
-                                      <p className="text-gray-900 font-medium">
-                                        {adoption.submitted_by?.name} ({adoption.submitted_by?.email})
-                                      </p>
-                                    </div>
-                                  </div>
-                                  {adoption.photos && adoption.photos.length > 0 && (
-                                    <div className="mt-3 flex gap-2">
-                                      {adoption.photos.slice(0, 3).map((photo: any, idx: number) => {
-                                        const photoPath = typeof photo === 'string' ? photo : photo.url;
-                                        const photoUrl = getImageUrl(photoPath) || 'https://via.placeholder.com/80';
-                                        return (
-                                          <img
-                                            key={idx}
-                                            src={photoUrl}
-                                            alt={`Pet ${idx + 1}`}
-                                            className="h-20 w-20 rounded-lg object-cover border border-gray-200"
-                                          />
-                                        );
-                                      })}
-                                    </div>
-                                  )}
-                                </div>
-                                <Button
-                                  size="sm"
-                                  className="bg-green-600 hover:bg-green-700 gap-2"
-                                  onClick={() => handleAcceptAdoption(adoption._id)}
-                                >
-                                  <CheckCircle className="h-4 w-4" />
-                                  Accept
-                                </Button>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        ))}
-                      </div>
-                    </>
-                  );
-                })()}
-              </TabsContent>
-
-              {/* Chat Requests Tab */}
-              <TabsContent value="chat-requests" className="space-y-4">
-                {/* Search and Filter */}
-                <div className="flex flex-col sm:flex-row gap-4 mb-4">
-                  <div className="flex-1">
-                    <Input
-                      placeholder="Search by pet ID, requester ID, or message..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full"
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    <select
-                      value={typeFilter}
-                      onChange={(e) => setTypeFilter(e.target.value)}
-                      className="px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-purple-500"
-                    >
-                      <option value="all">All Types</option>
-                      <option value="adoption">Adoption</option>
-                      <option value="claim">Claim</option>
-                    </select>
-                    <select
-                      value={statusFilter}
-                      onChange={(e) => setStatusFilter(e.target.value)}
-                      className="px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-purple-500"
-                    >
-                      <option value="all">All Status</option>
-                      <option value="pending">Pending</option>
-                      <option value="approved">Approved</option>
-                      <option value="rejected">Rejected</option>
-                    </select>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setSearchTerm('');
-                        setTypeFilter('all');
-                        setStatusFilter('all');
-                      }}
-                    >
-                      Clear
-                    </Button>
-                  </div>
-                </div>
-
-                {(() => {
-                  const filtered = chatRequests.filter((req: any) => {
-                    const matchesSearch = !searchTerm || 
-                      req.petId?.toString().includes(searchTerm) ||
-                      req.requesterId?.toString().includes(searchTerm) ||
-                      req.message?.toLowerCase().includes(searchTerm.toLowerCase());
-                    const matchesType = typeFilter === 'all' || req.type === typeFilter;
-                    const matchesStatus = statusFilter === 'all' || req.status === statusFilter;
-                    return matchesSearch && matchesType && matchesStatus;
-                  });
-
-                  const pendingFiltered = filtered.filter((req: any) => req.status === 'pending');
-
-                  return pendingFiltered.length === 0 ? (
-                    <div className="text-center py-12 bg-gray-50 rounded-lg">
-                      <MessageSquare className="h-16 w-16 mx-auto text-gray-400 mb-4" />
-                      <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                        {searchTerm || typeFilter !== 'all' || statusFilter !== 'all' ? 'No Results Found' : 'No Pending Requests'}
-                      </h3>
-                      <p className="text-gray-600">
-                        {searchTerm || typeFilter !== 'all' || statusFilter !== 'all' 
-                          ? 'Try adjusting your search or filters'
-                          : 'All chat requests have been processed.'}
-                      </p>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="mb-4 text-sm text-gray-600">
-                        Showing <span className="font-semibold">{pendingFiltered.length}</span> pending requests
-                        {filtered.length !== pendingFiltered.length && (
-                          <span> (Total filtered: {filtered.length})</span>
-                        )}
-                      </div>
-                      <div className="space-y-4">
-                        {pendingFiltered.map((request: any) => (
-                        <Card key={request.id || request._id} className="hover:shadow-md transition-shadow">
-                          <CardContent className="pt-6">
-                            <div className="flex items-start justify-between gap-4">
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-3">
-                                  <Badge variant={request.type === 'adoption' ? 'default' : 'secondary'}>
-                                    {request.type === 'adoption' ? 'ADOPTION' : 'CLAIM'}
-                                  </Badge>
-                                  <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-300">
-                                    <Clock className="h-3 w-3 mr-1" />
-                                    Pending
-                                  </Badge>
-                                </div>
-                                <div className="space-y-2 text-sm">
+          {/* All Pets Section - Moved to separate page /admin/all-pets */}
+          {false && (
+          <section id="pets" className="scroll-mt-8">
+            <Card className="bg-white rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-gray-100">
+              <CardHeader className="border-b border-gray-100 pb-4">
+                <div className="flex items-center justify-between">
                                   <div>
-                                    <span className="text-gray-500">Pet ID:</span>
-                                    <span className="text-gray-900 font-medium ml-2">{request.petId}</span>
+                    <CardTitle className="text-2xl font-bold text-gray-900">All Pets</CardTitle>
+                    <CardDescription className="text-sm text-gray-500 mt-1">
+                      View and manage all pets in the database (Lost, Found, Adopted)
+                    </CardDescription>
                                   </div>
-                                  <div>
-                                    <span className="text-gray-500">Requester ID:</span>
-                                    <span className="text-gray-900 font-medium ml-2">{request.requesterId}</span>
                                   </div>
-                                  {request.message && (
-                                    <div className="bg-gray-50 rounded-lg p-3 mt-2">
-                                      <p className="text-gray-700">
-                                        <span className="font-medium">Message:</span> {request.message}
-                                      </p>
-                                    </div>
-                                  )}
-                                  <div className="text-xs text-gray-500">
-                                    Requested: {format(new Date(request.createdAt || Date.now()), 'MMM d, yyyy HH:mm')}
-                                  </div>
-                                </div>
-                              </div>
-                              <div className="flex flex-col gap-2">
-                                <Button
-                                  size="sm"
-                                  className="bg-green-600 hover:bg-green-700 gap-2"
-                                  onClick={async () => {
-                                    try {
-                                      await adminAPI.respondToChatRequest(request.id || request._id, true);
-                                      toast({
-                                        title: 'Success',
-                                        description: 'Chat request approved',
-                                      });
-                                      loadDashboardData();
-                                    } catch (error: any) {
-                                      toast({
-                                        title: 'Error',
-                                        description: error.message || 'Failed to approve request',
-                                        variant: 'destructive',
-                                      });
-                                    }
-                                  }}
-                                >
-                                  <CheckCircle className="h-4 w-4" />
-                                  Approve
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="destructive"
-                                  className="gap-2"
-                                  onClick={async () => {
-                                    try {
-                                      await adminAPI.respondToChatRequest(request.id || request._id, false);
-                                      toast({
-                                        title: 'Success',
-                                        description: 'Chat request rejected',
-                                      });
-                                      loadDashboardData();
-                                    } catch (error: any) {
-                                      toast({
-                                        title: 'Error',
-                                        description: error.message || 'Failed to reject request',
-                                        variant: 'destructive',
-                                      });
-                                    }
-                                  }}
-                                >
-                                  <X className="h-4 w-4" />
-                                  Reject
-                                </Button>
-                              </div>
-                            </div>
-                          </CardContent>
-                          </Card>
-                        ))}
-                      </div>
-                    </>
-                  );
-                })()}
-              </TabsContent>
-
-              {/* Active Chats Tab */}
-              <TabsContent value="active-chats" className="space-y-4">
-                {/* Search and Filter */}
-                <div className="flex flex-col sm:flex-row gap-4 mb-4">
-                  <div className="flex-1">
-                    <Input
-                      placeholder="Search by room ID, pet ID, or participant..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full"
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    <select
-                      value={typeFilter}
-                      onChange={(e) => setTypeFilter(e.target.value)}
-                      className="px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-green-500"
-                    >
-                      <option value="all">All Types</option>
-                      <option value="adoption">Adoption</option>
-                      <option value="claim">Claim</option>
-                    </select>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setSearchTerm('');
-                        setTypeFilter('all');
-                      }}
-                    >
-                      Clear
-                    </Button>
-                  </div>
-                </div>
-
-                {(() => {
-                  const filtered = activeChats.filter((chat: any) => {
-                    const matchesSearch = !searchTerm || 
-                      chat.roomId?.toString().includes(searchTerm) ||
-                      chat.petId?.toString().includes(searchTerm) ||
-                      chat.participants?.some((p: any) => p.toString().includes(searchTerm));
-                    const matchesType = typeFilter === 'all' || chat.type === typeFilter;
-                    return matchesSearch && matchesType;
-                  });
-
-                  return filtered.length === 0 ? (
-                    <div className="text-center py-12 bg-gray-50 rounded-lg">
-                      <MessageSquare className="h-16 w-16 mx-auto text-gray-400 mb-4" />
-                      <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                        {searchTerm || typeFilter !== 'all' ? 'No Results Found' : 'No Active Chats'}
-                      </h3>
-                      <p className="text-gray-600">
-                        {searchTerm || typeFilter !== 'all' 
-                          ? 'Try adjusting your search or filters'
-                          : 'There are no active chat conversations at the moment.'}
-                      </p>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="mb-4 text-sm text-gray-600">
-                        Showing <span className="font-semibold">{filtered.length}</span> of <span className="font-semibold">{activeChats.length}</span> active chats
-                      </div>
-                      <div className="space-y-4">
-                        {filtered.map((chat: any) => (
-                      <Card key={chat.roomId || chat._id} className="hover:shadow-md transition-shadow">
-                        <CardContent className="pt-6">
-                          <div className="flex items-start justify-between gap-4">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-3">
-                                <Badge variant={chat.type === 'adoption' ? 'default' : 'secondary'}>
-                                  {chat.type === 'adoption' ? 'ADOPTION' : 'CLAIM'}
-                                </Badge>
-                                <Badge variant="default" className="bg-green-50 text-green-700 border-green-300">
-                                  Active
-                                </Badge>
-                              </div>
-                              <div className="space-y-2 text-sm">
-                                <div>
-                                  <span className="text-gray-500">Room ID:</span>
-                                  <span className="text-gray-900 font-medium ml-2">{chat.roomId || chat._id}</span>
-                                </div>
-                                <div>
-                                  <span className="text-gray-500">Pet ID:</span>
-                                  <span className="text-gray-900 font-medium ml-2">{chat.petId}</span>
-                                </div>
-                                <div>
-                                  <span className="text-gray-500">Participants:</span>
-                                  <span className="text-gray-900 font-medium ml-2">{chat.participants?.join(', ') || 'N/A'}</span>
-                                </div>
-                                {chat.messages && chat.messages.length > 0 && (
-                                  <div>
-                                    <span className="text-gray-500">Messages:</span>
-                                    <span className="text-gray-900 font-medium ml-2">{chat.messages.length}</span>
-                                    <p className="text-xs text-gray-500 mt-1 line-clamp-2">
-                                      Last: {chat.messages[chat.messages.length - 1]?.text || 'No messages yet'}
-                                    </p>
-                                  </div>
-                                )}
-                                <div className="text-xs text-gray-500">
-                                  Created: {format(new Date(chat.createdAt || Date.now()), 'MMM d, yyyy HH:mm')}
-                                </div>
-                              </div>
-                            </div>
-                            <div className="flex flex-col gap-2">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="gap-2"
-                                onClick={() => navigate(`/chat/${chat.roomId || chat._id}`)}
-                              >
-                                <Eye className="h-4 w-4" />
-                                View
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="gap-2"
-                                onClick={async () => {
-                                  try {
-                                    const roomData = await adminAPI.getChatRoom(chat.roomId || chat._id);
-                                    toast({
-                                      title: 'Chat Details',
-                                      description: `Room has ${roomData.messages?.length || 0} messages`,
-                                    });
-                                  } catch (error) {
-                                    toast({
-                                      title: 'Error',
-                                      description: 'Could not load chat details',
-                                      variant: 'destructive',
-                                    });
-                                  }
-                                }}
-                              >
-                                <Shield className="h-4 w-4" />
-                                Monitor
-                              </Button>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                      </div>
-                    </>
-                  );
-                })()}
-              </TabsContent>
-
-              {/* Users Tab */}
-              <TabsContent value="users" className="space-y-4">
-                {/* Search and Filter */}
-                <div className="flex flex-col sm:flex-row gap-4 mb-4">
-                  <div className="flex-1">
-                    <Input
-                      placeholder="Search by name, email, or role..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full"
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    <select
-                      value={statusFilter}
-                      onChange={(e) => setStatusFilter(e.target.value)}
-                      className="px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="all">All Roles</option>
-                      <option value="user">User</option>
-                      <option value="rescuer">Rescuer</option>
-                      <option value="admin">Admin</option>
-                    </select>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={async () => {
-                        try {
-                          const usersData = await adminAPI.getAllUsers();
-                          setUsers(usersData);
-                          setSearchTerm('');
-                          setStatusFilter('all');
-                        } catch (error) {
-                          toast({
-                            title: 'Error',
-                            description: 'Could not load users',
-                            variant: 'destructive',
-                          });
-                        }
-                      }}
-                    >
-                      Load Users
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setSearchTerm('');
-                        setStatusFilter('all');
-                      }}
-                    >
-                      Clear
-                    </Button>
-                  </div>
-                </div>
-
-                {(() => {
-                  const filtered = users.filter((u: any) => {
-                    const matchesSearch = !searchTerm || 
-                      u.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                      u.email?.toLowerCase().includes(searchTerm.toLowerCase());
-                    const matchesRole = statusFilter === 'all' || u.role === statusFilter;
-                    return matchesSearch && matchesRole;
-                  });
-
-                  return (
-                    <>
-                      <div className="mb-4 text-sm text-gray-600">
-                        {users.length > 0 ? (
-                          <>Showing <span className="font-semibold">{filtered.length}</span> of <span className="font-semibold">{users.length}</span> users</>
-                        ) : (
-                          <>Click "Load Users" to view all users</>
-                        )}
-                      </div>
-                      <div className="overflow-x-auto">
-                        <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Email</TableHead>
-                        <TableHead>Role</TableHead>
-                        <TableHead>Joined</TableHead>
-                        <TableHead>Action</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                          <TableBody>
-                            {filtered.length === 0 ? (
-                              <TableRow>
-                                <TableCell colSpan={5} className="text-center py-8 text-gray-500">
-                                  {searchTerm || statusFilter !== 'all' ? 'No users match your search' : 'No users found. Click "Load Users" to fetch data.'}
-                                </TableCell>
-                              </TableRow>
-                            ) : (
-                              filtered.map((u: any) => (
-                          <TableRow key={u._id}>
-                            <TableCell className="font-medium">{u.name}</TableCell>
-                            <TableCell>{u.email}</TableCell>
-                            <TableCell>
-                              <Badge variant={u.role === 'admin' ? 'default' : u.role === 'rescuer' ? 'secondary' : 'outline'}>
-                                {u.role}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-sm text-gray-600">
-                              {format(new Date(u.createdAt), 'MMM dd, yyyy')}
-                            </TableCell>
-                            <TableCell>
-                              {u.role !== 'admin' && (
-                                <Button
-                                  variant="destructive"
-                                  size="sm"
-                                  onClick={() => handleDeactivateUser(u._id)}
-                                >
-                                  Deactivate
-                                </Button>
-                              )}
-                            </TableCell>
-                          </TableRow>
-                              ))
-                            )}
-                          </TableBody>
-                        </Table>
-                      </div>
-                    </>
-                  );
-                })()}
-              </TabsContent>
-
-              {/* Pets Tab */}
-              <TabsContent value="pets" className="space-y-4">
+              </CardHeader>
+              <CardContent className="pt-6 space-y-4">
                 {/* Search and Filter */}
                 <div className="flex flex-col sm:flex-row gap-4 mb-4">
                   <div className="flex-1">
@@ -1469,14 +781,17 @@ export default function Admin() {
                   }
 
                   const filtered = pets.filter((p: any) => {
+                    // Map adoption_status to report_type for filtering
+                    const reportType = p.adoption_status === 'Found' ? 'found' : 
+                                      p.adoption_status === 'Lost' ? 'lost' : null;
+                    
                     const matchesSearch = !searchTerm || 
                       p.breed?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                      p.species?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                      p.last_seen_or_found_location_text?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                      p.status?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                      p.name?.toLowerCase().includes(searchTerm.toLowerCase());
-                    const matchesType = typeFilter === 'all' || p.report_type === typeFilter || p.type === typeFilter;
-                    const matchesStatus = statusFilter === 'all' || p.status === statusFilter;
+                      p.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                      p.location?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                      p.adoption_status?.toLowerCase().includes(searchTerm.toLowerCase());
+                    const matchesType = typeFilter === 'all' || reportType === typeFilter || p.report_type === typeFilter || p.type === typeFilter;
+                    const matchesStatus = statusFilter === 'all' || p.adoption_status === statusFilter || p.status === statusFilter;
                     return matchesSearch && matchesType && matchesStatus;
                   });
 
@@ -1489,102 +804,126 @@ export default function Admin() {
                           <>No pets found. Click "Refresh" to load all pets.</>
                         )}
                       </div>
-                      <div className="overflow-x-auto">
-                        <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Pet Name</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Breed</TableHead>
-                        <TableHead>Location</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Reported</TableHead>
-                        <TableHead>Action</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                          <TableBody>
                             {filtered.length === 0 ? (
-                              <TableRow>
-                                <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                        <div className="text-center py-12 bg-gray-50 rounded-lg">
+                          <PawPrint className="h-16 w-16 mx-auto text-gray-400 mb-4" />
+                          <h3 className="text-lg font-semibold text-gray-900 mb-2">
                                   {searchTerm || typeFilter !== 'all' || statusFilter !== 'all' 
                                     ? 'No pets match your search' 
-                                    : pets.length === 0 
-                                    ? 'No pets found. Click "Refresh" to load all pets.' 
-                                    : 'No pets match the current filters.'}
-                                </TableCell>
-                              </TableRow>
+                              : 'No pets found'}
+                          </h3>
+                          <p className="text-gray-600">
+                            {searchTerm || typeFilter !== 'all' || statusFilter !== 'all' 
+                              ? 'Try adjusting your search or filters' 
+                              : 'Click "Refresh" to load all pets.'}
+                          </p>
+                        </div>
                             ) : (
-                              filtered.map((p: any) => (
-                          <TableRow key={p._id}>
-                            <TableCell className="font-medium">{p.name || p.species || 'Unnamed'}</TableCell>
-                            <TableCell>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                          {filtered.map((p: any) => {
+                                const petId = p.id || p._id;
+                                const createdDate = p.created_at || p.createdAt || p.date_submitted;
+                            const petImage = p.image || p.images?.[0]?.image || p.images?.[0]?.image_url || p.image_url;
+                            const imageUrl = petImage ? (petImage.startsWith('http') ? petImage : getImageUrl(petImage)) : 'https://via.placeholder.com/300x200?text=No+Image';
+                            
+                                return (
+                              <Card key={petId} className="bg-white rounded-xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-gray-100 hover:shadow-[0_8px_24px_rgba(0,0,0,0.1)] transition-all duration-300 overflow-hidden flex flex-col">
+                                {/* Pet Image */}
+                                <div className="relative h-48 w-full overflow-hidden bg-gray-100">
+                                  <img
+                                    src={imageUrl}
+                                    alt={p.name || 'Pet'}
+                                    className="w-full h-full object-cover"
+                                  />
+                                  <div className="absolute top-3 right-3">
                               <Badge variant={
-                                p.report_type === 'found' || p.type === 'found' ? 'default' :
-                                p.report_type === 'lost' || p.type === 'lost' ? 'secondary' : 'outline'
-                              }>
-                                {p.report_type || p.type || 'N/A'}
+                                p.adoption_status === 'Found' ? 'default' :
+                                p.adoption_status === 'Lost' ? 'secondary' : 
+                                p.adoption_status === 'Pending' ? 'outline' : 'outline'
+                                    } className="shadow-lg">
+                                {p.adoption_status === 'Found' ? 'Found' :
+                                 p.adoption_status === 'Lost' ? 'Lost' :
+                                 p.adoption_status === 'Pending' ? 'Pending' :
+                                 p.adoption_status === 'Available for Adoption' ? 'Adoption' :
+                                       p.adoption_status === 'Adopted' ? 'Adopted' :
+                                 p.adoption_status || 'N/A'}
                               </Badge>
-                            </TableCell>
-                            <TableCell>{p.breed || p.species || 'Unknown'}</TableCell>
-                            <TableCell className="text-sm">{p.last_seen_or_found_location_text || p.location?.city || 'N/A'}</TableCell>
-                            <TableCell>
-                              <Badge variant={
-                                p.status === 'Listed Found' || p.status === 'Listed Lost' ? 'default' :
-                                p.status === 'Pending Verification' ? 'destructive' : 'outline'
-                              }>
-                                {p.status || 'N/A'}
+                                  </div>
+                                  {p.is_verified && (
+                                    <div className="absolute top-3 left-3">
+                                      <Badge variant="default" className="bg-green-500 shadow-lg">
+                                        <CheckCircle className="h-3 w-3 mr-1" />
+                                        Verified
                               </Badge>
-                            </TableCell>
-                            <TableCell className="text-sm text-gray-600">
-                              {p.date_submitted || p.createdAt 
-                                ? format(new Date(p.date_submitted || p.createdAt), 'MMM dd, yyyy')
-                                : 'N/A'}
-                            </TableCell>
-                            <TableCell>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => navigate(`/pets/${p._id}`)}
-                                className="gap-1"
-                              >
-                                <Eye className="h-4 w-4" />
-                                View
-                              </Button>
-                            </TableCell>
-                              </TableRow>
-                            ))
-                          )}
-                        </TableBody>
-                      </Table>
+                                    </div>
+                                  )}
                     </div>
+
+                                {/* Card Content */}
+                                <CardContent className="p-5 flex-1 flex flex-col">
+                  <div className="flex-1">
+                                    <h3 className="text-xl font-bold text-gray-900 mb-2 line-clamp-1">
+                                      {p.name || 'Unnamed Pet'}
+                                    </h3>
+                                    <div className="space-y-2 mb-4">
+                                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                                        <PawPrint className="h-4 w-4 text-gray-400" />
+                                        <span className="font-medium">Breed:</span>
+                                        <span>{p.breed || 'Unknown'}</span>
+                  </div>
+                                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                                        <Search className="h-4 w-4 text-gray-400" />
+                                        <span className="font-medium">Location:</span>
+                                        <span className="line-clamp-1">{p.location || 'N/A'}</span>
+                                      </div>
+                                      {createdDate && (
+                                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                                          <Calendar className="h-4 w-4 text-gray-400" />
+                                          <span className="font-medium">Reported:</span>
+                                          <span>{format(new Date(createdDate), 'MMM dd, yyyy')}</span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                  
+                                  {/* View More Button */}
+                              <Button
+                                    variant="default"
+                                    className="w-full bg-[#4CAF50] hover:bg-[#2E7D32] text-white mt-auto"
+                      onClick={() => {
+                                      setSelectedPet(p);
+                                      setShowPetDialog(true);
+                      }}
+                              >
+                                    <Eye className="h-4 w-4 mr-2" />
+                                    View More
+                              </Button>
+                                </CardContent>
+                              </Card>
+                                );
+                          })}
+                    </div>
+                      )}
                   </>
                 );
               })()}
-              </TabsContent>
+              </CardContent>
+            </Card>
+          </section>
+          )}
 
-              {/* Shelter Registrations Tab */}
-              <TabsContent value="shelter-reg" className="space-y-4">
-                {/* Search and Filter */}
-                <div className="flex flex-col sm:flex-row gap-4 mb-4">
-                  <div className="flex-1">
-                    <Input
-                      placeholder="Search by shelter name, owner, or location..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full"
-                    />
+          {/* Shelter Registrations Section - Only show when on #shelter-reg */}
+          {currentHash === '#shelter-reg' && (
+          <section id="shelter-reg" className="scroll-mt-8">
+            <Card className="bg-white rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-gray-100">
+              <CardHeader className="border-b border-gray-100 pb-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-2xl font-bold text-gray-900">Shelter Registrations</CardTitle>
+                    <CardDescription className="text-sm text-gray-500 mt-1">
+                      Review and manage shelter registration requests
+                    </CardDescription>
                   </div>
-                  <div className="flex gap-2">
-                    <select
-                      value={statusFilter}
-                      onChange={(e) => setStatusFilter(e.target.value)}
-                      className="px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-green-500"
-                    >
-                      <option value="all">All Status</option>
-                      <option value="pending">Pending</option>
-                      <option value="approved">Approved</option>
-                      <option value="rejected">Rejected</option>
-                    </select>
                     <Button
                       variant="outline"
                       size="sm"
@@ -1604,59 +943,24 @@ export default function Admin() {
                         </>
                       )}
                     </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setSearchTerm('');
-                        setStatusFilter('all');
-                      }}
-                    >
-                      Clear
-                    </Button>
                   </div>
-                </div>
-
+              </CardHeader>
+              <CardContent className="pt-6">
                 {shelterRegistrationsLoading ? (
                   <div className="text-center py-12">
                     <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-green-600 border-r-transparent"></div>
                     <p className="mt-4 text-gray-600">Loading shelter registrations...</p>
                   </div>
-                ) : (
-                  <div className="space-y-4">
-                    {(() => {
-                      const filtered = shelterRegistrations.filter((s: any) => {
-                        const matchesSearch = !searchTerm || 
-                          s.shelter_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          s.user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          s.user?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          s.location?.city?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          s.location?.address?.toLowerCase().includes(searchTerm.toLowerCase());
-                        const matchesStatus = statusFilter === 'all' || s.status === statusFilter;
-                        return matchesSearch && matchesStatus;
-                      });
-
-                      return (
-                        <>
-                          <div className="mb-4 text-sm text-gray-600">
-                            Showing <span className="font-semibold">{filtered.length}</span> of <span className="font-semibold">{shelterRegistrations.length}</span> shelter registrations
+                ) : shelterRegistrations.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Building2 className="h-16 w-16 mx-auto text-gray-400 mb-4" />
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">No Shelter Registrations</h3>
+                    <p className="text-gray-600">No shelter registration requests found.</p>
                           </div>
-                          {filtered.length === 0 ? (
-                            <Card>
-                              <CardContent className="py-12 text-center">
-                                <Building2 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                                <h3 className="text-xl font-bold text-gray-900 mb-2">No Shelter Registrations</h3>
-                                <p className="text-gray-600">
-                                  {searchTerm || statusFilter !== 'all'
-                                    ? 'Try adjusting your search or filters'
-                                    : 'No shelter registrations found.'}
-                                </p>
-                              </CardContent>
-                            </Card>
                           ) : (
                             <div className="space-y-4">
-                              {filtered.map((shelter: any) => (
-                                <Card key={shelter._id}>
+                    {shelterRegistrations.map((shelter: any) => (
+                      <Card key={shelter._id || shelter.id} className="hover:shadow-md transition-shadow">
                                   <CardHeader>
                                     <div className="flex items-start justify-between">
                                       <div className="flex items-center gap-3">
@@ -1694,9 +998,9 @@ export default function Admin() {
                                       <div>
                                         <p className="text-sm font-semibold text-gray-700 mb-1">Location</p>
                                         <p className="text-sm text-gray-600">
-                                          {shelter.location?.city || 'N/A'}, {shelter.location?.state || ''}
+                                {shelter.location?.city || shelter.city || 'N/A'}, {shelter.location?.state || shelter.state || ''}
                                         </p>
-                                        <p className="text-xs text-gray-500">{shelter.location?.pincode || ''}</p>
+                              <p className="text-xs text-gray-500">{shelter.location?.pincode || shelter.pincode || ''}</p>
                                       </div>
                                       <div>
                                         <p className="text-sm font-semibold text-gray-700 mb-1">Capacity</p>
@@ -1711,24 +1015,6 @@ export default function Admin() {
                                         <p className="text-sm text-gray-600">{shelter.accepts_feeding_data ? 'Yes' : 'No'}</p>
                                       </div>
                                     </div>
-                                    {shelter.facilities && shelter.facilities.length > 0 && (
-                                      <div className="mb-4">
-                                        <p className="text-sm font-semibold text-gray-700 mb-2">Facilities</p>
-                                        <div className="flex flex-wrap gap-2">
-                                          {shelter.facilities.map((facility: string, idx: number) => (
-                                            <Badge key={idx} variant="outline">{facility}</Badge>
-                                          ))}
-                                        </div>
-                                      </div>
-                                    )}
-                                    {shelter.contact_info && (
-                                      <div className="mb-4">
-                                        <p className="text-sm font-semibold text-gray-700 mb-1">Contact</p>
-                                        <p className="text-sm text-gray-600">
-                                          {shelter.contact_info.phone || shelter.user?.phone || 'N/A'}
-                                        </p>
-                                      </div>
-                                    )}
                                     {shelter.status === 'pending' && (
                                       <div className="flex gap-2">
                                         <Button
@@ -1737,7 +1023,7 @@ export default function Admin() {
                                           onClick={() => {
                                             const notes = prompt('Add optional notes for approval:');
                                             if (notes !== null) {
-                                              handleShelterAction(shelter._id, 'approve', notes);
+                                    handleShelterAction(shelter._id || shelter.id, 'approve', notes);
                                             }
                                           }}
                                         >
@@ -1750,7 +1036,7 @@ export default function Admin() {
                                           onClick={() => {
                                             const reason = prompt('Please provide a reason for rejection:');
                                             if (reason && reason.trim()) {
-                                              handleShelterAction(shelter._id, 'reject', reason);
+                                    handleShelterAction(shelter._id || shelter.id, 'reject', reason);
                                             }
                                           }}
                                         >
@@ -1759,10 +1045,251 @@ export default function Admin() {
                                         </Button>
                                       </div>
                                     )}
-                                    {shelter.admin_notes && (
-                                      <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                                        <p className="text-xs font-semibold text-gray-700 mb-1">Admin Notes</p>
-                                        <p className="text-sm text-gray-600">{shelter.admin_notes}</p>
+                        </CardContent>
+                      </Card>
+                                          ))}
+                                        </div>
+                )}
+              </CardContent>
+            </Card>
+          </section>
+          )}
+
+          {/* Role Requests Section - Moved to separate page /admin/role-requests */}
+          {false && (
+          <section id="role-requests" className="scroll-mt-8">
+            <Card className="bg-white rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-gray-100">
+              <CardHeader className="border-b border-gray-100 pb-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-2xl font-bold text-gray-900">Role Requests</CardTitle>
+                    <CardDescription className="text-sm text-gray-500 mt-1">
+                      Manage volunteer role requests (rescuer, feeder, transporter, volunteer)
+                    </CardDescription>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={loadRoleRequests}
+                    disabled={roleRequestsLoading}
+                    className="gap-2"
+                  >
+                    {roleRequestsLoading ? (
+                      <>
+                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600"></div>
+                        Loading...
+                      </>
+                    ) : (
+                      <>
+                        <Activity className="h-4 w-4" />
+                        Refresh
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-6">
+                {/* Filters and Search */}
+                <div className="mb-6 space-y-4">
+                  <div className="flex flex-col md:flex-row gap-4">
+                    <div className="flex-1 relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <Input
+                        placeholder="Search by name, email, role, or reason..."
+                        value={roleRequestSearchTerm}
+                        onChange={(e) => setRoleRequestSearchTerm(e.target.value)}
+                        className="pl-10"
+                      />
+                    </div>
+                    <select
+                      value={roleRequestStatusFilter}
+                      onChange={(e) => setRoleRequestStatusFilter(e.target.value)}
+                      className="px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-green-500"
+                    >
+                      <option value="all">All Status</option>
+                      <option value="pending">Pending</option>
+                      <option value="approved">Approved</option>
+                      <option value="rejected">Rejected</option>
+                    </select>
+                    <select
+                      value={roleRequestRoleFilter}
+                      onChange={(e) => setRoleRequestRoleFilter(e.target.value)}
+                      className="px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-green-500"
+                    >
+                      <option value="all">All Roles</option>
+                      <option value="rescuer">Rescuer</option>
+                      <option value="feeder">Feeder</option>
+                      <option value="transporter">Transporter</option>
+                      <option value="volunteer">Volunteer</option>
+                    </select>
+                  </div>
+                  {/* Statistics */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="bg-gray-50 rounded-lg p-3">
+                      <p className="text-xs text-gray-600 mb-1">Total</p>
+                      <p className="text-2xl font-bold text-gray-900">{roleRequests.length}</p>
+                    </div>
+                    <div className="bg-yellow-50 rounded-lg p-3">
+                      <p className="text-xs text-gray-600 mb-1">Pending</p>
+                      <p className="text-2xl font-bold text-yellow-700">
+                        {roleRequests.filter((r: any) => r.status === 'pending').length}
+                      </p>
+                    </div>
+                    <div className="bg-green-50 rounded-lg p-3">
+                      <p className="text-xs text-gray-600 mb-1">Approved</p>
+                      <p className="text-2xl font-bold text-green-700">
+                        {roleRequests.filter((r: any) => r.status === 'approved').length}
+                      </p>
+                    </div>
+                    <div className="bg-red-50 rounded-lg p-3">
+                      <p className="text-xs text-gray-600 mb-1">Rejected</p>
+                      <p className="text-2xl font-bold text-red-700">
+                        {roleRequests.filter((r: any) => r.status === 'rejected').length}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {roleRequestsLoading ? (
+                  <div className="text-center py-12">
+                    <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-green-600 border-r-transparent"></div>
+                    <p className="mt-4 text-gray-600">Loading role requests...</p>
+                  </div>
+                ) : filteredRoleRequests.length === 0 ? (
+                  <div className="text-center py-12">
+                    <UserPlus className="h-16 w-16 mx-auto text-gray-400 mb-4" />
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">No Role Requests</h3>
+                    <p className="text-gray-600">
+                      {roleRequestSearchTerm || roleRequestStatusFilter !== 'all' || roleRequestRoleFilter !== 'all'
+                        ? 'No role requests match your filters'
+                        : 'No role requests found.'}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {filteredRoleRequests.map((request: any) => (
+                      <Card key={request._id || request.id} className="hover:shadow-md transition-shadow">
+                        <CardHeader>
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <CardTitle className="text-lg">
+                                {request.user?.name || request.requested_by?.name || 'Unknown User'}
+                              </CardTitle>
+                              <CardDescription>
+                                {request.user?.email || request.requested_by?.email || 'N/A'}
+                              </CardDescription>
+                            </div>
+                            <Badge
+                              variant={
+                                request.status === 'pending' ? 'default' :
+                                request.status === 'approved' ? 'default' :
+                                'destructive'
+                              }
+                              className={
+                                request.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                                request.status === 'approved' ? 'bg-green-100 text-green-700' :
+                                'bg-red-100 text-red-700'
+                              }
+                            >
+                              {request.status === 'pending' && <Clock className="h-3 w-3 mr-1" />}
+                              {request.status === 'approved' && <CheckCircle className="h-3 w-3 mr-1" />}
+                              {request.status === 'rejected' && <X className="h-3 w-3 mr-1" />}
+                              {request.status || 'Pending'}
+                            </Badge>
+                          </div>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <div>
+                              <p className="text-sm font-semibold text-gray-700 mb-1">Requested Role</p>
+                              <Badge variant="outline" className="text-base capitalize">
+                                {request.requested_role || 'N/A'}
+                              </Badge>
+                            </div>
+                            {request.user?.phone && (
+                              <div>
+                                <p className="text-sm font-semibold text-gray-700 mb-1">Phone</p>
+                                <p className="text-sm text-gray-600">{request.user.phone}</p>
+                              </div>
+                            )}
+                            {request.created_at && (
+                              <div>
+                                <p className="text-sm font-semibold text-gray-700 mb-1">Requested Date</p>
+                                <p className="text-sm text-gray-600">
+                                  {format(new Date(request.created_at), 'MMM dd, yyyy HH:mm')}
+                                </p>
+                              </div>
+                            )}
+                            {request.reviewed_at && (
+                              <div>
+                                <p className="text-sm font-semibold text-gray-700 mb-1">Reviewed Date</p>
+                                <p className="text-sm text-gray-600">
+                                  {format(new Date(request.reviewed_at), 'MMM dd, yyyy HH:mm')}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+
+                          {request.reason && (
+                            <div className="mb-3">
+                              <p className="text-sm font-semibold text-gray-700 mb-1">Reason</p>
+                              <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">{request.reason}</p>
+                            </div>
+                          )}
+
+                          {request.experience && (
+                            <div className="mb-3">
+                              <p className="text-sm font-semibold text-gray-700 mb-1">Experience</p>
+                              <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">{request.experience}</p>
+                            </div>
+                          )}
+
+                          {request.availability && (
+                            <div className="mb-3">
+                              <p className="text-sm font-semibold text-gray-700 mb-1">Availability</p>
+                              <p className="text-sm text-gray-600">{request.availability}</p>
+                            </div>
+                          )}
+
+                          {request.resources && (
+                            <div className="mb-3">
+                              <p className="text-sm font-semibold text-gray-700 mb-1">Resources</p>
+                              <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">{request.resources}</p>
+                            </div>
+                          )}
+
+                          {request.review_notes && (
+                            <div className="mb-3">
+                              <p className="text-sm font-semibold text-gray-700 mb-1">Review Notes</p>
+                              <p className="text-sm text-gray-600 bg-blue-50 p-3 rounded-lg">{request.review_notes}</p>
+                            </div>
+                          )}
+
+                          {request.reviewed_by_name && (
+                            <div className="mb-3">
+                              <p className="text-sm font-semibold text-gray-700 mb-1">Reviewed By</p>
+                              <p className="text-sm text-gray-600">{request.reviewed_by_name}</p>
+                            </div>
+                          )}
+                          {request.status === 'pending' && (
+                            <div className="flex gap-2 mt-4 pt-4 border-t border-gray-200">
+                              <Button
+                                size="sm"
+                                className="bg-green-600 hover:bg-green-700 flex-1"
+                                onClick={() => openRoleRequestAction(request, 'approve')}
+                              >
+                                <CheckCircle className="mr-2 h-4 w-4" />
+                                Approve
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                className="flex-1"
+                                onClick={() => openRoleRequestAction(request, 'reject')}
+                              >
+                                <X className="mr-2 h-4 w-4" />
+                                Reject
+                              </Button>
                                       </div>
                                     )}
                                   </CardContent>
@@ -1770,31 +1297,336 @@ export default function Admin() {
                               ))}
                             </div>
                           )}
+              </CardContent>
+            </Card>
+          </section>
+          )}
+
+          {/* Role Request Action Dialog */}
+          <Dialog open={showRoleRequestDialog} onOpenChange={setShowRoleRequestDialog}>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>
+                  {roleRequestActionType === 'approve' ? 'Approve Role Request' : 'Reject Role Request'}
+                </DialogTitle>
+                <DialogDescription>
+                  {roleRequestActionType === 'approve'
+                    ? 'Add optional notes for approval'
+                    : 'Please provide a reason for rejection (required)'}
+                </DialogDescription>
+              </DialogHeader>
+              {selectedRoleRequest && (
+                <div className="space-y-4">
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <p className="text-sm font-semibold text-gray-700 mb-2">Request Details</p>
+                    <div className="space-y-1 text-sm">
+                      <p><span className="font-medium">User:</span> {selectedRoleRequest.user?.name || 'Unknown'}</p>
+                      <p><span className="font-medium">Email:</span> {selectedRoleRequest.user?.email || 'N/A'}</p>
+                      <p><span className="font-medium">Requested Role:</span> <span className="capitalize">{selectedRoleRequest.requested_role}</span></p>
+                    </div>
+                  </div>
+                  <div>
+                    <Label htmlFor="action-notes" className="text-sm font-semibold">
+                      {roleRequestActionType === 'approve' ? 'Approval Notes (Optional)' : 'Rejection Reason *'}
+                    </Label>
+                    <Textarea
+                      id="action-notes"
+                      value={roleRequestActionNotes}
+                      onChange={(e) => setRoleRequestActionNotes(e.target.value)}
+                      placeholder={
+                        roleRequestActionType === 'approve'
+                          ? 'Add any notes about this approval...'
+                          : 'Explain why this role request is being rejected...'
+                      }
+                      className="mt-2"
+                      rows={4}
+                    />
+                  </div>
+                  <div className="flex gap-2 justify-end pt-4">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setShowRoleRequestDialog(false);
+                        setSelectedRoleRequest(null);
+                        setRoleRequestActionNotes('');
+                        setRoleRequestActionType(null);
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={submitRoleRequestAction}
+                      className={
+                        roleRequestActionType === 'approve'
+                          ? 'bg-green-600 hover:bg-green-700'
+                          : 'bg-red-600 hover:bg-red-700'
+                      }
+                    >
+                      {roleRequestActionType === 'approve' ? (
+                        <>
+                          <CheckCircle className="mr-2 h-4 w-4" />
+                          Approve
                         </>
-                      );
-                    })()}
+                      ) : (
+                        <>
+                          <X className="mr-2 h-4 w-4" />
+                          Reject
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
+
+          {/* Pet Details Dialog */}
+          <Dialog open={showPetDialog} onOpenChange={setShowPetDialog}>
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="text-2xl font-bold text-gray-900">
+                  {selectedPet?.name || 'Pet Details'}
+                </DialogTitle>
+                <DialogDescription className="text-sm text-gray-600">
+                  Complete information about the pet
+                </DialogDescription>
+              </DialogHeader>
+              
+              {selectedPet && (
+                <div className="space-y-6 mt-4">
+                  {/* Pet Image Gallery */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-3">Photos</h3>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                      {selectedPet.images && selectedPet.images.length > 0 ? (
+                        selectedPet.images.map((img: any, idx: number) => {
+                          const imageUrl = img.image_url || img.image || selectedPet.image_url || selectedPet.image;
+                          const photoUrl = imageUrl ? (imageUrl.startsWith('http') ? imageUrl : getImageUrl(imageUrl)) : 'https://via.placeholder.com/300x200?text=No+Image';
+                      return (
+                            <div key={idx} className="relative h-48 rounded-lg overflow-hidden border border-gray-200">
+                              <img
+                                src={photoUrl}
+                                alt={`Pet photo ${idx + 1}`}
+                                className="w-full h-full object-cover"
+                              />
+                          </div>
+                          );
+                        })
+                      ) : selectedPet.image ? (
+                        <div className="relative h-48 rounded-lg overflow-hidden border border-gray-200">
+                          <img
+                            src={selectedPet.image_url || getImageUrl(selectedPet.image) || 'https://via.placeholder.com/300x200?text=No+Image'}
+                            alt="Pet"
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      ) : (
+                        <div className="col-span-full text-center py-8 text-gray-500">
+                          No images available
                   </div>
                 )}
-              </TabsContent>
+                    </div>
+                  </div>
 
-              {/* Role Requests Tab */}
-              <TabsContent value="role-requests" className="space-y-4">
-                <div className="text-center py-12">
-                  <UserPlus className="h-16 w-16 mx-auto text-gray-400 mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Role Requests Management</h3>
-                  <p className="text-gray-600 mb-4">
-                    Manage volunteer role requests (rescuer, feeder, transporter)
-                  </p>
-                  <Button onClick={() => navigate('/admin/requests')} className="gap-2">
-                    <UserPlus className="h-4 w-4" />
-                    Go to Manage Requests
-                  </Button>
+                  {/* Basic Information */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <Card className="bg-gray-50">
+                                  <CardHeader>
+                        <CardTitle className="text-lg">Basic Information</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <div>
+                          <Label className="text-sm font-semibold text-gray-700">Pet Name</Label>
+                          <p className="text-gray-900">{selectedPet.name || 'Unnamed'}</p>
+                                        </div>
+                                        <div>
+                          <Label className="text-sm font-semibold text-gray-700">Breed</Label>
+                          <p className="text-gray-900">{selectedPet.breed || 'Unknown'}</p>
+                                        </div>
+                        <div>
+                          <Label className="text-sm font-semibold text-gray-700">Species</Label>
+                          <p className="text-gray-900">{selectedPet.species || selectedPet.type || 'N/A'}</p>
+                                      </div>
+                        <div>
+                          <Label className="text-sm font-semibold text-gray-700">Status</Label>
+                          <div className="mt-1">
+                            <Badge variant={
+                              selectedPet.adoption_status === 'Found' ? 'default' :
+                              selectedPet.adoption_status === 'Lost' ? 'secondary' : 
+                              selectedPet.adoption_status === 'Pending' ? 'outline' : 'outline'
+                            }>
+                              {selectedPet.adoption_status === 'Found' ? 'Found' :
+                               selectedPet.adoption_status === 'Lost' ? 'Lost' :
+                               selectedPet.adoption_status === 'Pending' ? 'Pending' :
+                               selectedPet.adoption_status === 'Available for Adoption' ? 'Available for Adoption' :
+                               selectedPet.adoption_status === 'Adopted' ? 'Adopted' :
+                               selectedPet.adoption_status || 'N/A'}
+                                      </Badge>
+                            {selectedPet.is_verified && (
+                              <Badge variant="default" className="ml-2 bg-green-500">
+                                <CheckCircle className="h-3 w-3 mr-1" />
+                                Verified
+                              </Badge>
+                            )}
+                                    </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="bg-gray-50">
+                      <CardHeader>
+                        <CardTitle className="text-lg">Location & Contact</CardTitle>
+                                  </CardHeader>
+                      <CardContent className="space-y-3">
+                                      <div>
+                          <Label className="text-sm font-semibold text-gray-700">Location</Label>
+                          <p className="text-gray-900">{selectedPet.location || 'N/A'}</p>
+                                      </div>
+                        {selectedPet.pincode && (
+                                      <div>
+                            <Label className="text-sm font-semibold text-gray-700">Pincode</Label>
+                            <p className="text-gray-900">{selectedPet.pincode}</p>
+                                      </div>
+                        )}
+                        {selectedPet.city && (
+                                      <div>
+                            <Label className="text-sm font-semibold text-gray-700">City</Label>
+                            <p className="text-gray-900">{selectedPet.city}</p>
+                                      </div>
+                        )}
+                        {selectedPet.state && (
+                                      <div>
+                            <Label className="text-sm font-semibold text-gray-700">State</Label>
+                            <p className="text-gray-900">{selectedPet.state}</p>
+                                      </div>
+                        )}
+                        {selectedPet.contact_phone && (
+                          <div>
+                            <Label className="text-sm font-semibold text-gray-700">Contact Phone</Label>
+                            <p className="text-gray-900">{selectedPet.contact_phone}</p>
+                                    </div>
+                        )}
+                        {selectedPet.contact_email && (
+                          <div>
+                            <Label className="text-sm font-semibold text-gray-700">Contact Email</Label>
+                            <p className="text-gray-900">{selectedPet.contact_email}</p>
+                                        </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                                      </div>
+
+                  {/* Description */}
+                  {selectedPet.description && (
+                    <Card className="bg-gray-50">
+                      <CardHeader>
+                        <CardTitle className="text-lg">Description</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-gray-900 whitespace-pre-wrap">{selectedPet.description}</p>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Physical Details */}
+                  {(selectedPet.age || selectedPet.gender || selectedPet.color || selectedPet.size || selectedPet.weight) && (
+                    <Card className="bg-gray-50">
+                      <CardHeader>
+                        <CardTitle className="text-lg">Physical Details</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                          {selectedPet.age && (
+                            <div>
+                              <Label className="text-sm font-semibold text-gray-700">Age</Label>
+                              <p className="text-gray-900">{selectedPet.age}</p>
+                                      </div>
+                                    )}
+                          {selectedPet.gender && (
+                            <div>
+                              <Label className="text-sm font-semibold text-gray-700">Gender</Label>
+                              <p className="text-gray-900">{selectedPet.gender}</p>
+                                      </div>
+                                    )}
+                          {selectedPet.color && (
+                            <div>
+                              <Label className="text-sm font-semibold text-gray-700">Color</Label>
+                              <p className="text-gray-900">{selectedPet.color}</p>
+                                      </div>
+                                    )}
+                          {selectedPet.size && (
+                            <div>
+                              <Label className="text-sm font-semibold text-gray-700">Size</Label>
+                              <p className="text-gray-900">{selectedPet.size}</p>
+                            </div>
+                          )}
+                          {selectedPet.weight && (
+                            <div>
+                              <Label className="text-sm font-semibold text-gray-700">Weight</Label>
+                              <p className="text-gray-900">{selectedPet.weight}</p>
+                  </div>
+                )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Additional Information */}
+                  <Card className="bg-gray-50">
+                    <CardHeader>
+                      <CardTitle className="text-lg">Additional Information</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      {selectedPet.created_at || selectedPet.createdAt || selectedPet.date_submitted ? (
+                        <div>
+                          <Label className="text-sm font-semibold text-gray-700">Reported Date</Label>
+                          <p className="text-gray-900">
+                            {format(new Date(selectedPet.created_at || selectedPet.createdAt || selectedPet.date_submitted), 'MMM dd, yyyy HH:mm')}
+                          </p>
                 </div>
-              </TabsContent>
-            </Tabs>
+                      ) : null}
+                      {selectedPet.last_seen && (
+                        <div>
+                          <Label className="text-sm font-semibold text-gray-700">Last Seen</Label>
+                          <p className="text-gray-900">
+                            {format(new Date(selectedPet.last_seen), 'MMM dd, yyyy')}
+                          </p>
+                        </div>
+                      )}
+                      {selectedPet.posted_by && (
+                        <div>
+                          <Label className="text-sm font-semibold text-gray-700">Reported By</Label>
+                          <p className="text-gray-900">
+                            {selectedPet.posted_by.name || 'Unknown'} ({selectedPet.posted_by.email || 'N/A'})
+                          </p>
+                        </div>
+                      )}
           </CardContent>
         </Card>
 
+                  {/* Action Buttons */}
+                  <div className="flex gap-3 pt-4 border-t">
+                    <Button
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() => navigate(`/pets/${selectedPet.id || selectedPet._id}`)}
+                    >
+                      <Eye className="h-4 w-4 mr-2" />
+                      View Full Page
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowPetDialog(false)}
+                    >
+                      Close
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
+
+          {/* Modals and other components */}
       {/* Reject Modal */}
       {showRejectModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
@@ -2010,6 +1842,7 @@ export default function Admin() {
           </Card>
         </div>
       )}
+
           </div>
         </main>
       </div>

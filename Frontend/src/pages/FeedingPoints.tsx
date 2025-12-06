@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MapPin, Plus, Droplet, UtensilsCrossed, AlertCircle, CheckCircle2, Search, Filter, Map } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/lib/auth';
 import { feedingPointAPI } from '@/services/api';
 import { useToast } from '@/hooks/use-toast';
+import { shelterApi } from '@/api';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
@@ -50,21 +51,10 @@ export default function FeedingPoints() {
     }
 
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
-      const response = await fetch(`${API_URL}/shelter-registrations/my`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success && data.data && data.data.status === 'approved') {
-          setMyShelter(data.data);
-          setCanAddFeedingPoint(true);
-        } else {
-          setCanAddFeedingPoint(false);
-        }
+      const shelterData = await shelterApi.getMyShelter();
+      if (shelterData && shelterData.is_verified) {
+        setMyShelter(shelterData);
+        setCanAddFeedingPoint(true);
       } else {
         setCanAddFeedingPoint(false);
       }
@@ -360,12 +350,72 @@ export default function FeedingPoints() {
           </div>
         </div>
 
-        {/* Map Placeholder */}
-        <Card className="mb-6 border-2 border-dashed border-gray-300">
-          <CardContent className="py-12 text-center">
-            <MapPin className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-xl font-bold text-gray-900 mb-2">Interactive Map</h3>
-            <p className="text-gray-600 mb-4">Map integration coming soon. View list of feeding points below.</p>
+        {/* Interactive Map */}
+        <Card className="mb-6 border-2 border-gray-300 overflow-hidden">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Map className="h-5 w-5 text-[#2BB6AF]" />
+              <CardTitle>Interactive Map</CardTitle>
+            </div>
+            <CardDescription>Click on markers to see feeding point details</CardDescription>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="relative w-full h-[500px] bg-gray-100">
+              {filteredPoints.length > 0 ? (
+                <iframe
+                  width="100%"
+                  height="100%"
+                  style={{ border: 0 }}
+                  loading="lazy"
+                  allowFullScreen
+                  referrerPolicy="no-referrer-when-downgrade"
+                  src={`https://www.google.com/maps/embed/v1/place?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY || 'AIzaSyBFw0Qbyq9zTFTd-tUY6d-s6V4qOZjFJw'}&q=${filteredPoints[0]?.location?.city || 'India'}&zoom=10`}
+                />
+              ) : (
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
+                  <MapPin className="h-16 w-16 text-gray-400 mb-4" />
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">No Feeding Points</h3>
+                  <p className="text-gray-600">Add feeding points to see them on the map</p>
+                </div>
+              )}
+            </div>
+            {filteredPoints.length > 0 && (
+              <div className="p-4 bg-gray-50 border-t">
+                <div className="flex flex-wrap gap-2">
+                  {filteredPoints.slice(0, 5).map((point) => (
+                    <Button
+                      key={point._id || point.id}
+                      variant="outline"
+                      size="sm"
+                      className="text-xs"
+                      onClick={() => {
+                        if (point.location?.coordinates?.lat && point.location?.coordinates?.lng) {
+                          window.open(
+                            `https://www.google.com/maps?q=${point.location.coordinates.lat},${point.location.coordinates.lng}`,
+                            '_blank'
+                          );
+                        } else if (point.location?.address) {
+                          window.open(
+                            `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                              `${point.location.address}, ${point.location.city}`
+                            )}`,
+                            '_blank'
+                          );
+                        }
+                      }}
+                    >
+                      <MapPin className="h-3 w-3 mr-1" />
+                      {point.name}
+                    </Button>
+                  ))}
+                  {filteredPoints.length > 5 && (
+                    <span className="text-xs text-gray-500 self-center">
+                      +{filteredPoints.length - 5} more
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 

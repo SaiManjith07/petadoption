@@ -1,18 +1,25 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-
-const API_URL = (import.meta.env.VITE_API_URL as string) || 'http://localhost:8000/api';
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-}
+import { authApi } from '@/api/authApi';
+import { tokenStorage } from '@/api/apiClient';
+import { User } from '@/models';
 
 interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<User>;
-  register: (payload: { name: string; email: string; password: string; role?: string; full_name?: string; pincode?: string; age?: number; gender?: string; phone?: string; agree_terms?: boolean; }) => Promise<void>;
+  register: (payload: {
+    name: string;
+    email: string;
+    password: string;
+    confirm_password: string;
+    role?: 'user' | 'rescuer' | 'shelter';
+    pincode?: string;
+    age?: number;
+    gender?: 'Male' | 'Female' | 'Other' | 'Prefer not to say';
+    phone?: string;
+    country_code?: string;
+    address?: string;
+    landmark?: string;
+  }) => Promise<void>;
   logout: () => void;
   refreshUser: () => Promise<void>;
   isAuthenticated: boolean;
@@ -26,128 +33,118 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     // Load stored user on mount
-    const storedUser = localStorage.getItem('user');
+    const storedUser = tokenStorage.getUser();
     if (storedUser) {
-      setUser(JSON.parse(storedUser));
+      setUser(storedUser);
       return;
     }
 
     // If token exists but user not in storage, try to fetch current user
-    const token = localStorage.getItem('token');
-    if (token) {
+    const accessToken = tokenStorage.getAccessToken();
+    if (accessToken) {
       (async () => {
         try {
-          const res = await fetch(`${API_URL}/auth/me`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          if (res.ok) {
-            const data = await res.json();
-            if (data.user) {
-              setUser(data.user);
-              localStorage.setItem('user', JSON.stringify(data.user));
-            }
-          } else {
-            // token invalid or expired, remove it
-            localStorage.removeItem('token');
+          const data = await authApi.getMe();
+          if (data.user) {
+            setUser(data.user);
+            tokenStorage.setUser(data.user);
           }
         } catch (e) {
-          // network error - keep as unauthenticated
+          // token invalid or expired, clear it
+          tokenStorage.clearTokens();
         }
       })();
     }
   }, []);
 
-  const login = async (email: string, password: string) => {
-    console.log('Auth: Attempting login to:', `${API_URL}/auth/login`);
-    const res = await fetch(`${API_URL}/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    });
-
-    console.log('Auth: Response status:', res.status, res.statusText);
-
-    if (!res.ok) {
-      const err = await res.json().catch(() => null);
-      console.error('Auth: Login failed:', err);
-      throw new Error(err?.message || 'Login failed');
-    }
-
-    const data = await res.json();
-    console.log('Auth: Login response data:', data);
-    const { token, user: returnedUser } = data;
-    
-    if (!token || !returnedUser) {
-      console.error('Auth: Missing token or user in response');
-      throw new Error('Invalid response from server');
-    }
-    
-    console.log('Auth: Returned user:', returnedUser);
-    
-    // Store token and user data
-    localStorage.setItem('token', token);
-    
-    // Ensure user object has all required fields
-    const userData = {
-      id: returnedUser.id || returnedUser._id,
-      _id: returnedUser._id || returnedUser.id,
-      name: returnedUser.name,
-      email: returnedUser.email,
-      role: returnedUser.role || 'user',
-      ...returnedUser, // Include any additional fields
-    };
-    
-    console.log('Auth: Processed user data:', userData);
-    setUser(userData);
-    localStorage.setItem('user', JSON.stringify(userData));
-    
-    return userData; // Return user data for immediate use
-  };
-
-  const register = async (payload: { name: string; email: string; password: string; role?: string; full_name?: string; pincode?: string; age?: number; gender?: string; phone?: string; agree_terms?: boolean; }) => {
-    const res = await fetch(`${API_URL}/auth/register`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-
-    if (!res.ok) {
-      const err = await res.json().catch(() => null);
-      // if backend returns field errors, include them on the Error message so caller can parse
-      const message = err?.message || (err?.errors ? JSON.stringify(err.errors) : 'Registration failed');
+  const login = async (email: string, password: string): Promise<User> => {
+    try {
+      const data = await authApi.login(email, password);
+      
+      // Store tokens
+      tokenStorage.setTokens({
+        access: data.token,
+        refresh: data.refresh,
+      });
+      
+      // Store user data
+      const userData = {
+        ...data.user,
+        id: data.user.id,
+      };
+      
+      setUser(userData);
+      tokenStorage.setUser(userData);
+      
+      return userData;
+    } catch (error: any) {
+      const message = error?.response?.data?.message || error?.message || 'Login failed';
       throw new Error(message);
     }
-
-    const data = await res.json();
-    const { token, user: returnedUser } = data;
-    if (token) localStorage.setItem('token', token);
-    setUser(returnedUser);
-    localStorage.setItem('user', JSON.stringify(returnedUser));
   };
 
-  const refreshUser = async () => {
-    const token = localStorage.getItem('token');
-    if (!token) return;
-    
+  const register = async (payload: {
+    name: string;
+    email: string;
+    password: string;
+    confirm_password: string;
+    role?: 'user' | 'rescuer' | 'shelter';
+    pincode?: string;
+    age?: number;
+    gender?: 'Male' | 'Female' | 'Other' | 'Prefer not to say';
+    phone?: string;
+    country_code?: string;
+    address?: string;
+    landmark?: string;
+  }): Promise<void> => {
     try {
-      const res = await fetch(`${API_URL}/auth/me`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.user) {
-          setUser(data.user);
-          localStorage.setItem('user', JSON.stringify(data.user));
+      const data = await authApi.register(payload);
+      
+      // Store tokens
+      if (data.token && data.refresh) {
+        tokenStorage.setTokens({
+          access: data.token,
+          refresh: data.refresh,
+        });
+      }
+      
+      // Store user data
+      setUser(data.user);
+      tokenStorage.setUser(data.user);
+    } catch (error: any) {
+      // Handle validation errors from Django
+      if (error?.response?.data) {
+        const errors = error.response.data;
+        if (typeof errors === 'object' && !errors.message) {
+          // Field-specific errors
+          const errorMessages = Object.entries(errors)
+            .map(([field, messages]) => {
+              const msgArray = Array.isArray(messages) ? messages : [messages];
+              return `${field}: ${msgArray.join(', ')}`;
+            })
+            .join('; ');
+          throw new Error(errorMessages);
         }
+        throw new Error(errors.message || JSON.stringify(errors));
+      }
+      throw new Error(error?.message || 'Registration failed');
+    }
+  };
+
+  const refreshUser = async (): Promise<void> => {
+    try {
+      const data = await authApi.getMe();
+      if (data.user) {
+        setUser(data.user);
+        tokenStorage.setUser(data.user);
       }
     } catch (e) {
       console.error('Error refreshing user:', e);
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+  const logout = (): void => {
+    tokenStorage.clearTokens();
     setUser(null);
   };
 
@@ -160,7 +157,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         logout,
         refreshUser,
         isAuthenticated: !!user,
-        isAdmin: user?.role === 'admin',
+        isAdmin: user?.role === 'admin' || user?.role === 'sub_admin' || user?.is_staff === true,
       }}
     >
       {children}

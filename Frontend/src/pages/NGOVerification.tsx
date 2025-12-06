@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { format } from 'date-fns';
 
 export default function NGOVerification() {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, isAdmin } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [myReports, setMyReports] = useState<any[]>([]);
@@ -21,10 +21,23 @@ export default function NGOVerification() {
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    if (isAuthenticated) {
+    if (!isAuthenticated) {
+      navigate('/auth/login');
+      return;
+    }
+    if (!isAdmin) {
+      toast({
+        title: 'Access Denied',
+        description: 'This page is only accessible to admin users.',
+        variant: 'destructive',
+      });
+      navigate('/home');
+      return;
+    }
+    if (isAuthenticated && isAdmin) {
       loadMyReports();
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, isAdmin, navigate]);
 
   const loadMyReports = async () => {
     try {

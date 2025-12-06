@@ -14,16 +14,34 @@ import { Search, Filter, PawPrint } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface Pet {
-  id: string;
-  status: string;
-  species: string;
-  breed: string;
-  color: string;
-  photos: string[];
-  location: string;
-  date_found_or_lost: string;
-  submitted_by: {
-    name: string;
+  id?: string;
+  _id?: string;
+  status?: string;
+  adoption_status?: string;
+  species?: string;
+  category?: {
+    name?: string;
+  };
+  breed?: string;
+  color?: string;
+  photos?: string[];
+  images?: Array<{ image?: string; image_url?: string }>;
+  image?: string;
+  image_url?: string;
+  location?: string;
+  pincode?: string;
+  date_found_or_lost?: string;
+  last_seen?: string;
+  submitted_by?: {
+    name?: string;
+    id?: string;
+    _id?: string;
+  };
+  posted_by?: {
+    name?: string;
+    email?: string;
+    id?: string;
+    _id?: string;
   };
 }
 
@@ -73,12 +91,18 @@ export const PetGallery = ({
   const [showFilterPanel, setShowFilterPanel] = useState(false);
 
   const filteredPets = pets.filter((pet) => {
-    const matchesSearch =
-      pet.breed.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      pet.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      pet.color.toLowerCase().includes(searchTerm.toLowerCase());
+    const breed = pet.breed || '';
+    const location = pet.location || '';
+    const color = pet.color || '';
+    const species = pet.species || pet.category?.name || '';
     
-    const matchesSpecies = speciesFilter === 'all' || pet.species === speciesFilter;
+    const matchesSearch = !searchTerm || (
+      breed.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      location.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      color.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    
+    const matchesSpecies = speciesFilter === 'all' || species === speciesFilter;
 
     return matchesSearch && matchesSpecies;
   });
@@ -180,15 +204,18 @@ export const PetGallery = ({
           </div>
         ) : (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
-            {filteredPets.map((pet) => (
-              <PetCard
-                key={pet.id}
-                pet={pet}
-                onActionClick={onActionClick}
-                actionLabel={actionLabel}
-                currentUserId={currentUserId}
-              />
-            ))}
+            {filteredPets.map((pet) => {
+              const petId = pet.id || pet._id || '';
+              return (
+                <PetCard
+                  key={petId}
+                  pet={pet}
+                  onActionClick={onActionClick}
+                  actionLabel={actionLabel}
+                  currentUserId={currentUserId}
+                />
+              );
+            })}
           </div>
         )}
       </div>

@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/lib/auth';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
+import { shelterApi } from '@/api';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 
@@ -54,36 +55,31 @@ export default function RegisterShelter() {
 
   const loadMyShelter = async () => {
     try {
-      const response = await fetch(`${API_URL}/shelter-registrations/my`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        if (data.data) {
-          setMyShelter(data.data);
-          setFormData({
-            shelter_name: data.data.shelter_name || '',
-            location: {
-              address: data.data.location?.address || '',
-              city: data.data.location?.city || '',
-              state: data.data.location?.state || '',
-              pincode: data.data.location?.pincode || '',
-              coordinates: {
-                lat: data.data.location?.coordinates?.lat || '',
-                lng: data.data.location?.coordinates?.lng || '',
-              },
+      const data = await shelterApi.getMyShelter();
+      if (data) {
+        setMyShelter(data);
+        setFormData({
+          shelter_name: data.name || '',
+          location: {
+            address: data.address || '',
+            city: data.city || '',
+            state: data.state || '',
+            pincode: data.pincode || '',
+            coordinates: {
+              lat: data.latitude || '',
+              lng: data.longitude || '',
             },
-            area_sqft: data.data.area_sqft || '',
-            capacity: data.data.capacity || '',
-            facilities: data.data.facilities || [],
-            contact_info: {
-              phone: data.data.contact_info?.phone || '',
-              email: data.data.contact_info?.email || '',
-              alternate_phone: data.data.contact_info?.alternate_phone || '',
-            },
-            accepts_feeding_data: data.data.accepts_feeding_data || false,
-          });
-        }
+          },
+          area_sqft: data.area_sqft || '',
+          capacity: data.total_capacity || '',
+          facilities: data.facilities || [],
+          contact_info: {
+            phone: data.phone || '',
+            email: data.email || '',
+            alternate_phone: '',
+          },
+          accepts_feeding_data: data.accepts_feeding || false,
+        });
       }
     } catch (error) {
       console.error('Error loading shelter:', error);
@@ -95,35 +91,42 @@ export default function RegisterShelter() {
     setSubmitting(true);
 
     try {
-      const response = await fetch(`${API_URL}/shelter-registrations`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
-        body: JSON.stringify({
-          ...formData,
-          area_sqft: parseInt(formData.area_sqft),
-          capacity: parseInt(formData.capacity),
-        }),
-      });
+      const shelterData = {
+        name: formData.shelter_name,
+        address: formData.location.address,
+        city: formData.location.city,
+        state: formData.location.state,
+        pincode: formData.location.pincode,
+        latitude: parseFloat(formData.location.coordinates.lat) || null,
+        longitude: parseFloat(formData.location.coordinates.lng) || null,
+        area_sqft: parseInt(formData.area_sqft) || 0,
+        total_capacity: parseInt(formData.capacity) || 0,
+        phone: formData.contact_info.phone,
+        email: formData.contact_info.email,
+        facilities: formData.facilities,
+        accepts_feeding: formData.accepts_feeding_data,
+      };
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to register shelter');
+      if (myShelter) {
+        // Update existing shelter
+        await shelterApi.updateShelter(myShelter.id || myShelter._id, shelterData);
+      } else {
+        // Register new shelter
+        await shelterApi.registerShelter(shelterData);
       }
 
       toast({
         title: 'Success',
-        description: 'Shelter registration submitted. Waiting for admin approval.',
+        description: myShelter 
+          ? 'Shelter updated successfully.' 
+          : 'Shelter registration submitted. Waiting for admin approval.',
       });
 
       loadMyShelter();
     } catch (error: any) {
       toast({
         title: 'Error',
-        description: error.message || 'Failed to register shelter',
+        description: error.response?.data?.message || error.message || 'Failed to register shelter',
         variant: 'destructive',
       });
     } finally {
