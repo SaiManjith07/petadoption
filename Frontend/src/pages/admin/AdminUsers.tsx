@@ -16,6 +16,7 @@ import {
   X,
   CheckCircle,
   AlertCircle,
+  MessageSquare,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,13 +41,15 @@ import {
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { adminApi } from '@/api';
+import { adminApi, chatApi } from '@/api';
 import { AdminSidebar } from '@/components/layout/AdminSidebar';
 import { AdminTopNav } from '@/components/layout/AdminTopNav';
+import { useAuth } from '@/lib/auth';
 
 export default function AdminUsers() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user: currentUser } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -56,6 +59,7 @@ export default function AdminUsers() {
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [connectingUserId, setConnectingUserId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({
     role: '',
     is_active: true,
@@ -119,6 +123,98 @@ export default function AdminUsers() {
     }
   };
 
+  const handleConnectUser = async (targetUser: any) => {
+    const currentUserId = currentUser?.id || currentUser?._id || currentUser?.user_id;
+    if (!currentUserId) {
+      toast({
+        title: 'Error',
+        description: 'Unable to identify current user',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const targetUserId = targetUser._id || targetUser.id || targetUser.user_id;
+    if (!targetUserId) {
+      toast({
+        title: 'Error',
+        description: 'Unable to identify target user',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      setConnectingUserId(targetUserId);
+      
+      // Create a chat request from admin to user
+      try {
+        const result = await adminApi.createChatRequest(
+          targetUserId,
+          `Admin ${currentUser.name || currentUser.email || 'Administrator'} wants to connect with you.`
+        );
+        
+        toast({
+          title: 'Chat Request Sent',
+          description: `A chat request has been sent to ${targetUser.name || targetUser.email}. They will be notified and can approve to start chatting.`,
+        });
+      } catch (adminError: any) {
+        // If admin API endpoint doesn't exist, try alternative approach
+        try {
+          // First try admin API to create room directly
+          let room;
+          try {
+            room = await adminApi.createChatRoom(targetUserId);
+          } catch (adminRoomError: any) {
+            // If admin room creation fails, try regular chat API
+            room = await chatApi.getOrCreateRoom(parseInt(String(targetUserId)));
+          }
+          
+          // Check if we got a valid room
+          if (room && (room.id || room.room_id || room._id)) {
+            toast({
+              title: 'Chat Room Created',
+              description: `You can now chat with ${targetUser.name || targetUser.email}.`,
+            });
+            navigate(`/admin/chats/monitor/${room.id || room.room_id || room._id}`);
+          } else {
+            throw new Error('Invalid room response');
+          }
+        } catch (roomError: any) {
+          // If all else fails, show error with helpful guidance
+          let errorMsg = roomError?.response?.data?.detail || 
+                        roomError?.response?.data?.error || 
+                        roomError?.message || 
+                        adminError?.response?.data?.detail || 
+                        adminError?.response?.data?.error || 
+                        adminError?.message;
+          
+          // If it's a 404 or 500 error, provide more helpful message
+          if (roomError?.response?.status === 404 || roomError?.response?.status === 500 || 
+              adminError?.response?.status === 404 || adminError?.response?.status === 500) {
+            errorMsg = 'The chat system is currently unavailable. Please try using the Chat Management section to connect with users, or contact the system administrator.';
+          } else if (!errorMsg) {
+            errorMsg = 'Failed to create chat request. The chat system may be temporarily unavailable. Please try using the chat management section.';
+          }
+          
+          toast({
+            title: 'Unable to Connect',
+            description: errorMsg,
+            variant: 'destructive',
+          });
+        }
+      }
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error?.response?.data?.detail || error?.response?.data?.error || error?.message || 'Failed to send chat request',
+        variant: 'destructive',
+      });
+    } finally {
+      setConnectingUserId(null);
+    }
+  };
+
   const handleDeactivateUser = async (userId: string) => {
     if (!confirm('Are you sure you want to deactivate this user?')) return;
     
@@ -144,6 +240,13 @@ export default function AdminUsers() {
   };
 
   const filteredUsers = users.filter((u: any) => {
+    // Filter out the current logged-in admin
+    const currentUserId = currentUser?.id || currentUser?._id || currentUser?.user_id;
+    const userId = u._id || u.id || u.user_id;
+    if (currentUserId && userId && String(currentUserId) === String(userId)) {
+      return false;
+    }
+    
     const matchesSearch = !searchTerm || 
       u.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       u.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -155,13 +258,21 @@ export default function AdminUsers() {
     return matchesSearch && matchesRole && matchesStatus;
   });
 
+  // Filter out current user for stats
+  const currentUserId = currentUser?.id || currentUser?._id || currentUser?.user_id;
+  const usersExcludingCurrent = users.filter((u: any) => {
+    if (!currentUserId) return true;
+    const userId = u._id || u.id || u.user_id;
+    return !userId || String(userId) !== String(currentUserId);
+  });
+
   const stats = {
-    total: users.length,
-    active: users.filter((u: any) => u.is_active !== false).length,
-    inactive: users.filter((u: any) => u.is_active === false).length,
-    regular: users.filter((u: any) => u.role === 'user').length,
-    rescuers: users.filter((u: any) => u.role === 'rescuer').length,
-    admins: users.filter((u: any) => u.role === 'admin').length,
+    total: usersExcludingCurrent.length,
+    active: usersExcludingCurrent.filter((u: any) => u.is_active !== false).length,
+    inactive: usersExcludingCurrent.filter((u: any) => u.is_active === false).length,
+    regular: usersExcludingCurrent.filter((u: any) => u.role === 'user').length,
+    rescuers: usersExcludingCurrent.filter((u: any) => u.role === 'rescuer').length,
+    admins: usersExcludingCurrent.filter((u: any) => u.role === 'admin').length,
   };
 
   return (
@@ -329,8 +440,8 @@ export default function AdminUsers() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {filteredUsers.map((user: any) => (
-                          <TableRow key={user._id}>
+                        {filteredUsers.map((user: any, index: number) => (
+                          <TableRow key={user._id || user.id || `user-${index}`}>
                             <TableCell className="font-medium">{user.name || 'N/A'}</TableCell>
                             <TableCell>{user.email || 'N/A'}</TableCell>
                             <TableCell>{user.phone || 'N/A'}</TableCell>
@@ -374,6 +485,16 @@ export default function AdminUsers() {
                                   className="gap-1"
                                 >
                                   <Eye className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleConnectUser(user)}
+                                  disabled={connectingUserId === (user._id || user.id)}
+                                  className="gap-1 bg-[#2BB6AF]/10 hover:bg-[#2BB6AF]/20 text-[#2BB6AF] border-[#2BB6AF]/30"
+                                >
+                                  <MessageSquare className={`h-4 w-4 ${connectingUserId === (user._id || user.id) ? 'animate-spin' : ''}`} />
+                                  Connect
                                 </Button>
                                 {user.role !== 'admin' && (
                                   <>

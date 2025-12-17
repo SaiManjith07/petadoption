@@ -69,8 +69,49 @@ export default function AdminFoundPets() {
         _isPendingFound: true, // Mark as pending found pet
       }));
       
-      // Combine both sources
-      const combinedPets = [...(allPetsData || []), ...markedPendingPets];
+      // Filter allPetsData to ONLY include found pets (has found_date)
+      // Found pets MUST have found_date set - this is the primary indicator
+      const foundPetsFromAll = (allPetsData || []).filter((p: any) => {
+        // Check for found_date in various possible field names
+        const hasFoundDate = p.found_date || p.foundDate || p.foundDate || 
+                           (p.found_date !== null && p.found_date !== undefined);
+        
+        
+        // Include if it has found_date (primary indicator of found pet)
+        if (hasFoundDate) {
+          // Include all pets with found_date, regardless of status
+          return true;
+        }
+        
+        // Also include if explicitly marked as Found status
+        if (p.adoption_status === 'Found') {
+          return true;
+        }
+        
+        return false;
+      });
+      
+      // Combine: use pending reports as primary source, then add other found pets
+      // Remove duplicates by ID
+      const petMap = new Map();
+      
+      // First, add pending found pets (most important)
+      markedPendingPets.forEach((p: any) => {
+        const id = p.id || p._id;
+        if (id) {
+          petMap.set(id, p);
+        }
+      });
+      
+      // Then, add other found pets (avoid duplicates)
+      foundPetsFromAll.forEach((p: any) => {
+        const id = p.id || p._id;
+        if (id && !petMap.has(id)) {
+          petMap.set(id, p);
+        }
+      });
+      
+      const combinedPets = Array.from(petMap.values());
       
       // Normalize the data
       const normalizedPets = combinedPets.map((p: any) => ({
@@ -84,25 +125,20 @@ export default function AdminFoundPets() {
         index === self.findIndex((p: any) => (p.id || p._id) === (pet.id || pet._id))
       );
       
-      // Filter for found pets - check multiple possible fields
-      // Include both verified and pending found pets
-      // When a found pet is reported, it's created with adoption_status='Pending'
-      // So we need to include Pending pets that are likely found pets
+      // Final filter: Include ALL pets that have found_date OR are marked as Found
+      // This is simpler and more inclusive
       const foundPetsList = uniquePets.filter((pet: any) => {
+        // Check if it has found_date (primary indicator)
+        const hasFoundDate = pet.found_date || pet.foundDate || 
+                           (pet.found_date !== null && pet.found_date !== undefined);
+        
+        if (hasFoundDate) return true;
+        
         // Check if it's explicitly marked as Found
         if (pet.adoption_status === 'Found') return true;
         
-        // Check report_type or type fields
-        if (pet.report_type === 'found' || pet.type === 'found') return true;
-        
-        // Check status field
-        if (pet.status && pet.status.includes('Found')) return true;
-        
         // If it's marked as pending found from getPendingReports, include it
         if (pet._isPendingFound) return true;
-        
-        // For Pending pets, check if they have found_date (indicating they're found pets)
-        if (pet.adoption_status === 'Pending' && (pet.found_date || pet.foundDate)) return true;
         
         return false;
       });
@@ -156,6 +192,28 @@ export default function AdminFoundPets() {
     }
 
     setFilteredPets(filtered);
+  };
+
+  const stats = {
+    total: foundPets.length,
+    pending: foundPets.filter((p: any) => {
+      const petStatus = p.status || p.adoption_status || '';
+      const isPending = !p.is_verified || 
+                       petStatus.toLowerCase().includes('pending') ||
+                       petStatus === 'Pending Verification' ||
+                       petStatus === 'Pending' ||
+                       p._isPendingFound;
+      return isPending;
+    }).length,
+    verified: foundPets.filter((p: any) => {
+      const petStatus = p.status || p.adoption_status || '';
+      return (petStatus === 'Listed Found' || petStatus === 'Found' || 
+              (p.is_verified && petStatus !== 'Pending' && petStatus !== 'Pending Verification'));
+    }).length,
+    rejected: foundPets.filter((p: any) => {
+      const petStatus = p.status || p.adoption_status || '';
+      return petStatus === 'Rejected';
+    }).length,
   };
 
   const handleAccept = (petId: string) => {
@@ -276,14 +334,50 @@ export default function AdminFoundPets() {
             <div className="flex items-center justify-between">
               <div>
                 <h1 className="text-3xl font-bold flex items-center gap-2 text-gray-900">
-                  <Shield className="h-8 w-8 text-[#4CAF50]" />
+                  <Shield className="h-8 w-8 text-[#2BB6AF]" />
                   Found Pets Management
                 </h1>
                 <p className="text-gray-600 mt-1">Verify and manage found pet reports</p>
               </div>
-              <Badge variant="default" className="text-base px-3 py-1 bg-[#4CAF50]">
+              <Badge variant="default" className="text-base px-3 py-1 bg-[#2BB6AF]">
                 {filteredPets.length} Found Pet{filteredPets.length !== 1 ? 's' : ''}
               </Badge>
+            </div>
+
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium text-gray-600">Total Found Pets</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-gray-900">{stats.total}</div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium text-gray-600">Pending Verification</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-yellow-600">{stats.pending}</div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium text-gray-600">Verified</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-green-600">{stats.verified}</div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium text-gray-600">Rejected</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-red-600">{stats.rejected}</div>
+                </CardContent>
+              </Card>
             </div>
 
         {/* Filters */}
@@ -370,7 +464,9 @@ export default function AdminFoundPets() {
                       <div className="flex items-start justify-between">
                         <div>
                           <div className="flex items-center gap-2 mb-2">
-                            <Badge variant="default">FOUND</Badge>
+                            <Badge variant="default" className="bg-orange-500 hover:bg-orange-600">
+                              {pet.species || 'Pet'}
+                            </Badge>
                             <Badge variant={
                               (pet.status === 'Pending Verification' || pet.adoption_status === 'Pending') ? 'destructive' : 
                               (pet.is_verified ? 'default' : 'outline')

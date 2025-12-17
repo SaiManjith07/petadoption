@@ -74,16 +74,7 @@ export default function RegisterAdmin() {
         }),
       };
 
-      console.log('Sending email via EmailJS with params:', { 
-        serviceId, 
-        templateId, 
-        to_email: email,
-        pin_length: pin.length 
-      });
-
       const response = await emailjs.send(serviceId, templateId, templateParams);
-      
-      console.log('EmailJS response:', response);
 
       toast({
         title: 'Email Sent Successfully!',

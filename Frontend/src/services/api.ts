@@ -241,7 +241,6 @@ export const petsAPI = {
           console.warn('Photo at index', index, 'is not a File object:', photo);
         }
       });
-      console.log(`Added ${petData.photos.length} photo(s) to FormData`);
     } else {
       console.warn('No photos array found in petData or photos is not an array');
     }
@@ -250,14 +249,6 @@ export const petsAPI = {
       const token = localStorage.getItem('token');
       const url = `${API_URL}${endpoint}`;
       
-      console.log('Sending request to:', url);
-      console.log('FormData keys:', Array.from(formData.keys()));
-      
-      // Log photo files for debugging
-      const photoFiles = petData.photos?.filter((p: any) => p instanceof File) || [];
-      if (photoFiles.length > 0) {
-        console.log('Photo files being sent:', photoFiles.map((f: File) => ({ name: f.name, size: f.size, type: f.type })));
-      }
       
       const response = await fetch(url, {
         method: 'POST',
@@ -583,11 +574,10 @@ export const chatAPI = {
 
   connectWebSocket(roomId: string) {
     // Mock WebSocket connection
-    console.log(`WebSocket connected to ${WS_URL}/chats/${roomId}`);
     return {
-      send: (message: any) => console.log('WS Send:', message),
-      close: () => console.log('WS Closed'),
-      on: (event: string, callback: Function) => console.log('WS Event:', event),
+      send: (message: any) => {},
+      close: () => {},
+      on: (event: string, callback: Function) => {},
     };
   },
 };

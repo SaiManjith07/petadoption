@@ -17,6 +17,7 @@ import {
   MapPin,
   Stethoscope,
 } from 'lucide-react';
+import { Logo } from '@/components/ui/Logo';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/auth';
 import { Badge } from '@/components/ui/badge';
@@ -139,65 +140,31 @@ export const AdminSidebar = ({ isOpen = true, onClose }: AdminSidebarProps) => {
         feedingPointAPI.getAll(),
       ]);
 
-      // Count found pets pending - check both all pets and pending reports
+      // Count found pets pending - use pending reports API directly (most accurate)
       let foundPendingCount = 0;
-      if (allPetsRes.status === 'fulfilled') {
-        try {
-          const allPets = allPetsRes.value || [];
-          const foundPets = allPets.filter((p: any) => {
-            const isFound = p.adoption_status === 'Found' || 
-                           p.report_type === 'found' || 
-                           p.type === 'found' ||
-                           (p.status && p.status.includes('Found'));
-            return isFound;
-          });
-          foundPendingCount = foundPets.filter((p: any) => 
-            !p.is_verified || 
-            (p.status || p.adoption_status || '').toLowerCase().includes('pending') ||
-            p.status === 'Pending Verification'
-          ).length;
-        } catch (e) {
-          console.error('Error counting found pets from all:', e);
-        }
-      }
       if (pendingFoundRes.status === 'fulfilled') {
         try {
-          const pendingPets = pendingFoundRes.value || [];
-          foundPendingCount = Math.max(foundPendingCount, pendingPets.length);
+          const pendingPets = pendingFoundRes.value?.data || pendingFoundRes.value || [];
+          foundPendingCount = Array.isArray(pendingPets) ? pendingPets.length : 0;
         } catch (e) {
           console.error('Error counting pending found pets:', e);
         }
+      } else {
+        console.warn('Failed to load pending found pets:', pendingFoundRes.reason);
       }
       setPendingCounts(prev => ({ ...prev, foundPets: foundPendingCount }));
 
-      // Count lost pets pending - check both all pets and pending reports
+      // Count lost pets pending - use pending reports API directly (most accurate)
       let lostPendingCount = 0;
-      if (allPetsRes.status === 'fulfilled') {
-        try {
-          const allPets = allPetsRes.value || [];
-          const lostPets = allPets.filter((p: any) => {
-            const isLost = p.adoption_status === 'Lost' || 
-                           p.report_type === 'lost' || 
-                           p.type === 'lost' ||
-                           (p.status && p.status.includes('Lost'));
-            return isLost;
-          });
-          lostPendingCount = lostPets.filter((p: any) => 
-            !p.is_verified || 
-            (p.status || p.adoption_status || '').toLowerCase().includes('pending') ||
-            p.status === 'Pending Verification'
-          ).length;
-        } catch (e) {
-          console.error('Error counting lost pets from all:', e);
-        }
-      }
       if (pendingLostRes.status === 'fulfilled') {
         try {
-          const pendingPets = pendingLostRes.value || [];
-          lostPendingCount = Math.max(lostPendingCount, pendingPets.length);
+          const pendingPets = pendingLostRes.value?.data || pendingLostRes.value || [];
+          lostPendingCount = Array.isArray(pendingPets) ? pendingPets.length : 0;
         } catch (e) {
           console.error('Error counting pending lost pets:', e);
         }
+      } else {
+        console.warn('Failed to load pending lost pets:', pendingLostRes.reason);
       }
       setPendingCounts(prev => ({ ...prev, lostPets: lostPendingCount }));
 
@@ -271,13 +238,9 @@ export const AdminSidebar = ({ isOpen = true, onClose }: AdminSidebarProps) => {
         "lg:translate-x-0"
       )}>
         {/* Logo Section */}
-        <div className="flex items-center gap-3 px-6 py-6 border-b border-gray-100">
-          <div className="h-10 w-10 rounded-xl bg-[#E8F8EE] flex items-center justify-center">
-            <Shield className="h-6 w-6 text-[#4CAF50]" />
-          </div>
-          <div>
-            <h1 className="text-lg font-bold text-gray-900">PetReunite</h1>
-            <p className="text-xs text-gray-500">Admin Panel</p>
+        <div className="px-2 py-2 border-b border-gray-200 h-16 flex items-center">
+          <div className="w-full min-w-0">
+            <Logo size="sm" showText={true} showTagline={false} />
           </div>
         </div>
 
@@ -296,21 +259,21 @@ export const AdminSidebar = ({ isOpen = true, onClose }: AdminSidebarProps) => {
                 className={cn(
                   'group flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 relative',
                   active
-                    ? 'bg-[#E8F8EE] text-[#4CAF50]'
+                    ? 'bg-[#E8F8EE] text-[#2BB6AF]'
                     : hasPending
-                    ? 'text-gray-700 hover:bg-yellow-50 hover:text-[#4CAF50] bg-yellow-50/50'
-                    : 'text-gray-700 hover:bg-gray-50 hover:text-[#4CAF50]'
+                    ? 'text-gray-700 hover:bg-yellow-50 hover:text-[#2BB6AF] bg-yellow-50/50'
+                    : 'text-gray-700 hover:bg-gray-50 hover:text-[#2BB6AF]'
                 )}
               >
                 {/* Active indicator bar */}
                 {active && (
-                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-[#4CAF50] rounded-r-full" />
+                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-[#2BB6AF] rounded-r-full" />
                 )}
                 {/* Pending indicator bar */}
                 {hasPending && !active && (
                   <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-yellow-500 rounded-r-full" />
                 )}
-                <Icon className={cn('h-5 w-5', active && 'text-[#4CAF50]', hasPending && !active && 'text-yellow-600')} strokeWidth={2} />
+                <Icon className={cn('h-5 w-5', active && 'text-[#2BB6AF]', hasPending && !active && 'text-yellow-600')} strokeWidth={2} />
                 <span className="font-medium text-sm flex-1">{item.title}</span>
                 {hasPending && (
                   <Badge 
@@ -321,7 +284,7 @@ export const AdminSidebar = ({ isOpen = true, onClose }: AdminSidebarProps) => {
                   </Badge>
                 )}
                 {active && !hasPending && (
-                  <ArrowRight className="h-4 w-4 text-[#4CAF50]" />
+                  <ArrowRight className="h-4 w-4 text-[#2BB6AF]" />
                 )}
               </Link>
             );
@@ -331,8 +294,8 @@ export const AdminSidebar = ({ isOpen = true, onClose }: AdminSidebarProps) => {
         {/* Admin Info Section - Bottom */}
         <div className="p-4 border-t border-gray-100 bg-gray-50/50">
           <div className="flex items-center gap-3 px-2 py-2">
-            <div className="h-10 w-10 rounded-full bg-[#E8F8EE] flex items-center justify-center border-2 border-[#4CAF50]/20">
-              <User className="h-5 w-5 text-[#4CAF50]" />
+            <div className="h-10 w-10 rounded-full bg-[#E8F8EE] flex items-center justify-center border-2 border-[#2BB6AF]/20">
+              <User className="h-5 w-5 text-[#2BB6AF]" />
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-gray-900 truncate">{user?.name || 'Admin'}</p>

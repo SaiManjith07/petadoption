@@ -370,7 +370,7 @@ export default function AdminFeedingPoints() {
               </div>
               <Button
                 onClick={() => setShowAddDialog(true)}
-                className="bg-[#4CAF50] hover:bg-[#2E7D32] text-white"
+                className="bg-[#2BB6AF] hover:bg-[#239a94] text-white"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Add Feeding Point
@@ -666,7 +666,7 @@ export default function AdminFeedingPoints() {
               <Button
                 onClick={handleAddPoint}
                 disabled={submitting}
-                className="bg-[#4CAF50] hover:bg-[#2E7D32]"
+                className="bg-[#2BB6AF] hover:bg-[#239a94]"
               >
                 {submitting ? 'Creating...' : 'Create Feeding Point'}
               </Button>
@@ -813,7 +813,7 @@ export default function AdminFeedingPoints() {
               <Button
                 onClick={handleUpdatePoint}
                 disabled={submitting}
-                className="bg-[#4CAF50] hover:bg-[#2E7D32]"
+                className="bg-[#2BB6AF] hover:bg-[#239a94]"
               >
                 {submitting ? 'Updating...' : 'Update Feeding Point'}
               </Button>

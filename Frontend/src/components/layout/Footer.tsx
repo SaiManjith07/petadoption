@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
-import { PawPrint, Mail, Phone, MapPin, Facebook, Twitter, Instagram, Youtube } from 'lucide-react';
+import { Mail, Phone, MapPin, Facebook, Twitter, Instagram, Youtube } from 'lucide-react';
+import { Logo } from '@/components/ui/Logo';
 
 export const Footer = () => {
   const quickLinks = [
@@ -32,10 +33,7 @@ export const Footer = () => {
         <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
           {/* Logo */}
           <div className="space-y-4">
-            <Link to="/" className="flex items-center gap-2 text-xl font-bold text-[#2BB6AF]">
-              <PawPrint className="h-7 w-7" />
-              <span>PetReunite</span>
-            </Link>
+            <Logo size="lg" showText={true} showTagline={false} linkTo="/" />
             <p className="text-sm text-gray-600">
               Helping reunite lost pets with their families and finding loving homes for animals in need.
             </p>

@@ -199,11 +199,69 @@ export const adminApi = {
   },
 
   /**
-   * Get a chat room
+   * Approve a chat request (new workflow)
+   */
+  async approveChatRequest(requestId: number, adminNotes?: string): Promise<any> {
+    const response = await apiClient.patch(`/chats/requests/${requestId}/admin-approve/`, {
+      admin_notes: adminNotes || '',
+    });
+    return response.data;
+  },
+
+  /**
+   * Reject a chat request (new workflow)
+   */
+  async rejectChatRequest(requestId: number, adminNotes?: string): Promise<any> {
+    const response = await apiClient.patch(`/chats/requests/${requestId}/admin-reject/`, {
+      admin_notes: adminNotes || '',
+    });
+    return response.data;
+  },
+
+  /**
+   * Create a chat room (admin only)
+   */
+  async createChatRoom(userId: string | number): Promise<any> {
+    try {
+      const response = await apiClient.post('/admin/chats/rooms/', {
+        user_id: userId,
+        target_user_id: userId,
+        participant_ids: [userId],
+      });
+      return response.data.data || response.data;
+    } catch (error: any) {
+      console.error('Error creating chat room via admin API:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get a chat room (for admin monitoring)
+   * Handles both numeric IDs and string IDs (like "3_6")
    */
   async getChatRoom(roomId: string | number): Promise<any> {
-    const response = await apiClient.get(`/admin/chats/${roomId}`);
-    return response.data.data || response.data;
+    try {
+      // Try the regular chat rooms endpoint first
+      const response = await apiClient.get(`/chats/rooms/${roomId}/`);
+      return response.data.data || response.data;
+    } catch (error: any) {
+      // If 404, the room might use a different format - try without trailing slash
+      if (error?.response?.status === 404) {
+        try {
+          const response = await apiClient.get(`/chats/rooms/${roomId}`);
+          return response.data.data || response.data;
+        } catch (retryError: any) {
+          // If still fails, try admin-specific endpoint
+          try {
+            const response = await apiClient.get(`/admin/chats/${roomId}`);
+            return response.data.data || response.data;
+          } catch (adminError: any) {
+            throw error; // Throw original error
+          }
+        }
+      }
+      throw error;
+    }
   },
 
   /**
@@ -212,6 +270,35 @@ export const adminApi = {
   async closeChat(roomId: string | number): Promise<any> {
     const response = await apiClient.post(`/admin/chats/${roomId}/close`);
     return response.data.data || response.data;
+  },
+
+  /**
+   * Delete a chat room (permanently removes the chat room and all messages)
+   */
+  async deleteChat(roomId: string | number): Promise<any> {
+    const response = await apiClient.delete(`/admin/chats/${roomId}`);
+    return response.data.data || response.data;
+  },
+
+  /**
+   * Create a chat request from admin to user (admin-initiated chat)
+   */
+  async createChatRequest(userId: string | number, message?: string): Promise<any> {
+    try {
+      // Try admin-specific endpoint for creating chat requests
+      const response = await apiClient.post('/admin/chats/request/', {
+        target_user_id: userId,
+        user_id: userId,  // Support both field names
+        message: message || 'Admin wants to connect with you.',
+        type: 'admin_contact',
+      });
+      return response.data.data || response.data;
+    } catch (error: any) {
+      // If admin endpoint doesn't exist, try using regular chat API with a workaround
+      // We'll need to use the chatApi.sendChatRequest but it requires petId
+      // For now, throw the error and let the caller handle it
+      throw error;
+    }
   },
 
   /**

@@ -15,10 +15,14 @@ interface Pet {
   species?: string;
   category?: {
     name?: string;
-  };
+    type?: string;
+  } | string;
+  pet_type?: string;
+  type?: string;
+  animal_type?: string;
   breed?: string;
   color?: string;
-  photos?: string[];
+  photos?: Array<string | { url?: string; file_url?: string }>;
   images?: Array<{ image?: string; image_url?: string }>;
   image?: string;
   image_url?: string;
@@ -37,6 +41,7 @@ interface Pet {
     id?: string;
     _id?: string;
   };
+  created_at?: string;
 }
 
 interface PetCardProps {
@@ -73,15 +78,66 @@ export const PetCard = ({ pet, onActionClick, actionLabel, currentUserId }: PetC
   // Get status from either status or adoption_status field
   const petStatus = pet.status || pet.adoption_status || 'Unknown';
   
-  // Get species from either species or category field
-  const petSpecies = pet.species || pet.category?.name || 'Unknown';
+  // Get species from either species or category field and clean it
+  const getCleanPetSpecies = () => {
+    // Check multiple possible fields for pet type in order of preference
+    let rawSpecies: any = null;
+    
+    // First, try category.name (most common structure)
+    if (pet.category) {
+      if (typeof pet.category === 'object' && pet.category !== null) {
+        rawSpecies = pet.category.name || pet.category.type || pet.category;
+      } else if (typeof pet.category === 'string') {
+        rawSpecies = pet.category;
+      }
+    }
+    
+    // Fallback to other fields - including name field (as it stores pet type in database)
+    if (!rawSpecies || rawSpecies === 'null' || rawSpecies === 'undefined') {
+      rawSpecies = pet.species || 
+                   pet.name ||  // Name field stores pet type in database
+                   pet.pet_type || 
+                   pet.type ||
+                   pet.animal_type ||
+                   'Unknown';
+    }
+    
+    // Convert to string and clean
+    if (!rawSpecies || rawSpecies === 'null' || rawSpecies === 'undefined') {
+      return 'Unknown';
+    }
+    
+    let cleanSpecies = String(rawSpecies).trim();
+    
+    // Return Unknown if empty or invalid
+    if (!cleanSpecies || cleanSpecies === '') {
+      return 'Unknown';
+    }
+    
+    // Remove "Found" or "Lost" prefix from species name
+    if (cleanSpecies.toLowerCase().startsWith('found ')) {
+      cleanSpecies = cleanSpecies.substring(6).trim();
+    } else if (cleanSpecies.toLowerCase().startsWith('lost ')) {
+      cleanSpecies = cleanSpecies.substring(5).trim();
+    }
+    
+    // Capitalize first letter and lowercase rest
+    if (cleanSpecies && cleanSpecies.length > 0) {
+      return cleanSpecies.charAt(0).toUpperCase() + cleanSpecies.slice(1).toLowerCase();
+    }
+    
+    return 'Unknown';
+  };
+  
+  const petSpecies = getCleanPetSpecies();
   
   // Get image from various possible fields
   let photoPath: string | null = null;
   if (pet.photos && Array.isArray(pet.photos) && pet.photos.length > 0) {
-    photoPath = typeof pet.photos[0] === 'string' 
-      ? pet.photos[0] 
-      : pet.photos[0]?.url || pet.photos[0]?.file_url || pet.photos[0] || null;
+    const firstPhoto = pet.photos[0];
+    photoPath = typeof firstPhoto === 'string' 
+      ? firstPhoto 
+      : (firstPhoto && typeof firstPhoto === 'object' ? (firstPhoto.url || firstPhoto.file_url || null) : null);
   } else if (pet.images && Array.isArray(pet.images) && pet.images.length > 0) {
     photoPath = pet.images[0]?.image || pet.images[0]?.image_url || null;
   } else if (pet.image) {
@@ -166,16 +222,32 @@ export const PetCard = ({ pet, onActionClick, actionLabel, currentUserId }: PetC
       <CardContent className="p-4 flex-1 flex flex-col">
         <div className="mb-3">
           <Link to={`/pets/${petId}`} className="block">
-            <h3 className="font-bold text-xl text-gray-900 mb-1 truncate group-hover:text-[#2BB6AF] transition-colors">
-              {pet.name || pet.breed || 'Unknown Pet'}
-            </h3>
-            <p className="text-sm font-semibold text-gray-500 uppercase tracking-wider">
+            <p className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">
               {petSpecies}
             </p>
-            {pet.breed && pet.name && pet.breed !== pet.name && (
-              <p className="text-xs text-gray-400 mt-1 truncate">{pet.breed}</p>
+            {pet.breed && (
+              <p className="text-xs text-gray-400 truncate mb-2">{pet.breed}</p>
             )}
           </Link>
+          {/* Date uploaded and reported person */}
+          <div className="mt-3 space-y-1.5 border-t border-gray-100 pt-3">
+            {pet.created_at && (
+              <div className="flex items-center gap-2 text-xs text-gray-500">
+                <span className="font-medium">Uploaded:</span>
+                <span>{new Date(pet.created_at).toLocaleDateString('en-US', { 
+                  year: 'numeric', 
+                  month: 'short', 
+                  day: 'numeric' 
+                })}</span>
+              </div>
+            )}
+            {(pet.posted_by?.name || pet.submitted_by?.name) && (
+              <div className="flex items-center gap-2 text-xs text-gray-500">
+                <span className="font-medium">Reported by:</span>
+                <span className="text-gray-700">{pet.posted_by?.name || pet.submitted_by?.name}</span>
+              </div>
+            )}
+          </div>
         </div>
       </CardContent>
 

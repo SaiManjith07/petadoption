@@ -62,23 +62,160 @@ def dashboard_stats(request):
     """Get dashboard statistics for admin."""
     try:
         from .models import DashboardStats
+        import traceback
         
         # Get or create dashboard stats
-        stats = DashboardStats.get_latest()
+        stats = None
+        try:
+            stats = DashboardStats.get_latest()
+        except Exception as get_error:
+            print(f"Error getting dashboard stats: {get_error}")
+            print(traceback.format_exc())
+            # Try to calculate stats directly from database if model doesn't exist
+            try:
+                from pets.models import Pet
+                from users.models import User
+                from pets.models import AdoptionApplication
+                
+                print("DashboardStats model not available, calculating stats directly from database")
+                total_pets = Pet.objects.count()
+                pending_pets = Pet.objects.filter(adoption_status='Pending', is_verified=False).count()
+                found_pets = Pet.objects.filter(adoption_status='Found', is_verified=True).count()
+                lost_pets = Pet.objects.filter(adoption_status='Lost', is_verified=True).count()
+                available_pets = Pet.objects.filter(adoption_status='Available for Adoption').count()
+                adopted_pets = Pet.objects.filter(adoption_status='Adopted').count()
+                total_users = User.objects.count()
+                active_users = User.objects.filter(is_active=True).count()
+                total_applications = AdoptionApplication.objects.count()
+                pending_applications = AdoptionApplication.objects.filter(status='Pending').count()
+                
+                # Try to get chat stats
+                total_chats = 0
+                active_chats = 0
+                pending_chat_requests = 0
+                try:
+                    from chats.models import ChatRoom, ChatRequest
+                    total_chats = ChatRoom.objects.count()
+                    active_chats = ChatRoom.objects.filter(is_active=True).count()
+                    pending_chat_requests = ChatRequest.objects.filter(status='pending').count()
+                except Exception:
+                    pass  # Chat models might not exist
+                
+                stats_dict = {
+                    'pets': {
+                        'total': total_pets,
+                        'pending': pending_pets,
+                        'found': found_pets,
+                        'lost': lost_pets,
+                        'available': available_pets,
+                        'adopted': adopted_pets,
+                    },
+                    'users': {
+                        'total': total_users,
+                        'active': active_users,
+                        'regular': total_users - active_users,
+                        'rescuers': 0,
+                    },
+                    'applications': {
+                        'total': total_applications,
+                        'pending': pending_applications,
+                    },
+                    'chats': {
+                        'total': total_chats,
+                        'active': active_chats,
+                        'pending_requests': pending_chat_requests,
+                    },
+                    'pending': {
+                        'total': pending_pets,
+                        'found': 0,  # Will be calculated by frontend
+                        'lost': 0,   # Will be calculated by frontend
+                    },
+                    'active': {
+                        'total': found_pets + lost_pets,
+                        'found': found_pets,
+                        'lost': lost_pets,
+                    },
+                    'matched': 0,
+                    'recent_activity': {
+                        'pets_last_7_days': 0,
+                        'users_last_7_days': 0,
+                    }
+                }
+                
+                return Response({
+                    'data': stats_dict
+                })
+            except Exception as calc_error:
+                print(f"Error calculating stats directly: {calc_error}")
+                print(traceback.format_exc())
+                # Return default structure
+                return Response({
+                    'data': {
+                        'pets': {'total': 0, 'pending': 0, 'found': 0, 'lost': 0, 'available': 0, 'adopted': 0},
+                        'users': {'total': 0, 'active': 0, 'regular': 0, 'rescuers': 0},
+                        'pending': {'total': 0, 'found': 0, 'lost': 0},
+                        'active': {'total': 0, 'found': 0, 'lost': 0},
+                        'matched': 0,
+                        'applications': {'total': 0, 'pending': 0},
+                        'chats': {'total': 0, 'active': 0, 'pending_requests': 0},
+                    }
+                })
         
         # Update stats if older than 5 minutes (cache for performance)
         from datetime import timedelta
-        if not stats.last_updated or (timezone.now() - stats.last_updated) > timedelta(minutes=5):
-            stats.updated_by = request.user
-            stats.update_stats()
+        if stats:
+            try:
+                if not stats.last_updated or (timezone.now() - stats.last_updated) > timedelta(minutes=5):
+                    stats.updated_by = request.user
+                    stats.update_stats()
+                    stats.save()  # Save after updating
+            except Exception as update_error:
+                print(f"Error updating dashboard stats: {update_error}")
+                print(traceback.format_exc())
+                # Continue with existing stats even if update fails
+        
+        # Convert to dict with error handling
+        if stats:
+            try:
+                stats_dict = stats.to_dict()
+            except Exception as dict_error:
+                print(f"Error converting stats to dict: {dict_error}")
+                print(traceback.format_exc())
+                # Return default structure if to_dict fails
+                stats_dict = {
+                    'pets': {'total': 0, 'pending': 0, 'found': 0, 'lost': 0, 'available': 0, 'adopted': 0},
+                    'users': {'total': 0, 'active': 0, 'regular': 0, 'rescuers': 0},
+                    'pending': {'total': 0, 'found': 0, 'lost': 0},
+                    'active': {'total': 0, 'found': 0, 'lost': 0},
+                    'matched': 0,
+                    'applications': {'total': 0, 'pending': 0},
+                    'chats': {'total': 0, 'active': 0, 'pending_requests': 0},
+                }
+        else:
+            # Stats object doesn't exist, return default
+            stats_dict = {
+                'pets': {'total': 0, 'pending': 0, 'found': 0, 'lost': 0, 'available': 0, 'adopted': 0},
+                'users': {'total': 0, 'active': 0, 'regular': 0, 'rescuers': 0},
+                'pending': {'total': 0, 'found': 0, 'lost': 0},
+                'active': {'total': 0, 'found': 0, 'lost': 0},
+                'matched': 0,
+                'applications': {'total': 0, 'pending': 0},
+                'chats': {'total': 0, 'active': 0, 'pending_requests': 0},
+            }
         
         return Response({
-            'data': stats.to_dict()
+            'data': stats_dict
         })
     except Exception as e:
         import traceback
+        error_trace = traceback.format_exc()
+        print(f"Dashboard stats error: {e}")
+        print(error_trace)
         return Response(
-            {'error': str(e), 'traceback': traceback.format_exc()},
+            {
+                'error': str(e),
+                'traceback': error_trace if request.user.is_staff else None
+            },
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
@@ -95,17 +232,39 @@ def pending_reports(request):
     if report_type == 'found':
         # Include: Pending pets with found_date (found pets waiting approval) OR Found pets that aren't verified
         # Found pets are created with adoption_status='Pending' and found_date set
+        # CRITICAL: Must have found_date NOT null (this is the key differentiator)
         queryset = Pet.objects.filter(
-            Q(adoption_status='Pending', is_verified=False, found_date__isnull=False) |
-            Q(adoption_status='Found', is_verified=False)
+            is_verified=False,
+            found_date__isnull=False  # MUST have found_date
+        ).filter(
+            Q(adoption_status='Pending') | Q(adoption_status='Found')
+        ).exclude(
+            # Exclude lost pets
+            adoption_status='Lost'
         ).order_by('-created_at')
+        
+        # Debug logging
+        print(f"[DEBUG] Found pets query - report_type={report_type}, count={queryset.count()}")
+        for pet in queryset[:5]:  # Log first 5
+            print(f"  - Pet ID {pet.id}: name='{pet.name}', found_date={pet.found_date}, status={pet.adoption_status}")
     elif report_type == 'lost':
         # Include: Pending pets without found_date (lost pets waiting approval) OR Lost pets that aren't verified
         # Lost pets are created with adoption_status='Pending' but no found_date
+        # CRITICAL: Must have found_date IS null (this is the key differentiator)
         queryset = Pet.objects.filter(
-            Q(adoption_status='Pending', is_verified=False, found_date__isnull=True) |
-            Q(adoption_status='Lost', is_verified=False)
+            is_verified=False,
+            found_date__isnull=True  # MUST NOT have found_date
+        ).filter(
+            Q(adoption_status='Pending') | Q(adoption_status='Lost')
+        ).exclude(
+            # Exclude found pets
+            adoption_status='Found'
         ).order_by('-created_at')
+        
+        # Debug logging
+        print(f"[DEBUG] Lost pets query - report_type={report_type}, count={queryset.count()}")
+        for pet in queryset[:5]:  # Log first 5
+            print(f"  - Pet ID {pet.id}: name='{pet.name}', found_date={pet.found_date}, status={pet.adoption_status}")
     else:
         # Get all unverified pets (Pending, Found, or Lost)
         queryset = Pet.objects.filter(
@@ -306,11 +465,16 @@ def chat_stats(request):
                 }
             })
         
-        total_requests = ChatRoom.objects.count()
-        active_chats = ChatRoom.objects.filter(is_active=True).count()
-        pending_requests = 0  # This would need a ChatRequest model if you have one
-        approved_requests = ChatRoom.objects.filter(is_active=True).count()
-        rejected_requests = ChatRoom.objects.filter(is_active=False).count()
+        from chats.models import ChatRequest
+        
+        # Get chat request stats
+        total_requests = ChatRequest.objects.count()
+        pending_requests = ChatRequest.objects.filter(status='pending').count()
+        approved_requests = ChatRequest.objects.filter(status__in=['admin_approved', 'active']).count()
+        rejected_requests = ChatRequest.objects.filter(status='rejected').count()
+        
+        # Get chat room stats
+        active_chats = ChatRoom.objects.filter(is_active=True).count() if table_exists else 0
         
         return Response({
             'data': {
@@ -341,37 +505,225 @@ def chat_stats(request):
 @permission_classes([IsAdminUser])
 def chat_requests(request):
     """Get all chat requests."""
-    # If you have a ChatRequest model, use it here
-    # For now, return empty array
-    return Response({'data': []})
+    try:
+        from chats.models import ChatRequest
+        from chats.serializers import ChatRequestSerializer
+        
+        # Get all chat requests, ordered by most recent first
+        requests = ChatRequest.objects.select_related(
+            'requester', 'target', 'pet'
+        ).prefetch_related('pet__category').order_by('-created_at')
+        
+        serializer = ChatRequestSerializer(requests, many=True)
+        return Response({'data': serializer.data})
+    except Exception as e:
+        import traceback
+        print(f"Error fetching chat requests: {traceback.format_exc()}")
+        return Response(
+            {'error': str(e), 'data': []},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(['POST'])
+@permission_classes([IsAdminUser])
+def admin_create_chat_request(request):
+    """Admin endpoint to create a chat request from admin to a user."""
+    try:
+        from chats.models import ChatRequest
+        from chats.serializers import ChatRequestSerializer
+        
+        target_user_id = request.data.get('target_user_id') or request.data.get('user_id')
+        message = request.data.get('message', 'Admin wants to connect with you.')
+        request_type = request.data.get('type', 'admin_contact')
+        
+        if not target_user_id:
+            return Response(
+                {'error': 'target_user_id or user_id is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            target_user = User.objects.get(id=target_user_id)
+        except User.DoesNotExist:
+            return Response(
+                {'error': 'Target user not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        if target_user == request.user:
+            return Response(
+                {'error': 'Cannot create chat request with yourself'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Check if request already exists
+        existing_request = ChatRequest.objects.filter(
+            requester=request.user,
+            target=target_user,
+            status__in=['pending', 'admin_approved', 'active']
+        ).first()
+        
+        if existing_request:
+            serializer = ChatRequestSerializer(existing_request)
+            return Response({
+                'message': 'Chat request already exists',
+                'data': serializer.data
+            }, status=status.HTTP_200_OK)
+        
+        # Create chat request (admin-created requests are auto-approved)
+        chat_request = ChatRequest.objects.create(
+            requester=request.user,
+            target=target_user,
+            message=message,
+            type=request_type,
+            status='admin_approved',  # Admin requests are auto-approved
+            admin_approved_at=timezone.now()
+        )
+        
+        serializer = ChatRequestSerializer(chat_request)
+        return Response({
+            'message': 'Chat request created successfully',
+            'data': serializer.data
+        }, status=status.HTTP_201_CREATED)
+        
+    except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
+        print(f"Error in admin_create_chat_request: {e}")
+        print(error_trace)
+        return Response(
+            {'error': f'Failed to create chat request: {str(e)}'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
 
 
 @api_view(['POST'])
 @permission_classes([IsAdminUser])
 def respond_to_chat_request(request, request_id):
     """Respond to a chat request (approve/reject)."""
-    # Placeholder - implement when ChatRequest model exists
-    approved = request.data.get('approved', False)
-    admin_notes = request.data.get('admin_notes', '')
-    
-    # Log action
-    AdminLog.objects.create(
-        admin=request.user,
-        action='APPROVE' if approved else 'REJECT',
-        model_type='ChatRoom',
-        object_id=request_id,
-        description=f'{"Approved" if approved else "Rejected"} chat request. Notes: {admin_notes}',
-        ip_address=request.META.get('REMOTE_ADDR')
-    )
-    
-    return Response({
-        'data': {
-            'id': request_id,
-            'approved': approved,
-            'admin_notes': admin_notes,
+    try:
+        from chats.models import ChatRequest
+        from chats.serializers import ChatRequestSerializer
+        from chats.views_chat_requests import admin_approve_request, admin_reject_request
+        from django.utils import timezone
+        
+        approved = request.data.get('approved', False)
+        admin_notes = request.data.get('admin_notes', '')
+        
+        # Get the chat request
+        try:
+            chat_request = ChatRequest.objects.get(id=request_id, status='pending')
+        except ChatRequest.DoesNotExist:
+            return Response(
+                {'error': 'Chat request not found or already processed'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Update request with admin notes
+        if admin_notes:
+            chat_request.admin_notes = admin_notes
+        
+        if approved:
+            # Approve the request
+            chat_request.status = 'admin_approved'
+            chat_request.admin_approved_at = timezone.now()
+            chat_request.save()
+            
+            # Send WebSocket notifications
+            from channels.layers import get_channel_layer
+            from asgiref.sync import async_to_sync
+            
+            channel_layer = get_channel_layer()
+            if channel_layer:
+                # Notify requester
+                async_to_sync(channel_layer.group_send)(
+                    f'user_{chat_request.requester.id}',
+                    {
+                        'type': 'admin_approved',
+                        'data': {
+                            'id': chat_request.id,
+                            'status': 'admin_approved',
+                            'message': 'Your chat request has been approved by admin',
+                        }
+                    }
+                )
+                
+                # Notify target user
+                async_to_sync(channel_layer.group_send)(
+                    f'user_{chat_request.target.id}',
+                    {
+                        'type': 'admin_approved',
+                        'data': {
+                            'id': chat_request.id,
+                            'requester': {
+                                'id': chat_request.requester.id,
+                                'name': getattr(chat_request.requester, 'name', chat_request.requester.email),
+                            },
+                            'message': chat_request.message,
+                            'status': 'admin_approved',
+                            'message_text': 'You have a new chat request to review',
+                        }
+                    }
+                )
+        else:
+            # Reject the request
+            chat_request.status = 'rejected'
+            chat_request.save()
+            
+            # Send WebSocket notification to requester
+            from channels.layers import get_channel_layer
+            from asgiref.sync import async_to_sync
+            
+            channel_layer = get_channel_layer()
+            if channel_layer:
+                async_to_sync(channel_layer.group_send)(
+                    f'user_{chat_request.requester.id}',
+                    {
+                        'type': 'chat_rejected',
+                        'data': {
+                            'id': chat_request.id,
+                            'status': 'rejected',
+                            'message': 'Your chat request has been rejected by admin',
+                        }
+                    }
+                )
+        
+        # Log action
+        AdminLog.objects.create(
+            admin=request.user,
+            action='APPROVE' if approved else 'REJECT',
+            model_type='ChatRequest',
+            object_id=request_id,
+            description=f'{"Approved" if approved else "Rejected"} chat request. Notes: {admin_notes}',
+            ip_address=request.META.get('REMOTE_ADDR')
+        )
+        
+        serializer = ChatRequestSerializer(chat_request)
+        return Response({
+            'data': serializer.data,
             'message': f'Chat request {"approved" if approved else "rejected"} successfully'
-        }
-    })
+        })
+    except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
+        print(f"Error responding to chat request: {e}")
+        print(error_trace)
+        return Response(
+            {
+                'error': str(e),
+                'traceback': error_trace if request.user.is_staff else None
+            },
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+        
+    except Exception as e:
+        import traceback
+        print(f"Error responding to chat request: {traceback.format_exc()}")
+        return Response(
+            {'error': str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
 
 
 @api_view(['POST'])
@@ -634,3 +986,122 @@ def all_logs(request):
     serializer = AdminLogSerializer(logs, many=True, context={'request': request})
     return Response({'data': serializer.data})
 
+
+@api_view(['POST'])
+@permission_classes([IsAdminUser])
+def admin_create_chat_room(request):
+    """Admin endpoint to create a chat room between users."""
+    try:
+        # Get participant IDs from request
+        participant_ids = request.data.get('participant_ids', [])
+        user_id = request.data.get('user_id')  # Alternative: single user_id
+        target_user_id = request.data.get('target_user_id')  # Alternative: target_user_id
+        participants = request.data.get('participants', [])  # Alternative: participants array
+        
+        # Build list of user IDs
+        user_ids = []
+        if participant_ids:
+            user_ids = participant_ids if isinstance(participant_ids, list) else [participant_ids]
+        elif user_id:
+            # If single user_id provided, create room between admin and that user
+            user_ids = [request.user.id, user_id]
+        elif target_user_id:
+            # If target_user_id provided, create room between admin and target
+            user_ids = [request.user.id, target_user_id]
+        elif participants:
+            user_ids = participants if isinstance(participants, list) else [participants]
+        else:
+            return Response(
+                {'error': 'Please provide participant_ids, user_id, target_user_id, or participants'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Ensure we have at least 2 users (admin + target user)
+        if len(user_ids) < 2:
+            # If only one user provided, add admin
+            if len(user_ids) == 1:
+                if user_ids[0] != request.user.id:
+                    user_ids.insert(0, request.user.id)
+                else:
+                    return Response(
+                        {'error': 'Cannot create room with yourself only'},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+        
+        # Remove duplicates and ensure admin is included
+        user_ids = list(set(user_ids))
+        if request.user.id not in user_ids:
+            user_ids.insert(0, request.user.id)
+        
+        # Ensure we have exactly 2 users for a chat room
+        if len(user_ids) > 2:
+            user_ids = user_ids[:2]  # Take first 2 users
+        
+        # Get user objects
+        try:
+            users = User.objects.filter(id__in=user_ids)
+            if users.count() != len(user_ids):
+                missing_ids = set(user_ids) - set(users.values_list('id', flat=True))
+                return Response(
+                    {'error': f'Users not found: {list(missing_ids)}'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+        except Exception as e:
+            return Response(
+                {'error': f'Error fetching users: {str(e)}'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Check if room already exists
+        existing_room = ChatRoom.objects.filter(
+            participants__id=user_ids[0]
+        ).filter(
+            participants__id=user_ids[1]
+        ).distinct().first()
+        
+        if existing_room:
+            # Return existing room
+            from chats.serializers import ChatRoomSerializer
+            serializer = ChatRoomSerializer(existing_room, context={'request': request})
+            return Response({
+                'message': 'Room already exists',
+                'data': serializer.data
+            }, status=status.HTTP_200_OK)
+        
+        # Create new room
+        room = ChatRoom.objects.create()
+        
+        # Add participants
+        for user in users:
+            room.participants.add(user)
+        
+        # Set user_a and user_b if needed (for backward compatibility)
+        if len(users) >= 2:
+            user_list = list(users)
+            room.user_a = user_list[0]
+            room.user_b = user_list[1]
+            room.save()
+        
+        # Generate room_id (will be done in save() method, but ensure it's set)
+        if not room.room_id:
+            sorted_ids = sorted(user_ids)
+            room.room_id = f"{sorted_ids[0]}_{sorted_ids[1]}"
+            room.save()
+        
+        # Serialize and return
+        from chats.serializers import ChatRoomSerializer
+        serializer = ChatRoomSerializer(room, context={'request': request})
+        return Response({
+            'message': 'Chat room created successfully',
+            'data': serializer.data
+        }, status=status.HTTP_201_CREATED)
+        
+    except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
+        print(f"Error in admin_create_chat_room: {e}")
+        print(error_trace)
+        return Response(
+            {'error': f'Failed to create chat room: {str(e)}'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )

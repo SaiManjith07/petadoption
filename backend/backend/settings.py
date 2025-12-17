@@ -18,9 +18,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-change-this-in-production')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv('DEBUG', 'True') == 'True'
+# Handle DEBUG setting - default to True for development
+DEBUG_ENV = os.getenv('DEBUG', 'True').lower()
+DEBUG = DEBUG_ENV in ('true', '1', 'yes', 'on')
 
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+# ALLOWED_HOSTS - always set, even in development
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,0.0.0.0').split(',')
+# Remove empty strings from the list
+ALLOWED_HOSTS = [host.strip() for host in ALLOWED_HOSTS if host.strip()]
 
 # Application definition
 INSTALLED_APPS = [
@@ -83,8 +88,26 @@ DATABASE_URL = os.getenv(
     'postgresql://neondb_owner:npg_vlOmWHKNQ45B@ep-empty-bush-a1ovrzm3-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require'
 )
 
+# Parse database URL with connection pooling settings
+db_config = dj_database_url.parse(DATABASE_URL, conn_max_age=600)
+
+# Add connection options for better reliability
+# Note: Neon pooled connections don't support statement_timeout in options
+# Only use connect_timeout for pooled connections
+db_config['OPTIONS'] = {
+    'connect_timeout': 10,  # 10 second connection timeout
+    # Removed statement_timeout as it's not supported by Neon pooled connections
+}
+
+# Ensure SSL is required for Neon
+if 'OPTIONS' not in db_config:
+    db_config['OPTIONS'] = {}
+if 'sslmode' not in str(DATABASE_URL).lower():
+    # Force SSL mode if not in URL
+    db_config['OPTIONS']['sslmode'] = 'require'
+
 DATABASES = {
-    'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600)
+    'default': db_config
 }
 
 # Password validation
@@ -116,6 +139,10 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 # Media files
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+# Backend URL for constructing absolute URLs (for image URLs, etc.)
+# In development, this should match your Django server URL
+BACKEND_URL = 'http://127.0.0.1:8000'  # Change this in production to your actual backend domain
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

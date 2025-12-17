@@ -131,15 +131,19 @@ class DashboardStats(models.Model):
         from datetime import timedelta
         from django.db import connection
         
-        # Pet statistics
+        # Pet statistics - handle potential invalid foreign keys
         try:
+            # Use count() which is safer than accessing related objects
             self.total_pets = Pet.objects.count()
             self.pending_pets = Pet.objects.filter(adoption_status='Pending').count()
             self.found_pets = Pet.objects.filter(adoption_status='Found').count()
             self.lost_pets = Pet.objects.filter(adoption_status='Lost').count()
             self.available_pets = Pet.objects.filter(adoption_status='Available for Adoption').count()
             self.adopted_pets = Pet.objects.filter(adoption_status='Adopted').count()
-        except Exception:
+        except Exception as pet_error:
+            print(f"Error getting pet stats: {pet_error}")
+            import traceback
+            print(traceback.format_exc())
             self.total_pets = 0
             self.pending_pets = 0
             self.found_pets = 0
@@ -151,7 +155,10 @@ class DashboardStats(models.Model):
         try:
             self.total_users = User.objects.count()
             self.active_users = User.objects.filter(is_active=True).count()
-        except Exception:
+        except Exception as user_error:
+            print(f"Error getting user stats: {user_error}")
+            import traceback
+            print(traceback.format_exc())
             self.total_users = 0
             self.active_users = 0
         
@@ -159,7 +166,10 @@ class DashboardStats(models.Model):
         try:
             self.total_applications = AdoptionApplication.objects.count()
             self.pending_applications = AdoptionApplication.objects.filter(status='Pending').count()
-        except Exception:
+        except Exception as app_error:
+            print(f"Error getting application stats: {app_error}")
+            import traceback
+            print(traceback.format_exc())
             self.total_applications = 0
             self.pending_applications = 0
         
@@ -175,17 +185,26 @@ class DashboardStats(models.Model):
                 chat_table_exists = cursor.fetchone()[0]
             
             if chat_table_exists:
-                from chats.models import ChatRoom
-                self.total_chats = ChatRoom.objects.count()
-                self.active_chats = ChatRoom.objects.filter(is_active=True).count()
+                try:
+                    from chats.models import ChatRoom, ChatRequest
+                    self.total_chats = ChatRoom.objects.count()
+                    self.active_chats = ChatRoom.objects.filter(is_active=True).count()
+                    # Count pending chat requests
+                    self.pending_chat_requests = ChatRequest.objects.filter(status='pending').count()
+                except Exception as chat_error:
+                    print(f"Error getting chat stats: {chat_error}")
+                    self.total_chats = 0
+                    self.active_chats = 0
+                    self.pending_chat_requests = 0
             else:
                 self.total_chats = 0
                 self.active_chats = 0
-        except Exception:
+                self.pending_chat_requests = 0
+        except Exception as e:
+            print(f"Error checking chat tables: {e}")
             self.total_chats = 0
             self.active_chats = 0
-        
-        self.pending_chat_requests = 0  # Placeholder for future ChatRequest model
+            self.pending_chat_requests = 0
         
         # Recent activity
         try:
@@ -212,6 +231,8 @@ class DashboardStats(models.Model):
             'users': {
                 'total': self.total_users,
                 'active': self.active_users,
+                'regular': self.total_users - self.active_users,
+                'rescuers': 0,  # Can be calculated if needed
             },
             'applications': {
                 'total': self.total_applications,
@@ -222,6 +243,17 @@ class DashboardStats(models.Model):
                 'active': self.active_chats,
                 'pending_requests': self.pending_chat_requests,
             },
+            'pending': {
+                'total': self.pending_pets,
+                'found': 0,  # Will be calculated by frontend from API
+                'lost': 0,   # Will be calculated by frontend from API
+            },
+            'active': {
+                'total': self.found_pets + self.lost_pets,
+                'found': self.found_pets,
+                'lost': self.lost_pets,
+            },
+            'matched': 0,  # Can be calculated if needed
             'recent_activity': {
                 'pets_last_7_days': self.pets_last_7_days,
                 'users_last_7_days': self.users_last_7_days,

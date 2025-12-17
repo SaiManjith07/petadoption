@@ -15,7 +15,9 @@ import {
   MapPin,
   ShieldCheck,
   Stethoscope,
+  ArrowRight,
 } from 'lucide-react';
+import { Logo } from '@/components/ui/Logo';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/auth';
 import { Badge } from '@/components/ui/badge';
@@ -100,21 +102,14 @@ export function UserSidebar({ isOpen = true, onClose }: UserSidebarProps) {
       >
         <div className="flex h-full flex-col">
           {/* Logo/Header */}
-          <div className="flex h-20 items-center border-b border-gray-200/80 px-6 bg-gradient-to-r from-[#2BB6AF]/5 to-transparent">
-            <Link to="/home" className="flex items-center gap-3 group">
-              <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-br from-[#2BB6AF] to-[#4CAF50] rounded-xl blur-md opacity-50 group-hover:opacity-75 transition-opacity" />
-                <div className="relative flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#2BB6AF] to-[#4CAF50] shadow-lg group-hover:scale-105 transition-transform">
-                  <PawPrint className="h-7 w-7 text-white" />
-                </div>
-              </div>
-              <div className="flex flex-col">
-                <h1 className="text-xl font-bold text-gray-900 group-hover:text-[#2BB6AF] transition-colors">
-                  PetReunite
-                </h1>
-                <p className="text-xs text-gray-500 font-medium">User Dashboard</p>
-              </div>
-            </Link>
+          <div className="flex h-16 items-center border-b border-gray-200/80 px-4 bg-gradient-to-r from-[#2BB6AF]/5 to-transparent">
+            <Logo 
+              size="sm" 
+              showText={true} 
+              showTagline={false}
+              linkTo="/home"
+              className="group"
+            />
           </div>
 
           {/* Navigation Menu */}
@@ -124,9 +119,9 @@ export function UserSidebar({ isOpen = true, onClose }: UserSidebarProps) {
               const isActive = location.pathname === item.path || 
                 (item.path === '/home' && location.pathname === '/home') ||
                 (item.path === '/chats' && location.pathname.startsWith('/chat')) ||
-                (item.path === '/pets/found' && location.pathname === '/pets/found') ||
-                (item.path === '/pets/lost' && location.pathname === '/pets/lost') ||
-                (item.path === '/pets/adopt' && location.pathname === '/pets/adopt') ||
+                (item.path === '/pets/found' && location.pathname.startsWith('/pets/found')) ||
+                (item.path === '/pets/lost' && location.pathname.startsWith('/pets/lost')) ||
+                (item.path === '/pets/adopt' && location.pathname.startsWith('/pets/adopt')) ||
                 (item.path === '/health-vaccination' && location.pathname === '/health-vaccination');
 
               return (
@@ -139,22 +134,19 @@ export function UserSidebar({ isOpen = true, onClose }: UserSidebarProps) {
                     }
                   }}
                   className={cn(
-                    'group flex items-center gap-4 rounded-xl px-4 py-3.5 text-sm font-medium transition-all duration-200 relative',
+                    'group flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 relative',
                     isActive
-                      ? 'bg-gradient-to-r from-[#2BB6AF]/10 to-[#4CAF50]/5 text-[#2BB6AF] shadow-sm border border-[#2BB6AF]/20'
-                      : 'text-gray-700 hover:bg-gray-100/80 hover:text-gray-900 hover:shadow-sm'
+                      ? 'bg-[#E8F8EE] text-[#2BB6AF]'
+                      : 'text-gray-700 hover:bg-gray-50 hover:text-[#2BB6AF]'
                   )}
                 >
-                  <div className={cn(
-                    'flex h-10 w-10 items-center justify-center rounded-lg transition-all',
-                    isActive
-                      ? 'bg-gradient-to-br from-[#2BB6AF] to-[#4CAF50] text-white shadow-md'
-                      : 'bg-gray-100 text-gray-600 group-hover:bg-gray-200 group-hover:text-[#2BB6AF]'
-                  )}>
-                    <Icon className="h-5 w-5" />
-                  </div>
+                  {/* Active indicator bar */}
+                  {isActive && (
+                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-[#2BB6AF] rounded-r-full" />
+                  )}
+                  <Icon className={cn('h-5 w-5', isActive && 'text-[#2BB6AF]')} strokeWidth={2} />
                   <div className="flex-1 min-w-0">
-                    <div className="font-semibold">{item.title}</div>
+                    <div className="font-medium text-sm">{item.title}</div>
                     <div className={cn(
                       'text-xs truncate',
                       isActive ? 'text-[#2BB6AF]/70' : 'text-gray-500'
@@ -163,7 +155,7 @@ export function UserSidebar({ isOpen = true, onClose }: UserSidebarProps) {
                     </div>
                   </div>
                   {isActive && (
-                    <div className="absolute right-3 h-2 w-2 rounded-full bg-[#4CAF50] animate-pulse" />
+                    <ArrowRight className="h-4 w-4 text-[#2BB6AF]" />
                   )}
                 </Link>
               );
@@ -205,10 +197,10 @@ export function UserSidebar({ isOpen = true, onClose }: UserSidebarProps) {
               }}
             >
               <div className="relative">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#2BB6AF] to-[#4CAF50] text-white font-bold text-lg shadow-md group-hover:scale-105 transition-transform">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#2BB6AF] to-[#239a94] text-white font-bold text-lg shadow-md group-hover:scale-105 transition-transform">
                   {user?.name?.charAt(0)?.toUpperCase() || 'U'}
                 </div>
-                <div className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full bg-green-500 border-2 border-white"></div>
+                <div className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full bg-[#2BB6AF] border-2 border-white"></div>
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-gray-900 truncate">

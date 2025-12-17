@@ -17,7 +17,9 @@ urlpatterns = [
     path('chats', views.all_chats, name='admin-all-chats'),
     path('chats/stats', views.chat_stats, name='admin-chat-stats'),
     path('chats/requests', views.chat_requests, name='admin-chat-requests'),
+    path('chats/request/', views.admin_create_chat_request, name='admin-create-chat-request'),
     path('chats/requests/<int:request_id>/respond', views.respond_to_chat_request, name='admin-respond-chat-request'),
+    path('chats/rooms/', views.admin_create_chat_room, name='admin-create-chat-room'),
     path('chats/<int:room_id>/close', views.close_chat_room, name='admin-close-chat'),
     
     # Users

@@ -8,40 +8,50 @@ import { LandingDataProvider } from "./contexts/LandingContext";
 import { TopNav } from "./components/layout/TopNav";
 import { Footer } from "./components/layout/Footer";
 import { UserPageWrapper } from "./components/layout/UserPageWrapper";
-import { AdminRedirect } from "./components/AdminRedirect";
+import { UserProtectedRoute } from "./components/UserProtectedRoute";
+import { AdminProtectedRoute } from "./components/AdminProtectedRoute";
+import { ProtectedRoute } from "./components/ProtectedRoute";
+// Common/Public pages
 import Landing from "./pages/Landing";
-import Login from "./pages/auth/Login";
-import Register from "./pages/auth/Register";
-import RegisterAdmin from "./pages/auth/RegisterAdmin";
-import UserHome from "./pages/UserHome";
-import Dashboard from "./pages/Dashboard";
-import Profile from "./pages/Profile";
-import Admin from "./pages/Admin";
-import AdminFoundPets from "./pages/admin/AdminFoundPets";
-import AdminLostPets from "./pages/admin/AdminLostPets";
-import AdminAdopt from "./pages/admin/AdminAdopt";
-import FoundPets from "./pages/pets/FoundPets";
-import LostPets from "./pages/pets/LostPets";
-import AdoptablePets from "./pages/pets/AdoptablePets";
-import PetDetail from "./pages/pets/PetDetail";
-import ReportFound from "./pages/pets/ReportFound";
-import ReportLost from "./pages/pets/ReportLost";
-import Chat from "./pages/Chat";
-import ChatList from "./pages/ChatList";
 import Policy from "./pages/Policy";
 import Safety from "./pages/Safety";
 import NotFound from "./pages/NotFound";
-import ShelterCapacity from "./pages/ShelterCapacity";
-import BecomeVolunteer from "./pages/BecomeVolunteer";
-import RegisterShelter from "./pages/RegisterShelter";
-import FeedingPoints from "./pages/FeedingPoints";
-import HomeCheckTracker from "./pages/HomeCheckTracker";
-import NeighborhoodAlerts from "./pages/NeighborhoodAlerts";
-import NGOVerification from "./pages/NGOVerification.tsx";
-import HealthVaccination from "./pages/HealthVaccination";
+
+// Auth pages
+import Login from "./pages/auth/Login";
+import Register from "./pages/auth/Register";
+import RegisterAdmin from "./pages/auth/RegisterAdmin";
+
+// User pages
+import UserHome from "./pages/user/UserHome";
+import Profile from "./pages/user/Profile";
+import Chat from "./pages/user/Chat";
+import ChatList from "./pages/user/ChatList";
+import FoundPets from "./pages/user/pets/FoundPets";
+import LostPets from "./pages/user/pets/LostPets";
+import AdoptablePets from "./pages/user/pets/AdoptablePets";
+import PetDetail from "./pages/user/pets/PetDetail";
+import EditPet from "./pages/user/pets/EditPet";
+import ReportFound from "./pages/user/pets/ReportFound";
+import ReportLost from "./pages/user/pets/ReportLost";
+import ShelterCapacity from "./pages/user/ShelterCapacity";
+import BecomeVolunteer from "./pages/user/BecomeVolunteer";
+import RegisterShelter from "./pages/user/RegisterShelter";
+import FeedingPoints from "./pages/user/FeedingPoints";
+import HomeCheckTracker from "./pages/user/HomeCheckTracker";
+import NeighborhoodAlerts from "./pages/user/NeighborhoodAlerts";
+import NGOVerification from "./pages/user/NGOVerification";
+import HealthVaccination from "./pages/user/HealthVaccination";
+
+// Admin pages
+import Admin from "./pages/admin/Admin";
+import AdminFoundPets from "./pages/admin/AdminFoundPets";
+import AdminLostPets from "./pages/admin/AdminLostPets";
+import AdminAdopt from "./pages/admin/AdminAdopt";
 import AdminRequests from "./pages/admin/AdminRequests";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminChats from "./pages/admin/AdminChats";
+import AdminChatMonitor from "./pages/admin/AdminChatMonitor";
 import AdminProfile from "./pages/admin/AdminProfile";
 import AllPets from "./pages/admin/AllPets";
 import AdminFeedingPoints from "./pages/admin/AdminFeedingPoints";
@@ -64,216 +74,371 @@ const AppContent = () => {
 
   return (
     <div className="flex min-h-screen flex-col">
-      {!isLoginPage && !isRegisterPage && !isAdminPage && isPublicPage && <TopNav />}
+      {/* TopNav for landing page and public pages */}
+      {isPublicPage && !isLoginPage && !isRegisterPage && <TopNav />}
       <main className="flex-1">
         <Routes>
+          {/* Public Routes */}
           <Route path="/" element={<Landing />} />
           <Route path="/auth/login" element={<Login />} />
           <Route path="/auth/register" element={<Register />} />
           <Route path="/auth/register-admin" element={<RegisterAdmin />} />
+          <Route path="/policy" element={<Policy />} />
+          <Route path="/safety" element={<Safety />} />
+
+          {/* User Protected Routes */}
           <Route 
             path="/home" 
             element={
+              <UserProtectedRoute>
               <UserPageWrapper>
                 <UserHome />
               </UserPageWrapper>
+              </UserProtectedRoute>
             } 
           />
           <Route 
             path="/dashboard" 
             element={
+              <UserProtectedRoute>
               <UserPageWrapper>
-                <Dashboard />
+                <UserHome />
               </UserPageWrapper>
+              </UserProtectedRoute>
             } 
           />
           <Route 
             path="/profile" 
             element={
+              <UserProtectedRoute>
               <UserPageWrapper>
                 <Profile />
               </UserPageWrapper>
+              </UserProtectedRoute>
             } 
           />
-          <Route path="/admin" element={<Admin />} />
-          <Route path="/admin/found-pets" element={<AdminFoundPets />} />
-          <Route path="/admin/lost-pets" element={<AdminLostPets />} />
-          <Route path="/admin/adopt" element={<AdminAdopt />} />
-          <Route path="/admin/users" element={<AdminUsers />} />
-          <Route path="/admin/chats" element={<AdminChats />} />
-          <Route path="/admin/profile" element={<AdminProfile />} />
-          <Route path="/admin/pets" element={<AllPets />} />
           <Route 
             path="/pets/found" 
             element={
-              <AdminRedirect adminPath="/admin/found-pets">
+              <UserProtectedRoute>
                 <UserPageWrapper>
                   <FoundPets />
                 </UserPageWrapper>
-              </AdminRedirect>
+              </UserProtectedRoute>
             } 
           />
           <Route 
             path="/pets/lost" 
             element={
-              <AdminRedirect adminPath="/admin/lost-pets">
+              <UserProtectedRoute>
                 <UserPageWrapper>
                   <LostPets />
                 </UserPageWrapper>
-              </AdminRedirect>
+              </UserProtectedRoute>
             } 
           />
           <Route 
             path="/pets/adopt" 
             element={
-              <AdminRedirect adminPath="/admin/adopt">
+              <UserProtectedRoute>
                 <UserPageWrapper>
                   <AdoptablePets />
                 </UserPageWrapper>
-              </AdminRedirect>
+              </UserProtectedRoute>
             } 
           />
-          {/* Main /pets route - shows all pets (adoptable) */}
           <Route 
             path="/pets" 
             element={
-              <AdminRedirect adminPath="/admin/pets">
+              <UserProtectedRoute>
                 <UserPageWrapper>
                   <AdoptablePets />
                 </UserPageWrapper>
-              </AdminRedirect>
+              </UserProtectedRoute>
             } 
           />
           <Route 
             path="/pets/report-found" 
             element={
+              <UserProtectedRoute>
               <UserPageWrapper>
                 <ReportFound />
               </UserPageWrapper>
+              </UserProtectedRoute>
             } 
           />
           <Route 
             path="/pets/report-lost" 
             element={
+              <UserProtectedRoute>
               <UserPageWrapper>
                 <ReportLost />
               </UserPageWrapper>
+              </UserProtectedRoute>
             } 
           />
           <Route 
             path="/pets/new/found" 
             element={
+              <UserProtectedRoute>
               <UserPageWrapper>
                 <ReportFound />
               </UserPageWrapper>
+              </UserProtectedRoute>
             } 
           />
           <Route 
             path="/pets/new/lost" 
             element={
+              <UserProtectedRoute>
               <UserPageWrapper>
                 <ReportLost />
               </UserPageWrapper>
+              </UserProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/pets/:id/edit" 
+            element={
+              <AdminProtectedRoute>
+              <UserPageWrapper>
+                  <EditPet />
+              </UserPageWrapper>
+              </AdminProtectedRoute>
             } 
           />
           <Route 
             path="/pets/:id" 
             element={
+              <ProtectedRoute requireAuth={true} requireAdmin={false}>
               <UserPageWrapper>
-                <PetDetail />
+                  <PetDetail />
               </UserPageWrapper>
+              </ProtectedRoute>
             } 
           />
           <Route 
             path="/chats" 
             element={
+              <UserProtectedRoute>
               <UserPageWrapper>
                 <ChatList />
               </UserPageWrapper>
+              </UserProtectedRoute>
             } 
           />
           <Route 
             path="/chat/:roomId" 
             element={
+              <UserProtectedRoute>
               <UserPageWrapper>
                 <Chat />
               </UserPageWrapper>
+              </UserProtectedRoute>
             } 
           />
-          <Route path="/policy" element={<Policy />} />
-          <Route path="/safety" element={<Safety />} />
-          {/* Community Features */}
+          {/* Community Features - User Protected */}
           <Route 
             path="/shelter-capacity" 
             element={
+              <UserProtectedRoute>
               <UserPageWrapper>
                 <ShelterCapacity />
               </UserPageWrapper>
+              </UserProtectedRoute>
             } 
           />
           <Route 
             path="/become-volunteer" 
             element={
+              <UserProtectedRoute>
               <UserPageWrapper>
                 <BecomeVolunteer />
               </UserPageWrapper>
+              </UserProtectedRoute>
             } 
           />
           <Route 
             path="/register-shelter" 
             element={
+              <UserProtectedRoute>
               <UserPageWrapper>
                 <RegisterShelter />
               </UserPageWrapper>
+              </UserProtectedRoute>
             } 
           />
           <Route 
             path="/feeding-points" 
             element={
+              <UserProtectedRoute>
               <UserPageWrapper>
                 <FeedingPoints />
               </UserPageWrapper>
+              </UserProtectedRoute>
             } 
           />
           <Route 
             path="/home-check-tracker" 
             element={
+              <UserProtectedRoute>
               <UserPageWrapper>
                 <HomeCheckTracker />
               </UserPageWrapper>
+              </UserProtectedRoute>
             } 
           />
           <Route 
             path="/neighborhood-alerts" 
             element={
+              <UserProtectedRoute>
               <UserPageWrapper>
                 <NeighborhoodAlerts />
               </UserPageWrapper>
+              </UserProtectedRoute>
             } 
           />
           <Route 
             path="/ngo-verification" 
             element={
+              <UserProtectedRoute>
               <UserPageWrapper>
                 <NGOVerification />
               </UserPageWrapper>
+              </UserProtectedRoute>
             } 
           />
           <Route 
             path="/health-vaccination" 
             element={
+              <UserProtectedRoute>
               <UserPageWrapper>
                 <HealthVaccination />
               </UserPageWrapper>
+              </UserProtectedRoute>
             } 
           />
-          {/* Admin Routes */}
-          <Route path="/admin/requests" element={<AdminRequests />} />
-          <Route path="/admin/feeding-points" element={<AdminFeedingPoints />} />
-          <Route path="/admin/shelter-locations" element={<AdminShelterLocations />} />
-          <Route path="/admin/all-pets" element={<AdminAllPets />} />
-          <Route path="/admin/role-requests" element={<AdminRoleRequests />} />
-          <Route path="/admin/medical-records" element={<AdminMedicalRecords />} />
+          {/* Admin Protected Routes */}
+          <Route 
+            path="/admin" 
+            element={
+              <AdminProtectedRoute>
+                <Admin />
+              </AdminProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin/found-pets" 
+            element={
+              <AdminProtectedRoute>
+                <AdminFoundPets />
+              </AdminProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin/lost-pets" 
+            element={
+              <AdminProtectedRoute>
+                <AdminLostPets />
+              </AdminProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin/adopt" 
+            element={
+              <AdminProtectedRoute>
+                <AdminAdopt />
+              </AdminProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin/users" 
+            element={
+              <AdminProtectedRoute>
+                <AdminUsers />
+              </AdminProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin/chats" 
+            element={
+              <AdminProtectedRoute>
+                <AdminChats />
+              </AdminProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin/chats/monitor/:roomId" 
+            element={
+              <AdminProtectedRoute>
+                <AdminChatMonitor />
+              </AdminProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin/profile" 
+            element={
+              <AdminProtectedRoute>
+                <AdminProfile />
+              </AdminProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin/pets" 
+            element={
+              <AdminProtectedRoute>
+                <AllPets />
+              </AdminProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin/requests" 
+            element={
+              <AdminProtectedRoute>
+                <AdminRequests />
+              </AdminProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin/feeding-points" 
+            element={
+              <AdminProtectedRoute>
+                <AdminFeedingPoints />
+              </AdminProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin/shelter-locations" 
+            element={
+              <AdminProtectedRoute>
+                <AdminShelterLocations />
+              </AdminProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin/all-pets" 
+            element={
+              <AdminProtectedRoute>
+                <AdminAllPets />
+              </AdminProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin/role-requests" 
+            element={
+              <AdminProtectedRoute>
+                <AdminRoleRequests />
+              </AdminProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin/medical-records" 
+            element={
+              <AdminProtectedRoute>
+                <AdminMedicalRecords />
+              </AdminProtectedRoute>
+            } 
+          />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

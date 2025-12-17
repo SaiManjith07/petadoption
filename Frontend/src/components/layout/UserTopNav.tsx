@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Search, Bell, User, LogOut, Menu, X, RefreshCw, Circle, UserPlus } from 'lucide-react';
+import { Bell, User, LogOut, Menu, X, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
@@ -29,7 +28,6 @@ export function UserTopNav({ onMenuToggle, sidebarOpen, onRefresh }: UserTopNavP
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState<NotificationModel[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [searchQuery, setSearchQuery] = useState('');
 
   // Load notifications
   useEffect(() => {
@@ -50,13 +48,6 @@ export function UserTopNav({ onMenuToggle, sidebarOpen, onRefresh }: UserTopNavP
     }
   }, [user]);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/pets/search?q=${encodeURIComponent(searchQuery)}`);
-    }
-  };
-
   const handleLogout = async () => {
     await logout();
     navigate('/auth/login');
@@ -64,33 +55,19 @@ export function UserTopNav({ onMenuToggle, sidebarOpen, onRefresh }: UserTopNavP
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-gray-200/50 bg-white/90 backdrop-blur-sm shadow-sm">
-      <div className="flex h-14 items-center px-4 lg:px-6">
+      <div className="flex h-14 items-center justify-between px-4 lg:px-6">
         {/* Mobile Menu Toggle */}
         <Button
           variant="ghost"
           size="icon"
-          className="lg:hidden mr-2 rounded-lg hover:bg-gray-100"
+          className="lg:hidden rounded-lg hover:bg-gray-100"
           onClick={onMenuToggle}
         >
           {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </Button>
 
-        {/* Center: Search Bar */}
-        <div className="flex-1 max-w-xl mx-auto">
-          <form onSubmit={handleSearch} className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <Input
-              type="text"
-              placeholder="Search pets, shelters, feeding points..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 h-9 bg-gray-50 border-gray-200 focus:bg-white focus:border-gray-300 rounded-lg transition-all text-sm"
-            />
-          </form>
-        </div>
-
         {/* Right: Actions */}
-        <div className="flex items-center gap-2 ml-4">
+        <div className="flex items-center gap-2 ml-auto">
           {/* Notifications */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -148,7 +125,7 @@ export function UserTopNav({ onMenuToggle, sidebarOpen, onRefresh }: UserTopNavP
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="flex items-center gap-2 h-9 px-2 rounded-lg hover:bg-gray-100">
                 <Avatar className="h-8 w-8 border border-gray-200">
-                  <AvatarFallback className="bg-gradient-to-br from-[#2BB6AF] to-[#4CAF50] text-white font-semibold text-sm">
+                  <AvatarFallback className="bg-gradient-to-br from-[#2BB6AF] to-[#239a94] text-white font-semibold text-sm">
                     {user?.name?.charAt(0).toUpperCase() || 'U'}
                   </AvatarFallback>
                 </Avatar>

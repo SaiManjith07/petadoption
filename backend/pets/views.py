@@ -3,6 +3,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny, IsAdminUser
 from rest_framework.response import Response
 from django.db.models import Q
+from django.conf import settings
 from django_filters.rest_framework import DjangoFilterBackend
 from .models import Pet, Category, AdoptionApplication, MedicalRecord
 from .serializers import (
@@ -44,6 +45,28 @@ class PetListView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         try:
+            # Automatically move found pets to adoption after 15 days (before filtering)
+            from django.utils import timezone
+            from datetime import timedelta
+            
+            cutoff_date = timezone.now() - timedelta(days=15)
+            found_pets_to_move = Pet.objects.filter(
+                adoption_status='Found',
+                found_date__isnull=False,
+                found_date__lte=cutoff_date,
+                moved_to_adoption=False,
+                is_reunited=False
+            )
+            
+            for pet in found_pets_to_move:
+                days = pet.calculate_days_in_care()
+                if days >= 15:
+                    pet.moved_to_adoption = True
+                    pet.moved_to_adoption_date = timezone.now()
+                    pet.adoption_status = 'Available for Adoption'
+                    pet.owner_consent_for_adoption = True
+                    pet.save()
+            
             queryset = Pet.objects.select_related('category', 'owner', 'posted_by').prefetch_related('images')
             
             # Filter by status
@@ -98,41 +121,183 @@ class LostPetListView(generics.ListCreateAPIView):
         return [AllowAny()]
     
     def get_queryset(self):
-        return Pet.objects.filter(adoption_status='Lost').select_related('category', 'owner', 'posted_by').prefetch_related('images')
+        try:
+            return Pet.objects.filter(adoption_status='Lost').select_related('category', 'owner', 'posted_by').prefetch_related('images')
+        except Exception as e:
+            import traceback
+            print(f"Error in LostPetListView.get_queryset: {e}")
+            print(traceback.format_exc())
+            return Pet.objects.none()
     
     def get_serializer_context(self):
         context = super().get_serializer_context()
         context['request'] = self.request
         return context
     
+    def list(self, request, *args, **kwargs):
+        """Override list to add error handling."""
+        try:
+            return super().list(request, *args, **kwargs)
+        except Exception as e:
+            import traceback
+            error_trace = traceback.format_exc()
+            print(f"Error in LostPetListView.list: {e}")
+            print(error_trace)
+            return Response(
+                {'error': str(e), 'detail': 'An error occurred while fetching lost pets'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
     def create(self, request, *args, **kwargs):
         """Override create to add better error handling."""
         try:
-            serializer = self.get_serializer(data=request.data)
-            serializer.is_valid(raise_exception=True)
-            self.perform_create(serializer)
-            headers = self.get_success_headers(serializer.data)
-            return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+            # Handle species -> category mapping if species is provided
+            # For FormData (QueryDict), we need to create a mutable copy
+            from django.http import QueryDict
+            
+            # Get the data and make it mutable if it's a QueryDict
+            data = request.data
+            if isinstance(data, QueryDict):
+                data = data.copy()  # This creates a mutable copy
+            elif hasattr(data, '_mutable') and not data._mutable:
+                data._mutable = True
+            
+            # Check if species is provided but category_id is not
+            species = None
+            if hasattr(data, 'get'):
+                species_value = data.get('species', '')
+                if isinstance(species_value, str):
+                    species = species_value.strip()
+                elif isinstance(species_value, list) and len(species_value) > 0:
+                    species = str(species_value[0]).strip()
+            
+            # Map species to category_id if needed
+            if species and not data.get('category_id'):
+                try:
+                    # Clean species name - remove "Lost" or "Found" prefix if present
+                    species_cleaned = species.strip()
+                    # Remove "Lost" or "Found" prefix (case-insensitive)
+                    if species_cleaned.lower().startswith('lost '):
+                        species_cleaned = species_cleaned[5:].strip()
+                    elif species_cleaned.lower().startswith('found '):
+                        species_cleaned = species_cleaned[6:].strip()
+                    
+                    # Normalize species name (capitalize first letter, rest lowercase)
+                    species_normalized = species_cleaned.capitalize()
+                    
+                    # Try to find existing category (case-insensitive)
+                    category = None
+                    try:
+                        category = Category.objects.get(name__iexact=species_normalized)
+                    except Category.DoesNotExist:
+                        # If not found, try exact match first
+                        try:
+                            category = Category.objects.get(name=species_normalized)
+                        except Category.DoesNotExist:
+                            # Create new category with normalized name (clean, no prefix)
+                            category = Category.objects.create(
+                                name=species_normalized,
+                                description=f'Category for {species_normalized}'
+                            )
+                    
+                    # Ensure category_id is an integer (serializer expects int)
+                    data['category_id'] = int(category.id)
+                    # Remove species from data as it's not a Pet model field
+                    if 'species' in data:
+                        if isinstance(data, QueryDict):
+                            data.pop('species', None)
+                        elif hasattr(data, 'pop'):
+                            data.pop('species', None)
+                        elif 'species' in data:
+                            del data['species']
+                except Exception as cat_error:
+                    import traceback
+                    print(f"Error creating/finding category for species '{species}': {cat_error}")
+                    print(traceback.format_exc())
+                    # Continue without category - it's optional
+            
+            # Make sure name field is present (required field)
+            if not data.get('name'):
+                return Response(
+                    {
+                        'error': 'Validation failed',
+                        'detail': 'Name field is required',
+                        'errors': {'name': ['This field is required.']}
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            serializer = self.get_serializer(data=data)
+            if not serializer.is_valid():
+                # Return validation errors with details
+                return Response(
+                    {
+                        'error': 'Validation failed',
+                        'detail': 'Please check the form data',
+                        'errors': serializer.errors
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            try:
+                self.perform_create(serializer)
+                headers = self.get_success_headers(serializer.data)
+                return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+            except Exception as save_error:
+                import traceback
+                error_trace = traceback.format_exc()
+                print(f"Error in LostPetListView.perform_create: {save_error}")
+                print(error_trace)
+                return Response(
+                    {
+                        'error': str(save_error),
+                        'detail': 'Failed to save pet data. Please check the server logs for details.',
+                        'traceback': error_trace if getattr(settings, 'DEBUG', False) else None
+                    },
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
         except Exception as e:
             import traceback
             error_trace = traceback.format_exc()
             print(f"Error in LostPetListView.create: {e}")
             print(error_trace)
+            # Check if it's a validation error from DRF
+            if hasattr(e, 'detail'):
+                return Response(
+                    {'error': str(e), 'detail': e.detail if isinstance(e.detail, (str, dict)) else 'Validation error'},
+                    status=getattr(e, 'status_code', status.HTTP_500_INTERNAL_SERVER_ERROR)
+                )
             return Response(
-                {'error': str(e), 'detail': 'Failed to create lost pet report'},
+                {
+                    'error': str(e),
+                    'detail': 'Failed to create lost pet report',
+                    'traceback': error_trace if getattr(settings, 'DEBUG', False) else None
+                },
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
     
     def perform_create(self, serializer):
         # Set status to 'Pending' for admin approval
         # For lost pets, don't set found_date (it should be None)
+        # Ensure user is authenticated
+        if not self.request.user or not self.request.user.is_authenticated:
+            from rest_framework.exceptions import AuthenticationFailed
+            raise AuthenticationFailed('User must be authenticated to create a pet report')
+        
+        # Save with required fields
         try:
-            serializer.save(posted_by=self.request.user, adoption_status='Pending', is_verified=False)
+            serializer.save(
+                posted_by=self.request.user, 
+                adoption_status='Pending', 
+                is_verified=False
+            )
         except Exception as e:
             import traceback
-            print(f"Error in LostPetListView.perform_create: {e}")
+            error_msg = f"Error saving pet in LostPetListView.perform_create: {e}"
+            print(error_msg)
             print(traceback.format_exc())
-            raise
+            # Re-raise with more context
+            raise Exception(f"{error_msg}. Check database constraints and field values.") from e
 
 
 class FoundPetListView(generics.ListCreateAPIView):
@@ -146,6 +311,28 @@ class FoundPetListView(generics.ListCreateAPIView):
         return [AllowAny()]
     
     def get_queryset(self):
+        # Automatically move found pets to adoption after 15 days
+        from django.utils import timezone
+        from datetime import timedelta
+        
+        cutoff_date = timezone.now() - timedelta(days=15)
+        found_pets_to_move = Pet.objects.filter(
+            adoption_status='Found',
+            found_date__isnull=False,
+            found_date__lte=cutoff_date,
+            moved_to_adoption=False,
+            is_reunited=False
+        )
+        
+        for pet in found_pets_to_move:
+            days = pet.calculate_days_in_care()
+            if days >= 15:
+                pet.moved_to_adoption = True
+                pet.moved_to_adoption_date = timezone.now()
+                pet.adoption_status = 'Available for Adoption'
+                pet.owner_consent_for_adoption = True
+                pet.save()
+        
         return Pet.objects.filter(adoption_status='Found').select_related('category', 'owner', 'posted_by').prefetch_related('images')
     
     def get_serializer_context(self):
@@ -156,18 +343,185 @@ class FoundPetListView(generics.ListCreateAPIView):
     def create(self, request, *args, **kwargs):
         """Override create to add better error handling."""
         try:
-            serializer = self.get_serializer(data=request.data)
-            serializer.is_valid(raise_exception=True)
-            self.perform_create(serializer)
-            headers = self.get_success_headers(serializer.data)
-            return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+            # Handle species -> category mapping if species is provided
+            # For FormData (QueryDict), we need to create a mutable copy
+            from django.http import QueryDict
+            
+            # Get the data and make it mutable if it's a QueryDict
+            data = request.data
+            if isinstance(data, QueryDict):
+                data = data.copy()  # This creates a mutable copy
+            elif hasattr(data, '_mutable') and not data._mutable:
+                data._mutable = True
+            
+            # Check if species is provided but category_id is not
+            species = None
+            if hasattr(data, 'get'):
+                species_value = data.get('species', '')
+                if isinstance(species_value, str):
+                    species = species_value.strip()
+                elif isinstance(species_value, list) and len(species_value) > 0:
+                    species = str(species_value[0]).strip()
+            
+            # Map species to category_id if needed
+            if species and not data.get('category_id'):
+                try:
+                    # Clean species name - remove "Lost" or "Found" prefix if present
+                    species_cleaned = species.strip()
+                    # Remove "Lost" or "Found" prefix (case-insensitive)
+                    if species_cleaned.lower().startswith('lost '):
+                        species_cleaned = species_cleaned[5:].strip()
+                    elif species_cleaned.lower().startswith('found '):
+                        species_cleaned = species_cleaned[6:].strip()
+                    
+                    # Normalize species name (capitalize first letter, rest lowercase)
+                    species_normalized = species_cleaned.capitalize()
+                    
+                    # Try to find existing category (case-insensitive)
+                    category = None
+                    try:
+                        category = Category.objects.get(name__iexact=species_normalized)
+                    except Category.DoesNotExist:
+                        # If not found, try exact match first
+                        try:
+                            category = Category.objects.get(name=species_normalized)
+                        except Category.DoesNotExist:
+                            # Create new category with normalized name (clean, no prefix)
+                            category = Category.objects.create(
+                                name=species_normalized,
+                                description=f'Category for {species_normalized}'
+                            )
+                    
+                    # Ensure category_id is an integer (serializer expects int)
+                    data['category_id'] = int(category.id)
+                    # Remove species from data as it's not a Pet model field
+                    if 'species' in data:
+                        if isinstance(data, QueryDict):
+                            data.pop('species', None)
+                        elif hasattr(data, 'pop'):
+                            data.pop('species', None)
+                        elif 'species' in data:
+                            del data['species']
+                except Exception as cat_error:
+                    import traceback
+                    print(f"Error creating/finding category for species '{species}': {cat_error}")
+                    print(traceback.format_exc())
+                    # Continue without category - it's optional
+            
+            # Make sure name field is present (required field)
+            if not data.get('name'):
+                return Response(
+                    {
+                        'error': 'Validation failed',
+                        'detail': 'Name field is required',
+                        'errors': {'name': ['This field is required.']}
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Convert data types for Decimal and Integer fields
+            # Weight: DecimalField(max_digits=5, decimal_places=2)
+            if data.get('weight'):
+                try:
+                    weight_val = data.get('weight')
+                    if isinstance(weight_val, str):
+                        weight_val = weight_val.strip()
+                        if weight_val:
+                            # Convert to float then to string for DecimalField
+                            float_val = float(weight_val)
+                            # Ensure it fits in max_digits=5, decimal_places=2
+                            if float_val > 999.99:
+                                float_val = 999.99
+                            data['weight'] = str(float_val)
+                    elif isinstance(weight_val, (int, float)):
+                        data['weight'] = str(float(weight_val))
+                except (ValueError, TypeError) as e:
+                    print(f"Warning: Invalid weight value '{data.get('weight')}': {e}")
+                    data.pop('weight', None)  # Remove invalid weight
+            
+            # Age: IntegerField
+            if data.get('age'):
+                try:
+                    age_val = data.get('age')
+                    if isinstance(age_val, str):
+                        age_val = age_val.strip()
+                        if age_val:
+                            data['age'] = int(float(age_val))  # Convert to int
+                    elif isinstance(age_val, (int, float)):
+                        data['age'] = int(age_val)
+                except (ValueError, TypeError) as e:
+                    print(f"Warning: Invalid age value '{data.get('age')}': {e}")
+                    data.pop('age', None)  # Remove invalid age
+            
+            # Location coordinates: DecimalField(max_digits=9, decimal_places=6)
+            for coord_field in ['location_latitude', 'location_longitude']:
+                if data.get(coord_field):
+                    try:
+                        coord_val = data.get(coord_field)
+                        if isinstance(coord_val, str):
+                            coord_val = coord_val.strip()
+                            if coord_val:
+                                float_val = float(coord_val)
+                                # Validate ranges
+                                if coord_field == 'location_latitude' and (-90 <= float_val <= 90):
+                                    data[coord_field] = str(float_val)
+                                elif coord_field == 'location_longitude' and (-180 <= float_val <= 180):
+                                    data[coord_field] = str(float_val)
+                                else:
+                                    print(f"Warning: {coord_field} out of range: {float_val}")
+                                    data.pop(coord_field, None)
+                        elif isinstance(coord_val, (int, float)):
+                            data[coord_field] = str(float(coord_val))
+                    except (ValueError, TypeError) as e:
+                        print(f"Warning: Invalid {coord_field} value '{data.get(coord_field)}': {e}")
+                        data.pop(coord_field, None)  # Remove invalid coordinate
+            
+            serializer = self.get_serializer(data=data)
+            if not serializer.is_valid():
+                # Return validation errors with details
+                return Response(
+                    {
+                        'error': 'Validation failed',
+                        'detail': 'Please check the form data',
+                        'errors': serializer.errors
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            try:
+                self.perform_create(serializer)
+                headers = self.get_success_headers(serializer.data)
+                return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+            except Exception as save_error:
+                import traceback
+                error_trace = traceback.format_exc()
+                print(f"Error in FoundPetListView.perform_create: {save_error}")
+                print(error_trace)
+                return Response(
+                    {
+                        'error': str(save_error),
+                        'detail': 'Failed to save pet data',
+                        'traceback': error_trace if getattr(settings, 'DEBUG', False) else None
+                    },
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
         except Exception as e:
             import traceback
             error_trace = traceback.format_exc()
             print(f"Error in FoundPetListView.create: {e}")
             print(error_trace)
+            # Check if it's a validation error from DRF
+            if hasattr(e, 'detail'):
+                return Response(
+                    {'error': str(e), 'detail': e.detail if isinstance(e.detail, (str, dict)) else 'Validation error'},
+                    status=getattr(e, 'status_code', status.HTTP_500_INTERNAL_SERVER_ERROR)
+                )
             return Response(
-                {'error': str(e), 'detail': 'Failed to create found pet report'},
+                {
+                    'error': str(e),
+                    'detail': 'Failed to create found pet report',
+                    'traceback': error_trace if getattr(settings, 'DEBUG', False) else None
+                },
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
     
@@ -176,10 +530,19 @@ class FoundPetListView(generics.ListCreateAPIView):
         # For found pets, set found_date to distinguish from lost pets
         from django.utils import timezone
         try:
+            # Ensure user is authenticated
+            if not self.request.user or not self.request.user.is_authenticated:
+                from rest_framework.exceptions import AuthenticationFailed
+                raise AuthenticationFailed('User must be authenticated to create a pet report')
+            
             data = serializer.validated_data
+            # Get found_date from various possible fields
             found_date = data.get('found_date') or data.get('foundDate')
+            # If not provided, try to use last_seen (date when pet was found)
+            if not found_date and data.get('last_seen'):
+                found_date = data.get('last_seen')
+            # If still not provided, set it to now for found pets
             if not found_date:
-                # If no found_date provided, set it to now for found pets
                 found_date = timezone.now()
             serializer.save(
                 posted_by=self.request.user, 
@@ -299,6 +662,32 @@ class PetDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
+        
+        # Check if this is a found pet that should be moved to adoption after 15 days
+        if (instance.adoption_status == 'Found' and 
+            instance.found_date and 
+            not instance.moved_to_adoption and 
+            not instance.is_reunited):
+            from django.utils import timezone
+            days = instance.calculate_days_in_care()
+            if days >= 15:
+                instance.moved_to_adoption = True
+                instance.moved_to_adoption_date = timezone.now()
+                instance.adoption_status = 'Available for Adoption'
+                instance.owner_consent_for_adoption = True
+                instance.save()
+                
+                # Notify the person who found the pet
+                if instance.posted_by:
+                    from notifications.models import Notification
+                    Notification.objects.create(
+                        user=instance.posted_by,
+                        title='Pet Moved to Adoption',
+                        message=f'"{instance.name}" has been automatically moved to adoption listing after 15 days in care.',
+                        notification_type='system',
+                        related_pet=instance
+                    )
+        
         # Increment view count
         instance.views_count += 1
         instance.save(update_fields=['views_count'])

@@ -3,11 +3,12 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { PawPrint, Eye, EyeOff, Lock, Mail, Heart, ShieldCheck, Users, CheckCircle2, ArrowRight, User, Phone, MapPin, Home } from 'lucide-react';
+import { Eye, EyeOff, Lock, Mail, Heart, ShieldCheck, Users, CheckCircle2, ArrowRight, User, Phone, MapPin, Home, PawPrint } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Logo } from '@/components/ui/Logo';
 import { useAuth } from '@/lib/auth';
 import { useToast } from '@/hooks/use-toast';
 import { authApi } from '@/api/authApi';
@@ -212,17 +213,20 @@ export default function Register() {
         }
       `}</style>
 
-      {/* Left Panel - Green Section (Sticky) */}
-      <div 
-        className="hidden lg:flex lg:w-[45%] xl:w-[40%] sticky left-0 top-0 h-screen overflow-hidden flex-shrink-0 relative flex flex-col justify-center p-10 xl:p-[60px_50px]"
-        style={{
-          background: 'linear-gradient(135deg, #4CAF50 0%, #45a049 50%, #66BB6A 100%)',
-          backgroundSize: '200% 200%',
-          animation: 'gradientShift 15s ease infinite',
-        }}
-      >
-        {/* Decorative Paw Prints with Animation */}
-        <div className="absolute inset-0 pointer-events-none">
+      {/* Left Panel - Welcome Section */}
+      <div className="hidden lg:flex lg:w-[48%] text-white px-12 py-6 flex flex-col justify-between relative overflow-hidden rounded-r-[6rem] h-screen sticky top-0 shadow-2xl shadow-green-500/60">
+        {/* Background Image */}
+        <div className="absolute inset-0">
+          <img
+            src="https://img.freepik.com/premium-photo/heartwarming-scene-various-pets-including-dog-cat-ferret-rabbit-bird-fish-rodent-posing-around-charming-border-collie_1224371-5179.jpg?semt=ais_se_enriched&w=740&q=80"
+            alt="Pet illustration background"
+            className="w-full h-full object-contain blur-sm"
+          />
+          <div className="absolute inset-0 bg-gradient-to-br from-[#2BB6AF]/50 via-[#239a94]/50 to-[#1a7a75]/50"></div>
+        </div>
+        <div className="relative z-10 flex flex-col justify-center flex-1">
+          {/* Decorative Paw Prints with Animation */}
+          <div className="absolute inset-0 pointer-events-none opacity-30">
           <div 
             className="absolute text-white opacity-15 paw-print-float"
             style={{ 
@@ -284,84 +288,58 @@ export default function Register() {
             </svg>
           </div>
           
-          {/* Floating Circles with Blur */}
-          <div 
-            className="absolute rounded-full pointer-events-none"
-            style={{ 
-              top: '10%', 
-              right: '5%', 
-              width: '120px', 
-              height: '120px', 
-              backgroundColor: 'rgba(255, 255, 255, 0.08)',
-              filter: 'blur(30px)'
-            }}
-          />
-          <div 
-            className="absolute rounded-full pointer-events-none"
-            style={{ 
-              bottom: '20%', 
-              left: '5%', 
-              width: '150px', 
-              height: '150px', 
-              backgroundColor: 'rgba(255, 255, 255, 0.06)',
-              filter: 'blur(40px)'
-            }}
-          />
         </div>
-
-        <div className="relative z-10 flex flex-col justify-center flex-1">
           {/* PetReunite Branding */}
-          <div className="mb-10">
-            <Link to="/" className="flex items-center gap-3 mb-6 group cursor-pointer">
-              <div className="w-14 h-14 bg-white/20 rounded-xl p-3 flex items-center justify-center group-hover:bg-white/30 group-hover:scale-105 transition-all duration-300">
-                <PawPrint className="h-7 w-7 text-white" />
-              </div>
-              <div>
-                <h1 className="text-[28px] font-bold text-white leading-tight group-hover:opacity-90 transition-opacity">PetReunite</h1>
-                <p className="text-white/90 text-sm mt-1">Helping pets find home</p>
-              </div>
-            </Link>
+          <div className="mb-6">
+            <Logo 
+              size="xl" 
+              showText={true} 
+              showTagline={true}
+              linkTo="/"
+              variant="white"
+              className="group"
+            />
           </div>
 
-          {/* Content */}
-          <div className="mb-8">
-            <h2 className="text-[42px] font-bold text-white leading-tight mb-6" style={{ textShadow: '0 2px 4px rgba(0, 0, 0, 0.1)' }}>
-              Join Our Community!
-            </h2>
-            <p className="text-lg text-white/95 leading-relaxed mb-10 max-w-[90%]">
-              Create your account and start making a difference in the lives of pets today.
+          {/* Concise Content */}
+          <div className="mb-6">
+            <h2 className="text-3xl font-bold mb-3 leading-tight text-[#2BB6AF] drop-shadow-lg">Start Your Journey!</h2>
+            <p className="text-white text-lg leading-relaxed mb-4 drop-shadow-md">
+              Become part of a caring community dedicated to helping pets find their way home. Your registration is the first step towards making a real difference.
             </p>
             
-            {/* Key Features */}
-            <div className="mt-8 space-y-4">
-              <div className="flex items-center text-base text-white leading-relaxed">
-                <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
-                  <CheckCircle2 className="h-4 w-4 text-white" />
-                </div>
-                <span>Report lost & found pets with verified NGO support</span>
+            {/* Key Features - Concise */}
+            <div className="space-y-2.5">
+              <div className="flex items-center gap-3">
+                <Users className="h-5 w-5 text-[#2BB6AF] flex-shrink-0 drop-shadow-md" />
+                <p className="text-white text-sm drop-shadow-md">Connect with pet lovers and animal welfare organizations</p>
               </div>
-              <div className="flex items-center text-base text-white leading-relaxed">
-                <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
-                  <ShieldCheck className="h-4 w-4 text-white" />
-                </div>
-                <span>Join community volunteers and shelters</span>
+              <div className="flex items-center gap-3">
+                <ShieldCheck className="h-5 w-5 text-[#2BB6AF] flex-shrink-0 drop-shadow-md" />
+                <p className="text-white text-sm drop-shadow-md">Get verified access to report and track lost pets</p>
               </div>
-              <div className="flex items-center text-base text-white leading-relaxed">
-                <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
-                  <Heart className="h-4 w-4 text-white" />
-                </div>
-                <span>Adopt rescued animals through verified network</span>
+              <div className="flex items-center gap-3">
+                <Heart className="h-5 w-5 text-[#2BB6AF] flex-shrink-0 drop-shadow-md" />
+                <p className="text-white text-sm drop-shadow-md">Open doors to adoption opportunities and volunteer programs</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <PawPrint className="h-5 w-5 text-[#2BB6AF] flex-shrink-0 drop-shadow-md" />
+                <p className="text-white text-sm drop-shadow-md">Real-time notifications for pet matches and updates</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <CheckCircle2 className="h-5 w-5 text-[#2BB6AF] flex-shrink-0 drop-shadow-md" />
+                <p className="text-white text-sm drop-shadow-md">Secure platform with verified user profiles</p>
               </div>
             </div>
           </div>
 
           {/* Login Prompt */}
-          <div className="mt-auto pt-8">
-            <p className="text-white/95 mb-4 text-base">Already have an account? Sign in to continue.</p>
+          <div className="mt-auto pt-4">
+            <p className="text-white mb-4 text-base drop-shadow-md">Already have an account? Sign in to continue.</p>
             <Button
               asChild
               variant="outline"
-              className="bg-white text-[#4CAF50] hover:bg-white/95 border-2 border-white font-semibold px-8 py-6 text-base rounded-2xl shadow-lg hover:shadow-xl transition-all w-fit"
+              className="bg-white text-[#2BB6AF] hover:bg-white/95 border-2 border-white font-semibold px-8 py-6 text-base rounded-2xl shadow-lg hover:shadow-xl transition-all w-fit"
             >
               <Link to="/auth/login">Sign In</Link>
             </Button>
@@ -373,26 +351,34 @@ export default function Register() {
       <div className="flex-1 lg:w-[55%] xl:w-[60%] h-screen overflow-y-auto overflow-x-hidden bg-[#F8FAFB] p-6 md:p-10 lg:p-[40px_50px] xl:p-[60px_80px] form-section">
         <div className="w-full max-w-[600px] mx-auto">
           {/* Mobile Welcome Section */}
-          <div className="lg:hidden mb-8 bg-gradient-to-br from-[#4CAF50] via-[#45A049] to-[#2E7D32] text-white p-8 rounded-[2rem] relative overflow-hidden">
+          <div className="lg:hidden mb-8 text-white p-8 rounded-[2rem] relative overflow-hidden border-2 border-[#2BB6AF] shadow-xl shadow-[#2BB6AF]/30">
+            {/* Background Image */}
+            <div className="absolute inset-0">
+              <img
+                src="https://img.freepik.com/premium-photo/heartwarming-scene-various-pets-including-dog-cat-ferret-rabbit-bird-fish-rodent-posing-around-charming-border-collie_1224371-5179.jpg?semt=ais_se_enriched&w=740&q=80"
+                alt="Pet illustration background"
+                className="w-full h-full object-contain blur-sm"
+              />
+              <div className="absolute inset-0 bg-gradient-to-br from-[#2BB6AF]/50 via-[#239a94]/50 to-[#1a7a75]/50"></div>
+            </div>
             <div className="relative z-10">
-              <Link to="/" className="flex items-center gap-3 mb-6 group cursor-pointer">
-                <div className="h-14 w-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center border-2 border-white/30 shadow-lg group-hover:bg-white/30 group-hover:scale-105 transition-all duration-300">
-                  <PawPrint className="h-7 w-7 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-2xl font-extrabold text-white mb-1 group-hover:opacity-90 transition-opacity">PetReunite</h1>
-                  <p className="text-white/90 text-xs">Helping pets find home</p>
-                </div>
-              </Link>
-              <h2 className="text-2xl font-bold mb-3">Join Our Community!</h2>
-              <p className="text-white/95 mb-4 text-sm">
-                Create your account and start making a difference in the lives of pets today.
+              <Logo 
+                size="lg" 
+                showText={true} 
+                showTagline={true}
+                linkTo="/"
+                variant="white"
+                className="mb-6 group"
+              />
+              <h2 className="text-2xl font-bold mb-3 text-[#2BB6AF] drop-shadow-lg">Start Your Journey!</h2>
+              <p className="text-white mb-4 text-sm drop-shadow-md">
+                Become part of a caring community dedicated to helping pets find their way home. Your registration is the first step.
               </p>
-              <p className="text-white/95 mb-4 text-sm">Already have an account? Sign in to continue.</p>
+              <p className="text-white mb-4 text-sm drop-shadow-md">Already have an account? Sign in to continue.</p>
               <Button
                 asChild
                 variant="outline"
-                className="bg-white text-[#4CAF50] hover:bg-white/95 border-2 border-white font-semibold px-6 py-3 rounded-xl"
+                className="bg-white text-[#2BB6AF] hover:bg-white/95 border-2 border-white font-semibold px-6 py-3 rounded-xl"
               >
                 <Link to="/auth/login">Sign In</Link>
               </Button>
@@ -424,7 +410,7 @@ export default function Register() {
                     className={`h-auto py-[14px] pl-12 pr-4 text-[15px] w-full border-2 rounded-[10px] bg-[#F8FAFB] transition-all duration-300 outline-none font-inherit ${
                       errors.name 
                         ? 'border-[#E74C3C] bg-[#FFF5F5]' 
-                        : 'border-[#E8ECEF] focus:bg-white focus:border-[#4CAF50] focus:shadow-[0_0_0_4px_rgba(76,175,80,0.1)]'
+                        : 'border-[#E8ECEF] focus:bg-white focus:border-[#2BB6AF] focus:shadow-[0_0_0_4px_rgba(43,182,175,0.1)]'
                     }`}
                   />
                 </div>
@@ -451,8 +437,8 @@ export default function Register() {
                       errors.email 
                         ? 'border-[#E74C3C] bg-[#FFF5F5]' 
                         : emailAvailable === true
-                        ? 'border-[#4CAF50] bg-[#F0FFF4]'
-                        : 'border-[#E8ECEF] focus:bg-white focus:border-[#4CAF50] focus:shadow-[0_0_0_4px_rgba(76,175,80,0.1)]'
+                        ? 'border-[#2BB6AF] bg-[#F0FFF4]'
+                        : 'border-[#E8ECEF] focus:bg-white focus:border-[#2BB6AF] focus:shadow-[0_0_0_4px_rgba(43,182,175,0.1)]'
                     }`}
                   />
                 </div>
@@ -461,7 +447,7 @@ export default function Register() {
                     <p className="text-xs text-red-600 font-medium">{errors.email.message}</p>
                   )}
                   {emailAvailable === true && (
-                    <p className="text-[13px] text-[#4CAF50] flex items-center gap-1.5">
+                    <p className="text-[13px] text-[#2BB6AF] flex items-center gap-1.5">
                       <CheckCircle2 className="h-4 w-4" />
                       Email available
                     </p>
@@ -483,7 +469,7 @@ export default function Register() {
                     <select 
                       value={countryCode} 
                       onChange={(e) => { setCountryCode(e.target.value); setValue('countryCode', e.target.value); }} 
-                      className="w-[120px] flex-shrink-0 px-3 py-[14px] border-2 border-[#E8ECEF] rounded-[10px] focus:border-[#4CAF50] focus:ring-2 focus:ring-[#4CAF50]/20 focus:outline-none bg-[#F8FAFB] focus:bg-white text-[15px] transition-all duration-300"
+                      className="w-[120px] flex-shrink-0 px-3 py-[14px] border-2 border-[#E8ECEF] rounded-[10px] focus:border-[#2BB6AF] focus:ring-2 focus:ring-[#2BB6AF]/20 focus:outline-none bg-[#F8FAFB] focus:bg-white text-[15px] transition-all duration-300"
                     >
                       <option value="+91">+91 (IN)</option>
                       <option value="+1">+1 (US)</option>
@@ -501,14 +487,14 @@ export default function Register() {
                         className={`h-auto py-[14px] pl-12 pr-4 text-[15px] w-full border-2 rounded-[10px] bg-[#F8FAFB] transition-all duration-300 outline-none font-inherit ${
                           errors.phone 
                             ? 'border-[#E74C3C] bg-[#FFF5F5]' 
-                            : 'border-[#E8ECEF] focus:bg-white focus:border-[#4CAF50] focus:shadow-[0_0_0_4px_rgba(76,175,80,0.1)]'
+                            : 'border-[#E8ECEF] focus:bg-white focus:border-[#2BB6AF] focus:shadow-[0_0_0_4px_rgba(43,182,175,0.1)]'
                         }`}
                       />
                     </div>
                   </div>
                   <div className="flex items-center justify-between">
                     {errors.phone && <p className="text-xs text-red-600 font-medium">{errors.phone.message}</p>}
-                    {phoneAvailable === true && <p className="text-xs text-green-600 font-medium">✓ Phone available</p>}
+                    {phoneAvailable === true && <p className="text-xs text-[#2BB6AF] font-medium">✓ Phone available</p>}
                     {phoneAvailable === false && <p className="text-xs text-red-600 font-medium">✗ Phone already registered</p>}
                   </div>
                 </div>
@@ -529,7 +515,7 @@ export default function Register() {
                       className={`h-auto py-[14px] pl-12 pr-4 text-[15px] w-full border-2 rounded-[10px] bg-[#F8FAFB] transition-all duration-300 outline-none font-inherit ${
                         errors.pincode 
                           ? 'border-[#E74C3C] bg-[#FFF5F5]' 
-                          : 'border-[#E8ECEF] focus:bg-white focus:border-[#4CAF50] focus:shadow-[0_0_0_4px_rgba(76,175,80,0.1)]'
+                          : 'border-[#E8ECEF] focus:bg-white focus:border-[#2BB6AF] focus:shadow-[0_0_0_4px_rgba(43,182,175,0.1)]'
                       }`}
                     />
                   </div>
@@ -554,7 +540,7 @@ export default function Register() {
                     className={`h-auto py-[14px] pl-12 pr-4 text-[15px] w-full border-2 rounded-[10px] bg-[#F8FAFB] transition-all duration-300 outline-none font-inherit resize-none ${
                       errors.address 
                         ? 'border-[#E74C3C] bg-[#FFF5F5]' 
-                        : 'border-[#E8ECEF] focus:bg-white focus:border-[#4CAF50] focus:shadow-[0_0_0_4px_rgba(76,175,80,0.1)]'
+                        : 'border-[#E8ECEF] focus:bg-white focus:border-[#2BB6AF] focus:shadow-[0_0_0_4px_rgba(43,182,175,0.1)]'
                     }`}
                   />
                 </div>
@@ -579,7 +565,7 @@ export default function Register() {
                     className={`h-auto py-[14px] pl-12 pr-4 text-[15px] w-full border-2 rounded-[10px] bg-[#F8FAFB] transition-all duration-300 outline-none font-inherit ${
                       errors.landmark 
                         ? 'border-[#E74C3C] bg-[#FFF5F5]' 
-                        : 'border-[#E8ECEF] focus:bg-white focus:border-[#4CAF50] focus:shadow-[0_0_0_4px_rgba(76,175,80,0.1)]'
+                        : 'border-[#E8ECEF] focus:bg-white focus:border-[#2BB6AF] focus:shadow-[0_0_0_4px_rgba(43,182,175,0.1)]'
                     }`}
                   />
                 </div>
@@ -603,7 +589,7 @@ export default function Register() {
                     className={`h-auto py-[14px] px-4 text-[15px] w-full border-2 rounded-[10px] bg-[#F8FAFB] transition-all duration-300 outline-none font-inherit ${
                       errors.age 
                         ? 'border-[#E74C3C] bg-[#FFF5F5]' 
-                        : 'border-[#E8ECEF] focus:bg-white focus:border-[#4CAF50] focus:shadow-[0_0_0_4px_rgba(76,175,80,0.1)]'
+                        : 'border-[#E8ECEF] focus:bg-white focus:border-[#2BB6AF] focus:shadow-[0_0_0_4px_rgba(43,182,175,0.1)]'
                     }`}
                   />
                   {errors.age && <p className="text-xs text-red-600 font-medium mt-1">{errors.age.message}</p>}
@@ -619,7 +605,7 @@ export default function Register() {
                     className={`w-full px-4 py-[14px] text-[15px] border-2 rounded-[10px] bg-[#F8FAFB] transition-all duration-300 outline-none font-inherit ${
                       errors.gender 
                         ? 'border-[#E74C3C] bg-[#FFF5F5]' 
-                        : 'border-[#E8ECEF] focus:bg-white focus:border-[#4CAF50] focus:shadow-[0_0_0_4px_rgba(76,175,80,0.1)]'
+                        : 'border-[#E8ECEF] focus:bg-white focus:border-[#2BB6AF] focus:shadow-[0_0_0_4px_rgba(43,182,175,0.1)]'
                     }`}
                     aria-invalid={!!errors.gender}
                     aria-label="Gender"
@@ -652,13 +638,13 @@ export default function Register() {
                       className={`h-auto py-[14px] pl-12 pr-12 text-[15px] w-full border-2 rounded-[10px] bg-[#F8FAFB] transition-all duration-300 outline-none font-inherit ${
                         errors.password 
                           ? 'border-[#E74C3C] bg-[#FFF5F5]' 
-                          : 'border-[#E8ECEF] focus:bg-white focus:border-[#4CAF50] focus:shadow-[0_0_0_4px_rgba(76,175,80,0.1)]'
+                          : 'border-[#E8ECEF] focus:bg-white focus:border-[#2BB6AF] focus:shadow-[0_0_0_4px_rgba(43,182,175,0.1)]'
                       }`}
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-[#666666] hover:text-[#4CAF50] transition-colors duration-200 min-w-[44px] min-h-[44px] flex items-center justify-center"
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-[#666666] hover:text-[#2BB6AF] transition-colors duration-200 min-w-[44px] min-h-[44px] flex items-center justify-center"
                       aria-label={showPassword ? 'Hide password' : 'Show password'}
                     >
                       {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
@@ -669,7 +655,7 @@ export default function Register() {
                   )}
                   {pwdStrength && (
                     <p className={`text-[13px] font-medium mt-1.5 ${
-                      pwdStrength === 'strong' ? 'text-[#4CAF50]' : 
+                      pwdStrength === 'strong' ? 'text-[#2BB6AF]' : 
                       pwdStrength === 'medium' ? 'text-[#FFA726]' : 
                       'text-[#E74C3C]'
                     }`}>
@@ -695,13 +681,13 @@ export default function Register() {
                       className={`h-auto py-[14px] pl-12 pr-12 text-[15px] w-full border-2 rounded-[10px] bg-[#F8FAFB] transition-all duration-300 outline-none font-inherit ${
                         errors.confirmPassword 
                           ? 'border-[#E74C3C] bg-[#FFF5F5]' 
-                          : 'border-[#E8ECEF] focus:bg-white focus:border-[#4CAF50] focus:shadow-[0_0_0_4px_rgba(76,175,80,0.1)]'
+                          : 'border-[#E8ECEF] focus:bg-white focus:border-[#2BB6AF] focus:shadow-[0_0_0_4px_rgba(43,182,175,0.1)]'
                       }`}
                     />
                     <button
                       type="button"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-[#666666] hover:text-[#4CAF50] transition-colors duration-200 min-w-[44px] min-h-[44px] flex items-center justify-center"
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-[#666666] hover:text-[#2BB6AF] transition-colors duration-200 min-w-[44px] min-h-[44px] flex items-center justify-center"
                       aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
                     >
                       {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
@@ -730,7 +716,7 @@ export default function Register() {
               {/* Submit Button */}
               <Button
                 type="submit"
-                className="w-full py-4 px-6 bg-gradient-to-r from-[#4CAF50] to-[#45a049] text-white text-base font-semibold border-none rounded-xl cursor-pointer mt-8 transition-all duration-300 shadow-[0_4px_16px_rgba(76,175,80,0.3)] hover:-translate-y-[2px] hover:shadow-[0_6px_24px_rgba(76,175,80,0.4)] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+                className="w-full py-4 px-6 bg-[#2BB6AF] hover:bg-[#239a94] text-white text-base font-semibold border-none rounded-xl cursor-pointer mt-8 transition-all duration-300 shadow-[0_4px_16px_rgba(43,182,175,0.3)] hover:-translate-y-[2px] hover:shadow-[0_6px_24px_rgba(43,182,175,0.4)] hover:shadow-[#2BB6AF]/50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
                 disabled={isLoading}
               >
                 {isLoading ? (
@@ -749,7 +735,7 @@ export default function Register() {
                   Already have an account?{' '}
                   <Link 
                     to="/auth/login" 
-                    className="text-[#4CAF50] font-semibold no-underline hover:underline transition-all"
+                    className="text-[#2BB6AF] font-semibold no-underline hover:underline transition-all"
                   >
                     Sign in here
                   </Link>

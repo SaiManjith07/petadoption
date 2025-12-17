@@ -284,7 +284,6 @@ export default function AdminShelterLocations() {
       }
       
       const result = await response.json();
-      console.log('Approval result:', result);
 
       toast({
         title: 'Success',
@@ -446,7 +445,7 @@ export default function AdminShelterLocations() {
               </div>
               <Button
                 onClick={() => setShowAddDialog(true)}
-                className="bg-[#4CAF50] hover:bg-[#2E7D32] text-white"
+                className="bg-[#2BB6AF] hover:bg-[#239a94] text-white"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Add Shelter Location
@@ -797,7 +796,7 @@ export default function AdminShelterLocations() {
               <Button
                 onClick={handleAddShelter}
                 disabled={submitting}
-                className="bg-[#4CAF50] hover:bg-[#2E7D32]"
+                className="bg-[#2BB6AF] hover:bg-[#239a94]"
               >
                 {submitting ? 'Creating...' : 'Create Shelter'}
               </Button>
@@ -991,7 +990,7 @@ export default function AdminShelterLocations() {
               <Button
                 onClick={handleUpdateShelter}
                 disabled={submitting}
-                className="bg-[#4CAF50] hover:bg-[#2E7D32]"
+                className="bg-[#2BB6AF] hover:bg-[#239a94]"
               >
                 {submitting ? 'Updating...' : 'Update Shelter'}
               </Button>

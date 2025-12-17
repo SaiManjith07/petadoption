@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import {
@@ -14,6 +14,7 @@ import {
   Shield,
   MessageCircle,
   AlertCircle,
+  Trash2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -51,7 +52,9 @@ export default function AdminChats() {
   const [typeFilter, setTypeFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedChat, setSelectedChat] = useState<any>(null);
+  const [selectedRequest, setSelectedRequest] = useState<any>(null);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [requestDialogOpen, setRequestDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'requests' | 'chats'>('requests');
 
   useEffect(() => {
@@ -67,6 +70,7 @@ export default function AdminChats() {
         adminApi.getChatStats(),
       ]);
       setChatRequests(Array.isArray(requests) ? requests : []);
+      
       setActiveChats(Array.isArray(chats) ? chats : []);
       setChatStats(stats || {});
     } catch (error: any) {
@@ -82,16 +86,26 @@ export default function AdminChats() {
 
   const handleRespondToRequest = async (requestId: string, approved: boolean) => {
     try {
-      await adminApi.respondToChatRequest(requestId, approved);
+      // Use the new workflow endpoint according to workflow_verification.md
+      if (approved) {
+        await adminApi.approveChatRequest(parseInt(requestId));
+        toast({
+          title: 'Request Approved',
+          description: 'The request has been forwarded to the pet owner for their approval.',
+        });
+      } else {
+        await adminApi.rejectChatRequest(parseInt(requestId));
       toast({
-        title: 'Success',
-        description: `Chat request ${approved ? 'approved' : 'rejected'}`,
+          title: 'Request Rejected',
+          description: 'The chat request has been rejected.',
       });
+      }
       loadData();
     } catch (error: any) {
+      console.error('Error responding to request:', error);
       toast({
         title: 'Error',
-        description: error.message || 'Failed to respond to request',
+        description: error?.response?.data?.error || error?.response?.data?.detail || error?.message || 'Failed to respond to request',
         variant: 'destructive',
       });
     }
@@ -99,7 +113,17 @@ export default function AdminChats() {
 
   const handleViewChat = async (chat: any) => {
     try {
-      const roomData = await adminApi.getChatRoom(chat.roomId || chat._id);
+      const roomId = chat.roomId || chat.room_id || chat.id || chat._id;
+      if (!roomId) {
+        toast({
+          title: 'Error',
+          description: 'Room ID not found in chat object',
+          variant: 'destructive',
+        });
+        console.error('Chat object:', chat);
+        return;
+      }
+      const roomData = await adminApi.getChatRoom(roomId);
       setSelectedChat(roomData);
       setViewDialogOpen(true);
     } catch (error: any) {
@@ -115,7 +139,6 @@ export default function AdminChats() {
     if (!confirm('Are you sure you want to close this chat? This action cannot be undone.')) return;
     
     try {
-      // This endpoint needs to be added to backend
       await adminApi.closeChat(chatId);
       toast({
         title: 'Success',
@@ -131,11 +154,42 @@ export default function AdminChats() {
     }
   };
 
+  const handleDeleteChat = async (chatId: string) => {
+    if (!confirm('⚠️ WARNING: Are you sure you want to DELETE this chat room? This will permanently delete all messages and cannot be undone. This action is irreversible.')) return;
+    
+    if (!confirm('This is your final warning. Click OK to permanently delete this chat room and all its messages.')) return;
+    
+    try {
+      await adminApi.deleteChat(chatId);
+      toast({
+        title: 'Success',
+        description: 'Chat room deleted successfully',
+      });
+      loadData();
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to delete chat room',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const filteredRequests = chatRequests.filter((req: any) => {
     const matchesSearch = !searchTerm || 
       req.petId?.toString().includes(searchTerm) ||
+      req.pet_id?.toString().includes(searchTerm) ||
+      req.pet?.id?.toString().includes(searchTerm) ||
       req.requesterId?.toString().includes(searchTerm) ||
-      req.ownerId?.toString().includes(searchTerm);
+      req.requester_id?.toString().includes(searchTerm) ||
+      req.requester?.id?.toString().includes(searchTerm) ||
+      req.requester?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      req.requester?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      req.targetId?.toString().includes(searchTerm) ||
+      req.target_id?.toString().includes(searchTerm) ||
+      req.target?.id?.toString().includes(searchTerm) ||
+      req.target?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      req.target?.email?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesType = typeFilter === 'all' || req.type === typeFilter;
     const matchesStatus = statusFilter === 'all' || req.status === statusFilter;
     return matchesSearch && matchesType && matchesStatus;
@@ -288,8 +342,9 @@ export default function AdminChats() {
                         className="px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-green-500"
                       >
                         <option value="all">All Status</option>
-                        <option value="pending">Pending</option>
-                        <option value="approved">Approved</option>
+                      <option value="pending">Pending Admin</option>
+                      <option value="admin_approved">Admin Approved</option>
+                      <option value="active">Active</option>
                         <option value="rejected">Rejected</option>
                       </select>
                     )}
@@ -338,26 +393,46 @@ export default function AdminChats() {
                             </TableRow>
                           </TableHeader>
                           <TableBody>
-                            {filteredRequests.map((req: any) => (
-                              <TableRow key={req._id || req.id}>
+                            {filteredRequests.map((req: any, index: number) => (
+                              <TableRow key={req._id || req.id || `request-${index}`}>
                                 <TableCell>
                                   <Badge variant={req.type === 'adoption' ? 'default' : 'secondary'}>
                                     {req.type || 'N/A'}
                                   </Badge>
                                 </TableCell>
-                                <TableCell className="font-mono text-xs">{req.petId || 'N/A'}</TableCell>
-                                <TableCell>{req.requesterId || 'N/A'}</TableCell>
-                                <TableCell>{req.ownerId || 'N/A'}</TableCell>
+                                <TableCell className="font-mono text-xs">
+                                  {req.pet?.id || req.petId || req.pet_id || 'N/A'}
+                                  {req.pet?.name && (
+                                    <span className="text-xs text-gray-500 block normal-case">{req.pet.name}</span>
+                                  )}
+                                </TableCell>
+                                <TableCell>
+                                  {req.requester?.name || req.requesterId || 'N/A'}
+                                  {req.requester?.email && (
+                                    <span className="text-xs text-gray-500 block">{req.requester.email}</span>
+                                  )}
+                                </TableCell>
+                                <TableCell>
+                                  {req.target?.name || req.targetId || req.pet?.posted_by?.name || 'N/A'}
+                                  {req.target?.email && (
+                                    <span className="text-xs text-gray-500 block">{req.target.email}</span>
+                                  )}
+                                </TableCell>
                                 <TableCell>
                                   {req.status === 'pending' ? (
                                     <Badge variant="outline" className="bg-yellow-50 text-yellow-700">
                                       <Clock className="h-3 w-3 mr-1" />
-                                      Pending
+                                      Pending Admin
                                     </Badge>
-                                  ) : req.status === 'approved' ? (
+                                  ) : req.status === 'admin_approved' ? (
+                                    <Badge variant="outline" className="bg-blue-50 text-blue-700">
+                                      <Clock className="h-3 w-3 mr-1" />
+                                      Admin Approved
+                                    </Badge>
+                                  ) : req.status === 'active' ? (
                                     <Badge variant="default" className="bg-green-100 text-green-800">
                                       <CheckCircle className="h-3 w-3 mr-1" />
-                                      Approved
+                                      Active
                                     </Badge>
                                   ) : (
                                     <Badge variant="destructive">
@@ -367,33 +442,53 @@ export default function AdminChats() {
                                   )}
                                 </TableCell>
                                 <TableCell className="text-sm text-gray-600">
-                                  {req.createdAt
-                                    ? format(new Date(req.createdAt), 'MMM dd, yyyy')
+                                  {req.created_at || req.createdAt
+                                    ? format(new Date(req.created_at || req.createdAt), 'MMM dd, yyyy')
                                     : 'N/A'}
                                 </TableCell>
                                 <TableCell className="text-right">
-                                  {req.status === 'pending' && (
                                     <div className="flex justify-end gap-2">
                                       <Button
+                                        key={`view-${req._id || req.id || index}`}
                                         variant="outline"
                                         size="sm"
-                                        onClick={() => handleRespondToRequest(req.id || req._id, true)}
+                                      onClick={() => {
+                                        setSelectedRequest(req);
+                                        setRequestDialogOpen(true);
+                                      }}
                                         className="gap-1"
+                                    >
+                                      <Eye className="h-4 w-4" />
+                                      View
+                                    </Button>
+                                    {req.status === 'pending' && (
+                                      <React.Fragment key={`pending-actions-${req._id || req.id || index}`}>
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => handleRespondToRequest(req.id || req._id, true)}
+                                          className="gap-1 bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
                                       >
                                         <CheckCircle className="h-4 w-4" />
-                                        Approve
+                                          Approve & Forward
                                       </Button>
                                       <Button
                                         variant="outline"
                                         size="sm"
                                         onClick={() => handleRespondToRequest(req.id || req._id, false)}
-                                        className="gap-1 text-red-600"
+                                          className="gap-1 text-red-600 border-red-200 hover:bg-red-50"
                                       >
                                         <XCircle className="h-4 w-4" />
                                         Reject
                                       </Button>
+                                      </React.Fragment>
+                                    )}
+                                    {req.status === 'admin_approved' && (
+                                      <Badge key={`badge-${req._id || req.id || index}`} variant="outline" className="bg-blue-50 text-blue-700">
+                                        Waiting for Owner
+                                      </Badge>
+                                    )}
                                     </div>
-                                  )}
                                 </TableCell>
                               </TableRow>
                             ))}
@@ -437,14 +532,14 @@ export default function AdminChats() {
                             </TableRow>
                           </TableHeader>
                           <TableBody>
-                            {filteredChats.map((chat: any) => (
-                              <TableRow key={chat.roomId || chat._id}>
+                            {filteredChats.map((chat: any, index: number) => (
+                              <TableRow key={chat.roomId || chat.room_id || chat.id || chat._id || `chat-${index}`}>
                                 <TableCell>
                                   <Badge variant={chat.type === 'adoption' ? 'default' : 'secondary'}>
                                     {chat.type === 'adoption' ? 'ADOPTION' : 'CLAIM'}
                                   </Badge>
                                 </TableCell>
-                                <TableCell className="font-mono text-xs">{chat.roomId || chat._id}</TableCell>
+                                <TableCell className="font-mono text-xs">{chat.roomId || chat.room_id || chat.id || chat._id || 'N/A'}</TableCell>
                                 <TableCell className="font-mono text-xs">{chat.petId || 'N/A'}</TableCell>
                                 <TableCell>
                                   {chat.participants?.length || 0} participant(s)
@@ -458,6 +553,7 @@ export default function AdminChats() {
                                 <TableCell className="text-right">
                                   <div className="flex justify-end gap-2">
                                     <Button
+                                      key={`view-${chat.roomId || chat.room_id || chat.id || chat._id || index}`}
                                       variant="outline"
                                       size="sm"
                                       onClick={() => handleViewChat(chat)}
@@ -467,22 +563,80 @@ export default function AdminChats() {
                                       View
                                     </Button>
                                     <Button
+                                      key={`monitor-${chat.roomId || chat.room_id || chat.id || chat._id || index}`}
                                       variant="outline"
                                       size="sm"
-                                      onClick={() => navigate(`/chat/${chat.roomId || chat._id}`)}
-                                      className="gap-1"
+                                      onClick={async () => {
+                                        try {
+                                          // Try multiple ways to get the room ID
+                                          const roomId = chat.roomId || chat.room_id || chat.id || chat._id;
+                                          
+                                          if (!roomId) {
+                                            toast({
+                                              title: 'Error',
+                                              description: 'Room ID not found in chat data',
+                                              variant: 'destructive',
+                                            });
+                                            console.error('Chat object:', chat);
+                                            return;
+                                          }
+                                          
+                                          // Navigate to monitor page
+                                          navigate(`/admin/chats/monitor/${roomId}`);
+                                        } catch (error: any) {
+                                          toast({
+                                            title: 'Error',
+                                            description: error.message || 'Failed to open chat monitor',
+                                            variant: 'destructive',
+                                          });
+                                        }
+                                      }}
+                                      className="gap-1 bg-[#2BB6AF]/10 hover:bg-[#2BB6AF]/20 text-[#2BB6AF] border-[#2BB6AF]/30"
                                     >
                                       <Shield className="h-4 w-4" />
                                       Monitor
                                     </Button>
                                     <Button
+                                      key={`close-${chat.roomId || chat.room_id || chat.id || chat._id || index}`}
                                       variant="outline"
                                       size="sm"
-                                      onClick={() => handleCloseChat(chat.roomId || chat._id)}
-                                      className="gap-1 text-red-600"
+                                      onClick={() => {
+                                        const roomId = chat.roomId || chat.room_id || chat.id || chat._id;
+                                        if (roomId) {
+                                          handleCloseChat(roomId.toString());
+                                        } else {
+                                          toast({
+                                            title: 'Error',
+                                            description: 'Room ID not found',
+                                            variant: 'destructive',
+                                          });
+                                        }
+                                      }}
+                                      className="gap-1 text-orange-600 border-orange-200 hover:bg-orange-50"
                                     >
                                       <X className="h-4 w-4" />
                                       Close
+                                    </Button>
+                                    <Button
+                                      key={`delete-${chat.roomId || chat.room_id || chat.id || chat._id || index}`}
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => {
+                                        const roomId = chat.roomId || chat.room_id || chat.id || chat._id;
+                                        if (roomId) {
+                                          handleDeleteChat(roomId.toString());
+                                        } else {
+                                          toast({
+                                            title: 'Error',
+                                            description: 'Room ID not found',
+                                            variant: 'destructive',
+                                          });
+                                        }
+                                      }}
+                                      className="gap-1 text-red-600 border-red-200 hover:bg-red-50"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                      Delete
                                     </Button>
                                   </div>
                                 </TableCell>
@@ -499,6 +653,138 @@ export default function AdminChats() {
           </div>
         </main>
       </div>
+
+      {/* View Request Dialog */}
+      <Dialog open={requestDialogOpen} onOpenChange={setRequestDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Chat Request Details</DialogTitle>
+            <DialogDescription>Complete information about the chat request</DialogDescription>
+          </DialogHeader>
+          {selectedRequest && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Request ID</p>
+                  <p className="text-sm font-mono">{selectedRequest.id || selectedRequest._id}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Type</p>
+                  <Badge variant={selectedRequest.type === 'adoption' ? 'default' : 'secondary'}>
+                    {selectedRequest.type || 'N/A'}
+                  </Badge>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Status</p>
+                  {selectedRequest.status === 'pending' ? (
+                    <Badge variant="outline" className="bg-yellow-50 text-yellow-700">
+                      <Clock className="h-3 w-3 mr-1" />
+                      Pending Admin Approval
+                    </Badge>
+                  ) : selectedRequest.status === 'admin_approved' ? (
+                    <Badge variant="outline" className="bg-blue-50 text-blue-700">
+                      <Clock className="h-3 w-3 mr-1" />
+                      Admin Approved - Pending Owner
+                    </Badge>
+                  ) : selectedRequest.status === 'active' ? (
+                    <Badge variant="default" className="bg-green-100 text-green-800">
+                      <CheckCircle className="h-3 w-3 mr-1" />
+                      Active Chat
+                    </Badge>
+                  ) : (
+                    <Badge variant="destructive">
+                      <XCircle className="h-3 w-3 mr-1" />
+                      Rejected
+                    </Badge>
+                  )}
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Pet ID</p>
+                  <p className="text-sm font-mono">{selectedRequest.pet?.id || selectedRequest.petId || selectedRequest.pet_id || 'N/A'}</p>
+                  {selectedRequest.pet?.name && (
+                    <p className="text-xs text-gray-500">{selectedRequest.pet.name}</p>
+                  )}
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Requester</p>
+                  <p className="text-sm">
+                    {selectedRequest.requester?.name || selectedRequest.requesterId || 'N/A'}
+                  </p>
+                  {selectedRequest.requester?.email && (
+                    <p className="text-xs text-gray-500">{selectedRequest.requester.email}</p>
+                  )}
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Pet Owner (Target)</p>
+                  <p className="text-sm">
+                    {selectedRequest.target?.name || selectedRequest.targetId || 'N/A'}
+                  </p>
+                  {selectedRequest.target?.email && (
+                    <p className="text-xs text-gray-500">{selectedRequest.target.email}</p>
+                  )}
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Created</p>
+                  <p className="text-sm">
+                    {selectedRequest.created_at || selectedRequest.createdAt
+                      ? format(new Date(selectedRequest.created_at || selectedRequest.createdAt), 'MMM dd, yyyy HH:mm')
+                      : 'N/A'}
+                  </p>
+                </div>
+                {(selectedRequest.updated_at || selectedRequest.updatedAt) && (
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Last Updated</p>
+                    <p className="text-sm">
+                      {format(new Date(selectedRequest.updated_at || selectedRequest.updatedAt), 'MMM dd, yyyy HH:mm')}
+                    </p>
+                  </div>
+                )}
+              </div>
+              {selectedRequest.message && (
+                <div>
+                  <p className="text-sm font-medium text-gray-600 mb-2">Request Message</p>
+                  <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                    <p className="text-sm text-gray-700 whitespace-pre-wrap">{selectedRequest.message}</p>
+                  </div>
+                </div>
+              )}
+              {selectedRequest.admin_notes && (
+                <div>
+                  <p className="text-sm font-medium text-gray-600 mb-2">Admin Notes</p>
+                  <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                    <p className="text-sm text-gray-700 whitespace-pre-wrap">{selectedRequest.admin_notes}</p>
+                  </div>
+                </div>
+              )}
+              {selectedRequest.status === 'pending' && (
+                <div className="flex gap-2 pt-4 border-t">
+                  <Button
+                    onClick={() => {
+                      handleRespondToRequest(selectedRequest.id || selectedRequest._id, true);
+                      setRequestDialogOpen(false);
+                    }}
+                    className="flex-1 bg-green-600 hover:bg-green-700"
+                  >
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    Approve & Forward to Owner
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={() => {
+                      handleRespondToRequest(selectedRequest.id || selectedRequest._id, false);
+                      setRequestDialogOpen(false);
+                    }}
+                    className="flex-1"
+                  >
+                    <XCircle className="h-4 w-4 mr-2" />
+                    Reject
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* View Chat Dialog */}
       <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>

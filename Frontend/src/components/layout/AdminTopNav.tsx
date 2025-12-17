@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Search, Bell, User, LogOut, Settings, Menu, X, RefreshCw, Circle } from 'lucide-react';
+import { Bell, User, LogOut, Settings, Menu, X, RefreshCw, Circle, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
@@ -12,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/lib/auth';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { notificationsApi } from '@/api';
 import { NotificationModel } from '@/models';
 import { format } from 'date-fns';
@@ -21,14 +20,41 @@ interface AdminTopNavProps {
   onMenuToggle?: () => void;
   sidebarOpen?: boolean;
   onRefresh?: () => void;
+  isRefreshing?: boolean;
 }
 
-export function AdminTopNav({ onMenuToggle, sidebarOpen, onRefresh }: AdminTopNavProps) {
+// Menu items matching AdminSidebar
+const menuItems = [
+  { title: 'Dashboard', path: '/admin' },
+  { title: 'Found Pets', path: '/admin/found-pets' },
+  { title: 'Lost Pets', path: '/admin/lost-pets' },
+  { title: 'Adoption', path: '/admin/adopt' },
+  { title: 'Chats', path: '/admin/chats' },
+  { title: 'Users', path: '/admin/users' },
+  { title: 'All Pets', path: '/admin/all-pets' },
+  { title: 'Role Requests', path: '/admin/role-requests' },
+  { title: 'Feeding Points', path: '/admin/feeding-points' },
+  { title: 'Shelter Locations', path: '/admin/shelter-locations' },
+  { title: 'Medical Registration', path: '/admin/medical-records' },
+];
+
+export function AdminTopNav({ onMenuToggle, sidebarOpen, onRefresh, isRefreshing = false }: AdminTopNavProps) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [notifications, setNotifications] = useState<NotificationModel[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [searchQuery, setSearchQuery] = useState('');
+
+  // Get current selected section
+  const getCurrentSection = () => {
+    const currentItem = menuItems.find(item => {
+      if (item.path === '/admin') {
+        return location.pathname === '/admin' || location.pathname === '/admin/';
+      }
+      return location.pathname.startsWith(item.path);
+    });
+    return currentItem?.title || 'Dashboard';
+  };
 
   // Load notifications
   useEffect(() => {
@@ -55,7 +81,7 @@ export function AdminTopNav({ onMenuToggle, sidebarOpen, onRefresh }: AdminTopNa
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-white shadow-sm">
+    <header className="sticky top-0 z-50 w-full border-b border-gray-200 bg-white shadow-sm">
       <div className="flex h-16 items-center px-4 lg:px-6">
         {/* Mobile Menu Toggle */}
         <Button
@@ -67,37 +93,30 @@ export function AdminTopNav({ onMenuToggle, sidebarOpen, onRefresh }: AdminTopNa
           {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </Button>
 
-        {/* Left: Page Title */}
-        <div className="hidden lg:block mr-8">
-          <h2 className="text-lg font-bold text-gray-900">Admin Control Panel</h2>
-          <p className="text-xs text-gray-500">Platform management & monitoring dashboard</p>
-        </div>
-
-        {/* Center: Search Bar */}
-        <div className="flex-1 max-w-2xl mx-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <Input
-              type="search"
-              placeholder="Search pets, users, reports..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 h-10 bg-gray-50 border-gray-200 focus:bg-white focus:border-[#4CAF50] rounded-xl"
-            />
+        {/* Left: Page Title with Current Section */}
+        <div className="flex-1">
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-bold text-gray-900">Admin Control Panel</h2>
+            <ChevronRight className="h-4 w-4 text-gray-400" />
+            <div className="flex items-center gap-2 px-3 py-1 bg-[#E8F8EE] rounded-lg border border-[#2BB6AF]/20">
+              <div className="h-1.5 w-1.5 rounded-full bg-[#2BB6AF]"></div>
+              <span className="text-sm font-semibold text-[#2BB6AF]">{getCurrentSection()}</span>
+            </div>
           </div>
+          <p className="text-xs text-gray-500 mt-1">Platform management & monitoring dashboard</p>
         </div>
 
         {/* Right Side Actions */}
         <div className="flex items-center gap-3">
           {/* Live System Indicator */}
-          <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-[#E8F8EE] rounded-lg border border-[#4CAF50]/20">
+          <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-[#E8F8EE] rounded-lg border border-[#2BB6AF]/20">
             <div className="relative">
-              <Circle className="h-2 w-2 text-[#4CAF50] fill-[#4CAF50]" />
+              <Circle className="h-2 w-2 text-[#2BB6AF] fill-[#4CAF50]" />
               <div className="absolute inset-0 animate-ping">
-                <Circle className="h-2 w-2 text-[#4CAF50] fill-[#4CAF50] opacity-75" />
+                <Circle className="h-2 w-2 text-[#2BB6AF] fill-[#4CAF50] opacity-75" />
               </div>
             </div>
-            <span className="text-xs font-medium text-[#4CAF50]">Live System</span>
+            <span className="text-xs font-medium text-[#2BB6AF]">Live System</span>
           </div>
 
           {/* Refresh Button */}
@@ -105,10 +124,13 @@ export function AdminTopNav({ onMenuToggle, sidebarOpen, onRefresh }: AdminTopNa
             variant="ghost"
             size="sm"
             onClick={onRefresh}
-            className="hidden md:flex gap-2 text-gray-600 hover:text-[#4CAF50]"
+            disabled={isRefreshing}
+            className="hidden md:flex gap-2 text-gray-600 hover:text-[#2BB6AF] disabled:opacity-50"
           >
-            <RefreshCw className="h-4 w-4" />
-            <span className="hidden lg:inline">Refresh Data</span>
+            <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+            <span className="hidden lg:inline">
+              {isRefreshing ? 'Refreshing...' : 'Refresh Data'}
+            </span>
           </Button>
 
           {/* Notifications */}
@@ -119,7 +141,7 @@ export function AdminTopNav({ onMenuToggle, sidebarOpen, onRefresh }: AdminTopNa
                 {unreadCount > 0 && (
                   <Badge
                     variant="destructive"
-                    className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs bg-[#4CAF50]"
+                    className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs bg-[#2BB6AF]"
                   >
                     {unreadCount > 9 ? '9+' : unreadCount}
                   </Badge>
@@ -130,7 +152,7 @@ export function AdminTopNav({ onMenuToggle, sidebarOpen, onRefresh }: AdminTopNa
               <DropdownMenuLabel className="flex items-center justify-between">
                 <span>Notifications</span>
                 {unreadCount > 0 && (
-                  <Badge variant="secondary" className="text-xs bg-[#E8F8EE] text-[#4CAF50]">
+                  <Badge variant="secondary" className="text-xs bg-[#E8F8EE] text-[#2BB6AF]">
                     {unreadCount} new
                   </Badge>
                 )}
@@ -168,7 +190,7 @@ export function AdminTopNav({ onMenuToggle, sidebarOpen, onRefresh }: AdminTopNa
                           </p>
                         </div>
                         {!notification.is_read && (
-                          <div className="h-2 w-2 rounded-full bg-[#4CAF50] ml-2" />
+                          <div className="h-2 w-2 rounded-full bg-[#2BB6AF] ml-2" />
                         )}
                       </div>
                     </DropdownMenuItem>
@@ -193,14 +215,14 @@ export function AdminTopNav({ onMenuToggle, sidebarOpen, onRefresh }: AdminTopNa
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="flex items-center gap-2 h-10 px-3">
-                <div className="h-8 w-8 rounded-full bg-[#E8F8EE] flex items-center justify-center border-2 border-[#4CAF50]/20">
-                  <span className="text-sm font-semibold text-[#4CAF50]">
+                <div className="h-8 w-8 rounded-full bg-[#E8F8EE] flex items-center justify-center border-2 border-[#2BB6AF]/20">
+                  <span className="text-sm font-semibold text-[#2BB6AF]">
                     {user?.name?.charAt(0).toUpperCase() || 'A'}
                   </span>
                 </div>
                 <div className="hidden md:block text-left">
                   <p className="text-sm font-medium text-gray-900">{user?.name || 'Admin'}</p>
-                  <Badge variant="secondary" className="text-xs bg-[#E8F8EE] text-[#4CAF50] border-[#4CAF50]/20">
+                  <Badge variant="secondary" className="text-xs bg-[#E8F8EE] text-[#2BB6AF] border-[#2BB6AF]/20">
                     Admin
                   </Badge>
                 </div>

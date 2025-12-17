@@ -69,8 +69,37 @@ export default function AdminLostPets() {
         _isPendingLost: true, // Mark as pending lost pet
       }));
       
-      // Combine both sources
-      const combinedPets = [...(allPetsData || []), ...markedPendingPets];
+      // Filter allPetsData to ONLY include lost pets (no found_date)
+      // Lost pets must NOT have found_date set
+      const lostPetsFromAll = (allPetsData || []).filter((p: any) => {
+        // Exclude pets with found_date (those are found pets)
+        const hasFoundDate = p.found_date || p.foundDate;
+        if (hasFoundDate) return false;
+        
+        // Include if adoption_status is Lost or Pending (without found_date)
+        return p.adoption_status === 'Lost' || 
+               (p.adoption_status === 'Pending' && !hasFoundDate);
+      });
+      
+      // Combine: use pending reports as primary source, then add other lost pets
+      // Remove duplicates by ID
+      const petMap = new Map();
+      
+      // First, add pending lost pets (most important)
+      markedPendingPets.forEach((p: any) => {
+        const id = p.id || p._id;
+        if (id) petMap.set(id, p);
+      });
+      
+      // Then, add other lost pets (avoid duplicates)
+      lostPetsFromAll.forEach((p: any) => {
+        const id = p.id || p._id;
+        if (id && !petMap.has(id)) {
+          petMap.set(id, p);
+        }
+      });
+      
+      const combinedPets = Array.from(petMap.values());
       
       // Normalize the data
       const normalizedPets = combinedPets.map((p: any) => ({
@@ -156,6 +185,28 @@ export default function AdminLostPets() {
     }
 
     setFilteredPets(filtered);
+  };
+
+  const stats = {
+    total: lostPets.length,
+    pending: lostPets.filter((p: any) => {
+      const petStatus = p.status || p.adoption_status || '';
+      const isPending = !p.is_verified || 
+                       petStatus.toLowerCase().includes('pending') ||
+                       petStatus === 'Pending Verification' ||
+                       petStatus === 'Pending' ||
+                       p._isPendingLost;
+      return isPending;
+    }).length,
+    verified: lostPets.filter((p: any) => {
+      const petStatus = p.status || p.adoption_status || '';
+      return (petStatus === 'Listed Lost' || petStatus === 'Lost' || 
+              (p.is_verified && petStatus !== 'Pending' && petStatus !== 'Pending Verification'));
+    }).length,
+    rejected: lostPets.filter((p: any) => {
+      const petStatus = p.status || p.adoption_status || '';
+      return petStatus === 'Rejected';
+    }).length,
   };
 
   const handleAccept = (petId: string) => {
@@ -276,14 +327,50 @@ export default function AdminLostPets() {
             <div className="flex items-center justify-between">
               <div>
                 <h1 className="text-3xl font-bold flex items-center gap-2 text-gray-900">
-                  <Shield className="h-8 w-8 text-[#4CAF50]" />
+                  <Shield className="h-8 w-8 text-[#2BB6AF]" />
                   Lost Pets Management
                 </h1>
                 <p className="text-gray-600 mt-1">Verify and manage lost pet reports</p>
               </div>
-              <Badge variant="default" className="text-base px-3 py-1 bg-[#4CAF50]">
+              <Badge variant="default" className="text-base px-3 py-1 bg-[#2BB6AF]">
                 {filteredPets.length} Lost Pet{filteredPets.length !== 1 ? 's' : ''}
               </Badge>
+            </div>
+
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium text-gray-600">Total Lost Pets</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-gray-900">{stats.total}</div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium text-gray-600">Pending Verification</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-yellow-600">{stats.pending}</div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium text-gray-600">Verified</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-green-600">{stats.verified}</div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium text-gray-600">Rejected</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-red-600">{stats.rejected}</div>
+                </CardContent>
+              </Card>
             </div>
 
         {/* Filters */}
@@ -370,7 +457,9 @@ export default function AdminLostPets() {
                       <div className="flex items-start justify-between">
                         <div>
                           <div className="flex items-center gap-2 mb-2">
-                            <Badge variant="secondary">LOST</Badge>
+                            <Badge variant="default" className="bg-orange-500 hover:bg-orange-600">
+                              {pet.species || 'Pet'}
+                            </Badge>
                             <Badge variant={
                               (pet.status === 'Pending Verification' || pet.adoption_status === 'Pending') ? 'destructive' : 
                               (pet.is_verified ? 'default' : 'outline')

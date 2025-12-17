@@ -134,7 +134,7 @@ export default function AllPets() {
               </div>
               <Button
                 onClick={() => navigate('/pets/report-found')}
-                className="bg-[#4CAF50] hover:bg-[#2E7D32] text-white"
+                className="bg-[#2BB6AF] hover:bg-[#239a94] text-white"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Add Pet
@@ -236,7 +236,7 @@ export default function AllPets() {
                 </p>
                 <Button
                   onClick={() => navigate('/pets/report-found')}
-                  className="bg-[#4CAF50] hover:bg-[#2E7D32]"
+                  className="bg-[#2BB6AF] hover:bg-[#239a94]"
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Add First Pet

@@ -96,7 +96,7 @@ export function AdminSidebarNew({ isOpen = true, onClose }: AdminSidebarNewProps
         {/* Logo Section */}
         <div className="h-16 flex items-center px-6 border-b border-gray-200">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-[#4CAF50] to-[#2E7D32] flex items-center justify-center">
+            <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-[#2BB6AF] to-[#239a94] flex items-center justify-center">
               <PawPrint className="h-6 w-6 text-white" />
             </div>
             <div>
@@ -125,7 +125,7 @@ export function AdminSidebarNew({ isOpen = true, onClose }: AdminSidebarNewProps
                   'flex items-center gap-3 px-4 py-3 rounded-lg',
                   'text-sm font-medium transition-colors',
                   active
-                    ? 'bg-[#4CAF50]/10 text-[#2E7D32] border border-[#4CAF50]/20'
+                    ? 'bg-[#2BB6AF]/10 text-[#239a94] border border-[#2BB6AF]/20'
                     : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
                 )}
               >

@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import {
-  Search,
   Heart,
   Shield,
   Users,
@@ -157,7 +156,7 @@ export const LandingDataProvider: React.FC<{ children: ReactNode }> = ({ childre
       color: 'from-amber-700 to-orange-800',
     },
     {
-      url: 'https://images.unsplash.com/photo-1516467508483-a7212febe31a?w=1920&q=90',
+      url: 'https://media.istockphoto.com/id/146776721/photo/goats.jpg?s=612x612&w=0&k=20&c=z0GrAzkkLYJMAWQGy0Dsc-3y0ZfDWsxxvEu8FMKwy9c=',
       type: 'Goats',
       text: 'Rescue Your Lost Goat',
       subtitle: 'Valuable Farm Animals Need Care',
@@ -395,32 +394,9 @@ export const LandingDataProvider: React.FC<{ children: ReactNode }> = ({ childre
   // What We Do Features - Service-focused descriptions with detailed info
   const [whatWeDoFeatures] = useState<WhatWeDoFeature[]>([
     {
-      icon: <Search className="w-10 h-10" />,
-      title: 'Find Pets',
-      description: 'We provide an advanced search platform where you can browse through verified pet listings. Our system allows you to filter by location, breed, age, and health status to find the perfect companion for your home.',
-      detailedInfo: {
-        features: [
-          'Advanced search filters by breed, age, size, and location',
-          'Detailed pet profiles with photos, health records, and personality traits',
-          'Real-time availability status and instant notifications'
-        ],
-        process: [
-          'Browse through verified listings from partner shelters and NGOs',
-          'Use filters to narrow down your search based on preferences',
-          'Contact the shelter directly through our secure messaging system',
-          'Schedule a meet-and-greet with your potential new companion'
-        ],
-        benefits: [
-          'All pets are verified and health-checked by partner organizations',
-          'Transparent adoption process with complete pet history',
-          'Support throughout the adoption journey'
-        ]
-      }
-    },
-    {
       icon: <Shield className="w-10 h-10" />,
       title: 'Report Lost/Found',
-      description: 'We offer a quick and efficient reporting system that instantly alerts our community network. When you report a lost or found pet, we immediately notify nearby rescuers, shelters, and community members to help reunite pets with their families.',
+      description: 'Quick reporting system that instantly alerts our community. Notify nearby rescuers and shelters to help reunite pets with families.',
       detailedInfo: {
         features: [
           'Quick reporting form with photo upload and GPS location',
@@ -443,7 +419,7 @@ export const LandingDataProvider: React.FC<{ children: ReactNode }> = ({ childre
     {
       icon: <Heart className="w-10 h-10" />,
       title: 'Support Care',
-      description: 'We connect you with multiple ways to support pet welfare. Whether you want to volunteer your time, sponsor a pet\'s care, or make a donation, we provide easy-to-use tools to track your impact and see how your support makes a difference.',
+      description: 'Support pet welfare through volunteering, sponsoring, or donations. Track your impact and see how your support makes a difference.',
       detailedInfo: {
         features: [
           'Multiple support options: volunteering, sponsoring, or donating',
@@ -466,7 +442,7 @@ export const LandingDataProvider: React.FC<{ children: ReactNode }> = ({ childre
     {
       icon: <Stethoscope className="w-10 h-10" />,
       title: 'Health Resources',
-      description: 'We organize free vaccination camps and provide comprehensive health information. Our platform helps you find nearby veterinary services, access vaccination schedules, and get expert guidance on pet health care and emergency situations.',
+      description: 'Free vaccination camps and health information. Find nearby veterinary services, access vaccination schedules, and get expert guidance.',
       detailedInfo: {
         features: [
           'Free vaccination camps organized monthly in different locations',
@@ -489,7 +465,7 @@ export const LandingDataProvider: React.FC<{ children: ReactNode }> = ({ childre
     {
       icon: <Home className="w-10 h-10" />,
       title: 'Adoption Services',
-      description: 'We facilitate safe and verified adoptions through our network of partner NGOs. Our process includes home verification visits, background checks, and ongoing support to ensure successful adoptions and happy pet-owner relationships.',
+      description: 'Safe and verified adoptions through partner NGOs. Includes home verification, background checks, and ongoing support for successful adoptions.',
       detailedInfo: {
         features: [
           'Verified adoption process with NGO partner oversight',
@@ -512,7 +488,7 @@ export const LandingDataProvider: React.FC<{ children: ReactNode }> = ({ childre
     {
       icon: <Users className="w-10 h-10" />,
       title: 'Community Network',
-      description: 'We connect you with a network of pet lovers, experts, and local organizations. Through our platform, you can access expert advice, participate in local meetups, share resources, and collaborate with others who share your passion for pet welfare.',
+      description: 'Connect with pet lovers, experts, and local organizations. Access expert advice, join meetups, and share resources with the community.',
       detailedInfo: {
         features: [
           'Connect with experienced pet owners and veterinarians',

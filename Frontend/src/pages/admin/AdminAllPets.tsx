@@ -60,6 +60,69 @@ export default function AdminAllPets() {
     }
   };
 
+  // Function to get clean pet name (remove Found/Lost prefix)
+  const getCleanPetName = (pet: any) => {
+    let name = pet.name || '';
+    // Remove "Lost" or "Found" prefix if present
+    if (name.toLowerCase().startsWith('lost ')) {
+      name = name.substring(5);
+    } else if (name.toLowerCase().startsWith('found ')) {
+      name = name.substring(6);
+    }
+    return name || 'Unnamed Pet';
+  };
+
+  // Function to get pet type/species
+  const getPetType = (pet: any) => {
+    // Check multiple possible fields for pet type in order of preference
+    let category: any = null;
+    
+    // First, try category.name (most common structure)
+    if (pet.category) {
+      if (typeof pet.category === 'object' && pet.category !== null) {
+        category = pet.category.name || pet.category.type || pet.category;
+      } else if (typeof pet.category === 'string') {
+        category = pet.category;
+      }
+    }
+    
+    // Fallback to other fields - including name field (as it stores pet type in database)
+    if (!category || category === 'null' || category === 'undefined') {
+      category = pet.species || 
+                 pet.name ||  // Name field stores pet type in database
+                 pet.pet_type || 
+                 pet.type ||
+                 pet.animal_type ||
+                 null;
+    }
+    
+    // Convert to string and clean
+    if (!category) {
+      return 'Unknown';
+    }
+    
+    category = String(category).trim();
+    
+    // Return Unknown if empty or invalid
+    if (!category || category === 'null' || category === 'undefined' || category === '') {
+      return 'Unknown';
+    }
+    
+    // Remove "Lost" or "Found" prefix if present
+    if (category.toLowerCase().startsWith('lost ')) {
+      category = category.substring(5).trim();
+    } else if (category.toLowerCase().startsWith('found ')) {
+      category = category.substring(6).trim();
+    }
+    
+    // Capitalize first letter and lowercase rest
+    if (category && category.length > 0) {
+      return category.charAt(0).toUpperCase() + category.slice(1).toLowerCase();
+    }
+    
+    return 'Unknown';
+  };
+
   return (
     <div className="min-h-screen bg-white">
       {/* Fixed Sidebar */}
@@ -257,9 +320,14 @@ export default function AdminAllPets() {
                                   <CardContent className="p-5 flex-1 flex flex-col">
                                     <div className="flex-1">
                                       <h3 className="text-xl font-bold text-gray-900 mb-2 line-clamp-1">
-                                        {p.name || 'Unnamed Pet'}
+                                        {getCleanPetName(p)}
                                       </h3>
                                       <div className="space-y-2 mb-4">
+                                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                                          <PawPrint className="h-4 w-4 text-gray-400" />
+                                          <span className="font-medium">Type:</span>
+                                          <span className="capitalize">{getPetType(p)}</span>
+                                        </div>
                                         <div className="flex items-center gap-2 text-sm text-gray-600">
                                           <PawPrint className="h-4 w-4 text-gray-400" />
                                           <span className="font-medium">Breed:</span>
@@ -284,7 +352,7 @@ export default function AdminAllPets() {
                                     <div className="flex gap-2 mt-auto">
                                       <Button
                                         variant="default"
-                                        className="flex-1 bg-[#4CAF50] hover:bg-[#2E7D32] text-white"
+                                        className="flex-1 bg-[#2BB6AF] hover:bg-[#239a94] text-white"
                                         onClick={() => {
                                           navigate(`/pets/${petId}`);
                                         }}

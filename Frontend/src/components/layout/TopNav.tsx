@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Menu, X, Search, Bell, User, LogOut, PawPrint, Home, ShieldCheck, Heart, Star, CheckCircle2, Trash2, MessageSquare, MapPin, Users, Sparkles, AlertCircle, Building2, UtensilsCrossed } from 'lucide-react';
+import { Menu, X, Search, Bell, User, LogOut, Home, ShieldCheck, Heart, Star, CheckCircle2, Trash2, MessageSquare, MapPin, Users, Sparkles, AlertCircle, Building2, UtensilsCrossed } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Logo } from '@/components/ui/Logo';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -111,18 +112,15 @@ export const TopNav = () => {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
-          <Link to={isAuthenticated ? "/home" : "/"} className="flex items-center gap-3 group">
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-[#2BB6AF] to-[#4CAF50] rounded-xl blur-md opacity-50 group-hover:opacity-75 transition-opacity" />
-              <div className="relative h-12 w-12 rounded-xl bg-gradient-to-br from-[#2BB6AF] to-[#4CAF50] flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform">
-                <PawPrint className="h-7 w-7 text-white" />
-              </div>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-xl font-bold text-gray-900 group-hover:text-[#2BB6AF] transition-colors">PetReunite</span>
-              <span className="text-xs text-gray-500 hidden sm:block font-medium">Helping pets find home</span>
-            </div>
-          </Link>
+          <div className="flex-shrink-0 min-w-0">
+            <Logo 
+              size="md" 
+              showText={true} 
+              showTagline={false}
+              linkTo={isAuthenticated ? "/home" : "/"}
+              className="group"
+            />
+          </div>
 
           {/* Desktop Navigation */}
           {isAuthenticated && !isAdminPage && (
@@ -131,8 +129,8 @@ export const TopNav = () => {
                 <NavLink
                   key={item.name}
                   to={item.href}
-                  className="group relative px-4 py-2.5 rounded-xl text-sm font-semibold text-gray-700 transition-all duration-200 hover:text-[#2BB6AF] hover:bg-gradient-to-r hover:from-[#2BB6AF]/10 hover:to-[#4CAF50]/5 hover:shadow-sm"
-                  activeClassName="text-[#2BB6AF] bg-gradient-to-r from-[#2BB6AF]/10 to-[#4CAF50]/5 shadow-sm"
+                  className="group relative px-4 py-2.5 rounded-xl text-sm font-semibold text-gray-700 transition-all duration-200 hover:text-[#2BB6AF] hover:bg-gradient-to-r hover:from-[#2BB6AF]/10 hover:to-[#2BB6AF]/5 hover:shadow-sm"
+                  activeClassName="text-[#2BB6AF] bg-gradient-to-r from-[#2BB6AF]/10 to-[#2BB6AF]/5 shadow-sm"
                 >
                   <div className="flex items-center gap-2">
                     <item.icon className="h-4 w-4" />
@@ -153,7 +151,7 @@ export const TopNav = () => {
                     <Button 
                       variant="ghost" 
                       size="icon" 
-                      className="relative text-gray-600 hover:text-[#2BB6AF] hover:bg-gradient-to-r hover:from-[#2BB6AF]/10 hover:to-[#4CAF50]/5 rounded-xl transition-all"
+                      className="relative text-gray-600 hover:text-[#2BB6AF] hover:bg-gradient-to-r hover:from-[#2BB6AF]/10 hover:to-[#2BB6AF]/5 rounded-xl transition-all"
                     >
                       <Bell className="h-5 w-5" />
                       {unreadCount > 0 && (
@@ -172,7 +170,7 @@ export const TopNav = () => {
                             variant="ghost"
                             size="sm"
                             onClick={handleMarkAllAsRead}
-                            className="text-xs text-[#4CAF50] hover:text-[#2E7D32] h-auto py-1"
+                            className="text-xs text-[#2BB6AF] hover:text-[#2E7D32] h-auto py-1"
                           >
                             Mark all read
                           </Button>
@@ -190,7 +188,7 @@ export const TopNav = () => {
                           <div
                             key={notif.id || notif._id}
                             className={`p-4 hover:bg-gray-50 transition-colors ${
-                              !notif.is_read ? 'bg-[#4CAF50]/5' : ''
+                              !notif.is_read ? 'bg-[#2BB6AF]/5' : ''
                             }`}
                           >
                             <div className="flex items-start gap-3">
@@ -212,7 +210,7 @@ export const TopNav = () => {
                                     className="h-6 w-6"
                                     onClick={() => handleMarkAsRead(notif.id || notif._id)}
                                   >
-                                    <CheckCircle2 className="h-4 w-4 text-[#4CAF50]" />
+                                    <CheckCircle2 className="h-4 w-4 text-[#2BB6AF]" />
                                   </Button>
                                 )}
                                 <Button
@@ -237,10 +235,10 @@ export const TopNav = () => {
                   <DropdownMenuTrigger asChild>
                     <Button 
                       variant="ghost" 
-                      className="flex items-center gap-2 px-3 hover:bg-gradient-to-r hover:from-[#2BB6AF]/10 hover:to-[#4CAF50]/5 rounded-xl transition-all"
+                      className="flex items-center gap-2 px-3 hover:bg-gradient-to-r hover:from-[#2BB6AF]/10 hover:to-[#2BB6AF]/5 rounded-xl transition-all"
                     >
                       <Avatar className="h-10 w-10 border-2 border-[#2BB6AF]/30 shadow-md">
-                        <AvatarFallback className="bg-gradient-to-br from-[#2BB6AF] to-[#4CAF50] text-white font-semibold text-sm">
+                        <AvatarFallback className="bg-gradient-to-br from-[#2BB6AF] to-[#2BB6AF] text-white font-semibold text-sm">
                           {user?.name?.charAt(0)?.toUpperCase() || 'U'}
                         </AvatarFallback>
                       </Avatar>
@@ -257,8 +255,8 @@ export const TopNav = () => {
                   <DropdownMenuContent align="end" className="w-64">
                     <DropdownMenuLabel className="p-3">
                       <div className="flex items-center gap-3">
-                        <Avatar className="h-10 w-10 border-2 border-[#4CAF50]/20">
-                          <AvatarFallback className="bg-gradient-to-br from-[#4CAF50] to-[#2E7D32] text-white font-semibold">
+                        <Avatar className="h-10 w-10 border-2 border-[#2BB6AF]/20">
+                          <AvatarFallback className="bg-gradient-to-br from-[#2BB6AF] to-[#239a94] text-white font-semibold">
                             {user?.name?.charAt(0)?.toUpperCase() || 'U'}
                           </AvatarFallback>
                         </Avatar>
@@ -266,7 +264,7 @@ export const TopNav = () => {
                           <span className="font-semibold text-gray-900 truncate">{user?.name}</span>
                           <span className="text-xs text-gray-500 truncate">{user?.email}</span>
                           {isAdmin && (
-                            <Badge className="mt-1 w-fit text-xs bg-[#4CAF50]/10 text-[#4CAF50] border-[#4CAF50]/20">
+                            <Badge className="mt-1 w-fit text-xs bg-[#2BB6AF]/10 text-[#2BB6AF] border-[#2BB6AF]/20">
                               <ShieldCheck className="h-3 w-3 mr-1" />
                               Admin
                             </Badge>
@@ -321,7 +319,7 @@ export const TopNav = () => {
               <div className="flex items-center gap-3">
                 <Button 
                   asChild
-                  className="bg-gradient-to-r from-[#2BB6AF] to-[#4CAF50] hover:from-[#239a94] hover:to-[#2E7D32] text-white font-semibold px-6 py-2.5 shadow-lg hover:shadow-xl transition-all duration-300 rounded-xl"
+                  className="bg-[#2BB6AF] hover:bg-[#239a94] text-white font-semibold px-6 py-2.5 shadow-lg hover:shadow-xl hover:shadow-[#2BB6AF]/50 transition-all duration-300 rounded-xl"
                 >
                   <Link to="/auth/register">Get Started</Link>
                 </Button>
@@ -332,7 +330,7 @@ export const TopNav = () => {
             <Button
               variant="ghost"
               size="icon"
-              className="md:hidden text-gray-600 hover:text-[#2BB6AF] hover:bg-gradient-to-r hover:from-[#2BB6AF]/10 hover:to-[#4CAF50]/5 rounded-xl"
+              className="md:hidden text-gray-600 hover:text-[#2BB6AF] hover:bg-gradient-to-r hover:from-[#2BB6AF]/10 hover:to-[#2BB6AF]/5 rounded-xl"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             >
               {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
@@ -349,8 +347,8 @@ export const TopNav = () => {
               <NavLink
                 key={item.name}
                 to={item.href}
-                className="flex items-center gap-3 rounded-xl px-4 py-3 text-base font-semibold text-gray-700 hover:bg-gradient-to-r hover:from-[#2BB6AF]/10 hover:to-[#4CAF50]/5 hover:text-[#2BB6AF] transition-all"
-                activeClassName="bg-gradient-to-r from-[#2BB6AF]/10 to-[#4CAF50]/5 text-[#2BB6AF]"
+                className="flex items-center gap-3 rounded-xl px-4 py-3 text-base font-semibold text-gray-700 hover:bg-gradient-to-r hover:from-[#2BB6AF]/10 hover:to-[#2BB6AF]/5 hover:text-[#2BB6AF] transition-all"
+                activeClassName="bg-gradient-to-r from-[#2BB6AF]/10 to-[#2BB6AF]/5 text-[#2BB6AF]"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 <item.icon className="h-5 w-5" />
@@ -360,7 +358,7 @@ export const TopNav = () => {
             <div className="pt-2 mt-2 border-t border-gray-200/80">
               <Link
                 to="/profile"
-                className="flex items-center gap-3 rounded-xl px-4 py-3 text-base font-semibold text-gray-700 hover:bg-gradient-to-r hover:from-[#2BB6AF]/10 hover:to-[#4CAF50]/5 hover:text-[#2BB6AF] transition-all"
+                className="flex items-center gap-3 rounded-xl px-4 py-3 text-base font-semibold text-gray-700 hover:bg-gradient-to-r hover:from-[#2BB6AF]/10 hover:to-[#2BB6AF]/5 hover:text-[#2BB6AF] transition-all"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 <User className="h-5 w-5" />

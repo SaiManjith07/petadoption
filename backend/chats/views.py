@@ -3,8 +3,9 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.db.models import Q
-from .models import ChatRoom, Message
-from .serializers import ChatRoomSerializer, ChatRoomListSerializer, MessageSerializer
+from django.utils import timezone
+from .models import ChatRoom, Message, ChatRequest
+from .serializers import ChatRoomSerializer, ChatRoomListSerializer, MessageSerializer, ChatRequestSerializer
 
 
 class ChatRoomListView(generics.ListCreateAPIView):
@@ -18,16 +19,163 @@ class ChatRoomListView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        return ChatRoom.objects.filter(
-            participants=user,
-            is_active=True
-        ).prefetch_related('participants', 'messages').distinct()
+        
+        try:
+            # Use participants filter (most reliable, always works)
+            # This should work regardless of whether user_a/user_b fields exist
+            queryset = ChatRoom.objects.filter(
+                participants=user,
+                is_active=True
+            )
+            
+            # Try to prefetch, but don't fail if it doesn't work
+            try:
+                # Only try to select_related if fields exist
+                queryset = queryset.select_related('user_a', 'user_b', 'chat_request')
+            except Exception:
+                pass  # Fields might not exist, that's okay
+            
+            try:
+                queryset = queryset.prefetch_related('participants', 'messages')
+            except Exception:
+                try:
+                    queryset = queryset.prefetch_related('participants')
+                except Exception:
+                    pass  # If prefetch fails, continue without it
+            
+            return queryset.distinct()
+            
+        except Exception as e:
+            import traceback
+            error_trace = traceback.format_exc()
+            print(f"Error in get_queryset: {e}")
+            print(error_trace)
+            # Return empty queryset on error
+            return ChatRoom.objects.none()
+
+    def list(self, request, *args, **kwargs):
+        """List chat rooms - REDESIGNED FOR ROBUSTNESS."""
+        try:
+            queryset = self.filter_queryset(self.get_queryset())
+            
+            # Build response manually (no complex serialization)
+            data = []
+            for room in queryset:
+                try:
+                    # Get other participant
+                    other_participant = None
+                    participants = list(room.participants.all())
+                    for p in participants:
+                        if p.id != request.user.id:
+                            other_participant = {
+                                'id': p.id,
+                                'name': getattr(p, 'name', p.email),
+                                'email': p.email
+                            }
+                            break
+                    
+                    # Get last message
+                    last_message = None
+                    try:
+                        last_msg = room.messages.last()
+                        if last_msg:
+                            last_message = {
+                                'content': last_msg.content[:50] + '...' if len(last_msg.content) > 50 else last_msg.content,
+                                'created_at': last_msg.created_at.isoformat() if last_msg.created_at else None,
+                                'sender_id': last_msg.sender.id if last_msg.sender else None,
+                            }
+                    except Exception:
+                        pass
+                    
+                    data.append({
+                        'id': room.id,
+                        'room_id': room.room_id or getattr(room, 'room_id', None),
+                        'other_participant': other_participant,
+                        'last_message': last_message,
+                        'is_active': room.is_active,
+                        'created_at': room.created_at.isoformat() if room.created_at else None,
+                        'updated_at': room.updated_at.isoformat() if room.updated_at else None,
+                    })
+                except Exception as room_error:
+                    # Skip problematic rooms
+                    print(f"Error processing room {room.id}: {room_error}")
+                    continue
+            
+            return Response(data, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            import traceback
+            print(f"Error in ChatRoomListView.list: {e}")
+            print(traceback.format_exc())
+            return Response(
+                {'data': [], 'error': 'Failed to load chat rooms'},
+                status=status.HTTP_200_OK
+            )
+
+    def get_serializer_context(self):
+        """Add request to serializer context."""
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
 
     def perform_create(self, serializer):
-        room = serializer.save()
-        # Add current user to participants if not already included
-        if self.request.user not in room.participants.all():
-            room.participants.add(self.request.user)
+        try:
+            # Get participant IDs from request data
+            participant_ids = self.request.data.get('participant_ids', [])
+            user_id = self.request.data.get('user_id')
+            target_user_id = self.request.data.get('target_user_id')
+            participants = self.request.data.get('participants', [])
+            
+            # Build list of user IDs
+            user_ids = []
+            if participant_ids:
+                user_ids = participant_ids if isinstance(participant_ids, list) else [participant_ids]
+            elif user_id:
+                user_ids = [self.request.user.id, user_id]
+            elif target_user_id:
+                user_ids = [self.request.user.id, target_user_id]
+            elif participants:
+                user_ids = participants if isinstance(participants, list) else [participants]
+            else:
+                # Default: just add current user
+                user_ids = [self.request.user.id]
+            
+            # Ensure current user is included
+            if self.request.user.id not in user_ids:
+                user_ids.insert(0, self.request.user.id)
+            
+            # Remove duplicates
+            user_ids = list(set(user_ids))
+            
+            # Create room
+            room = ChatRoom.objects.create()
+            
+            # Add participants
+            from users.models import User
+            users = User.objects.filter(id__in=user_ids)
+            for user in users:
+                room.participants.add(user)
+            
+            # Set user_a and user_b if we have 2 users
+            if len(users) >= 2:
+                user_list = list(users)
+                room.user_a = user_list[0]
+                room.user_b = user_list[1]
+                room.save()
+            
+            # Ensure room_id is set
+            if not room.room_id and len(user_ids) >= 2:
+                sorted_ids = sorted(user_ids)
+                room.room_id = f"{sorted_ids[0]}_{sorted_ids[1]}"
+                room.save()
+            
+            # Update serializer instance
+            serializer.instance = room
+        except Exception as e:
+            import traceback
+            print(f"Error in perform_create: {e}")
+            print(traceback.format_exc())
+            raise
 
 
 class ChatRoomDetailView(generics.RetrieveAPIView):
@@ -38,6 +186,35 @@ class ChatRoomDetailView(generics.RetrieveAPIView):
     def get_queryset(self):
         user = self.request.user
         return ChatRoom.objects.filter(participants=user).prefetch_related('participants', 'messages')
+    
+    def get_serializer_context(self):
+        """Add request to serializer context."""
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_room_messages(request, room_id):
+    """Get messages for a room by room_id."""
+    try:
+        room = ChatRoom.objects.get(room_id=room_id)
+        # Verify user has access
+        if request.user not in room.participants.all() and not request.user.is_staff:
+            return Response(
+                {'error': 'Permission denied'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        messages = Message.objects.filter(room=room).select_related('sender').order_by('created_at')
+        serializer = MessageSerializer(messages, many=True)
+        return Response({'data': serializer.data})
+    except ChatRoom.DoesNotExist:
+        return Response(
+            {'error': 'Room not found'},
+            status=status.HTTP_404_NOT_FOUND
+        )
 
 
 @api_view(['GET', 'POST'])
@@ -103,19 +280,19 @@ class MessageListView(generics.ListCreateAPIView):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def send_message(request, room_id):
-    """Send a message to a chat room."""
+    """Send a message to a chat room by room ID (integer)."""
     try:
         room = ChatRoom.objects.get(id=room_id, participants=request.user)
     except ChatRoom.DoesNotExist:
         return Response(
-            {'message': 'Room not found or access denied'},
+            {'error': 'Room not found or access denied'},
             status=status.HTTP_404_NOT_FOUND
         )
 
     content = request.data.get('content', '').strip()
     if not content:
         return Response(
-            {'message': 'Message content is required'},
+            {'error': 'Message content is required'},
             status=status.HTTP_400_BAD_REQUEST
         )
 
@@ -125,6 +302,51 @@ def send_message(request, room_id):
         content=content
     )
 
+    # Update room's updated_at
+    from django.utils import timezone
+    room.updated_at = timezone.now()
+    room.save(update_fields=['updated_at'])
+
+    serializer = MessageSerializer(message)
+    return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def send_message_by_room_id(request, room_id):
+    """Send a message to a chat room by room_id (string like '3_6')."""
+    try:
+        room = ChatRoom.objects.get(room_id=room_id)
+        # Verify user has access
+        if request.user not in room.participants.all():
+            return Response(
+                {'error': 'Room not found or access denied'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+    except ChatRoom.DoesNotExist:
+        return Response(
+            {'error': 'Room not found'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+    content = request.data.get('content', '').strip()
+    if not content:
+        return Response(
+            {'error': 'Message content is required'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    message = Message.objects.create(
+        room=room,
+        sender=request.user,
+        content=content
+    )
+
+    # Update room's updated_at
+    from django.utils import timezone
+    room.updated_at = timezone.now()
+    room.save(update_fields=['updated_at'])
+
     serializer = MessageSerializer(message)
     return Response(serializer.data, status=status.HTTP_201_CREATED)
 
@@ -132,12 +354,12 @@ def send_message(request, room_id):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def mark_messages_read(request, room_id):
-    """Mark all messages in a room as read."""
+    """Mark all messages in a room as read by room ID (integer)."""
     try:
         room = ChatRoom.objects.get(id=room_id, participants=request.user)
     except ChatRoom.DoesNotExist:
         return Response(
-            {'message': 'Room not found or access denied'},
+            {'error': 'Room not found or access denied'},
             status=status.HTTP_404_NOT_FOUND
         )
 
@@ -148,4 +370,269 @@ def mark_messages_read(request, room_id):
     ).update(read_status=True)
 
     return Response({'message': 'Messages marked as read'}, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def mark_messages_read_by_room_id(request, room_id):
+    """Mark all messages in a room as read by room_id (string like '3_6')."""
+    try:
+        room = ChatRoom.objects.get(room_id=room_id)
+        # Verify user has access
+        if request.user not in room.participants.all():
+            return Response(
+                {'error': 'Room not found or access denied'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+    except ChatRoom.DoesNotExist:
+        return Response(
+            {'error': 'Room not found'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+    Message.objects.filter(
+        room=room
+    ).exclude(
+        sender=request.user
+    ).update(read_status=True)
+
+    return Response({'message': 'Messages marked as read'}, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def request_chat(request):
+    """Request a chat with pet owner/finder (for claim/adoption)."""
+    try:
+        from pets.models import Pet
+        
+        pet_id = request.data.get('pet_id')
+        requester_id = request.data.get('requester_id')
+        request_type = request.data.get('type')  # 'claim' or 'adoption'
+        message = request.data.get('message', '')
+        
+        if not pet_id or not requester_id or not request_type:
+            return Response(
+                {'error': 'pet_id, requester_id, and type are required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        if request_type not in ['claim', 'adoption']:
+            return Response(
+                {'error': 'type must be either "claim" or "adoption"'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Verify requester is the current user
+        if str(request.user.id) != str(requester_id):
+            return Response(
+                {'error': 'You can only create requests for yourself'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        try:
+            pet = Pet.objects.get(id=pet_id)
+        except Pet.DoesNotExist:
+            return Response(
+                {'error': 'Pet not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Get pet owner (posted_by)
+        owner = pet.posted_by if hasattr(pet, 'posted_by') and pet.posted_by else None
+        
+        # Check if request already exists
+        existing_request = ChatRequest.objects.filter(
+            pet=pet,
+            requester=request.user,
+            status__in=['pending', 'pending_owner']
+        ).first()
+        
+        if existing_request:
+            return Response(
+                {'error': 'You already have a pending request for this pet'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Create chat request
+        chat_request = ChatRequest.objects.create(
+            pet=pet,
+            requester=request.user,
+            owner=owner,
+            type=request_type,
+            status='pending',  # First needs admin approval
+            message=message
+        )
+        
+        serializer = ChatRequestSerializer(chat_request)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        
+    except Exception as e:
+        return Response(
+            {'error': str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_chat_requests(request):
+    """Get chat requests for current user (as requester)."""
+    requests = ChatRequest.objects.filter(requester=request.user).order_by('-created_at')
+    serializer = ChatRequestSerializer(requests, many=True)
+    return Response({'data': serializer.data})
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_chat_requests_for_owner(request):
+    """Get chat requests for current user (as target) - REDESIGNED FOR ROBUSTNESS."""
+    try:
+        requests = ChatRequest.objects.filter(
+            target=request.user,
+            status='admin_approved'
+        ).select_related('requester', 'target').order_by('-created_at')
+        
+        # Build response manually (no serializer to avoid errors)
+        data = []
+        for req in requests:
+            data.append({
+                'id': req.id,
+                'status': req.status,
+                'requester_id': req.requester.id if req.requester else None,
+                'requester_name': getattr(req.requester, 'name', req.requester.email) if req.requester else '',
+                'message': req.message,
+                'created_at': req.created_at.isoformat() if req.created_at else None,
+            })
+        
+        return Response({'data': data}, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        import traceback
+        print(f"Error in get_chat_requests_for_owner: {e}")
+        print(traceback.format_exc())
+        return Response(
+            {'error': str(e), 'data': []},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def respond_to_chat_request(request, request_id):
+    """Respond to a chat request (approve/reject by requester or owner)."""
+    try:
+        chat_request = ChatRequest.objects.get(id=request_id)
+        approved = request.data.get('approved', False)
+        
+        # Check if user has permission (must be requester or owner)
+        if chat_request.requester != request.user and chat_request.owner != request.user:
+            return Response(
+                {'error': 'You do not have permission to respond to this request'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        if approved:
+            if chat_request.status == 'pending_owner' and chat_request.owner == request.user:
+                # Owner approves - create chat room
+                chat_request.status = 'approved'
+                chat_request.owner_approved_at = timezone.now()
+                chat_request.save()
+                
+                # Create chat room
+                chat_room = ChatRoom.objects.create()
+                chat_room.participants.add(chat_request.requester, chat_request.owner)
+                
+                return Response({
+                    'message': 'Chat request approved and room created',
+                    'room_id': chat_room.id,
+                    'request': ChatRequestSerializer(chat_request).data
+                })
+            else:
+                return Response(
+                    {'error': 'Invalid request status or user'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        else:
+            # Reject
+            chat_request.status = 'rejected'
+            if chat_request.owner == request.user:
+                chat_request.owner_approved_at = timezone.now()
+            chat_request.save()
+            
+            return Response({
+                'message': 'Chat request rejected',
+                'request': ChatRequestSerializer(chat_request).data
+            })
+            
+    except ChatRequest.DoesNotExist:
+        return Response(
+            {'error': 'Chat request not found'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    except Exception as e:
+        return Response(
+            {'error': str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def respond_to_owner_chat_request(request, request_id):
+    """Owner responds to admin-approved chat request."""
+    try:
+        chat_request = ChatRequest.objects.get(id=request_id)
+        approved = request.data.get('approved', False)
+        
+        # Verify user is the owner
+        if chat_request.owner != request.user:
+            return Response(
+                {'error': 'Only the pet owner can respond to this request'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Verify status is pending_owner
+        if chat_request.status != 'pending_owner':
+            return Response(
+                {'error': 'This request is not awaiting your approval'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        if approved:
+            # Owner approves - create chat room
+            chat_request.status = 'approved'
+            chat_request.owner_approved_at = timezone.now()
+            chat_request.save()
+            
+            # Create chat room
+            chat_room = ChatRoom.objects.create()
+            chat_room.participants.add(chat_request.requester, chat_request.owner)
+            
+            return Response({
+                'message': 'Chat request approved and room created',
+                'room_id': chat_room.id,
+                'request': ChatRequestSerializer(chat_request).data
+            })
+        else:
+            # Owner rejects
+            chat_request.status = 'rejected'
+            chat_request.owner_approved_at = timezone.now()
+            chat_request.save()
+            
+            return Response({
+                'message': 'Chat request rejected',
+                'request': ChatRequestSerializer(chat_request).data
+            })
+            
+    except ChatRequest.DoesNotExist:
+        return Response(
+            {'error': 'Chat request not found'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    except Exception as e:
+        return Response(
+            {'error': str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
 

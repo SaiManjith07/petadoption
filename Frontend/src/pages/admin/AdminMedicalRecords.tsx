@@ -461,7 +461,7 @@ export default function AdminMedicalRecords() {
         <Button
           onClick={handleSubmit}
           disabled={submitting}
-          className="bg-[#4CAF50] hover:bg-[#2E7D32]"
+          className="bg-[#2BB6AF] hover:bg-[#239a94]"
         >
           {submitting ? 'Saving...' : isEdit ? 'Update Record' : 'Create Record'}
         </Button>
@@ -513,7 +513,7 @@ export default function AdminMedicalRecords() {
               </div>
               <Button
                 onClick={handleAddNew}
-                className="bg-[#4CAF50] hover:bg-[#2E7D32] text-white"
+                className="bg-[#2BB6AF] hover:bg-[#239a94] text-white"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Add Medical Record
@@ -576,7 +576,7 @@ export default function AdminMedicalRecords() {
                       ? 'No medical records match your search'
                       : 'No medical records have been registered yet.'}
                   </p>
-                  <Button onClick={handleAddNew} className="bg-[#4CAF50] hover:bg-[#2E7D32]">
+                  <Button onClick={handleAddNew} className="bg-[#2BB6AF] hover:bg-[#239a94]">
                     <Plus className="h-4 w-4 mr-2" />
                     Add First Medical Record
                   </Button>

@@ -52,7 +52,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   Search,
@@ -155,47 +155,32 @@ const HeroSection: React.FC = () => {
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-      {/* Background Images with Fade Animation */}
+      {/* Background Images - No Transition */}
       <div className="absolute inset-0 z-0">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={currentIndex}
-            initial={{ opacity: 0, scale: 1.1 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
-            transition={{ duration: 1.5, ease: "easeInOut" }}
-            className="absolute inset-0"
-            style={{
-              backgroundImage: `url(${currentHero.image})`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              backgroundRepeat: 'no-repeat',
-            }}
-          />
-        </AnimatePresence>
+        <div
+          key={currentIndex}
+          className="absolute inset-0"
+          style={{
+            backgroundImage: `url(${currentHero.image})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
+          }}
+        />
       </div>
 
       {/* Content Overlay - Text and CTA */}
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-white w-full pt-[10px]">
-        <motion.div
+        <div
           key={currentIndex}
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -30 }}
-          transition={{ duration: 0.8 }}
           className="max-w-4xl mx-auto"
         >
           {/* Pet Type Badge - Starting from navbar */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.2 }}
-            className="inline-block px-6 py-2 rounded-full mb-3 bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-white/20 hover:border-white/40 transition-all duration-300 cursor-default"
-          >
+          <div className="inline-block px-6 py-2 rounded-full mb-3 bg-[#2BB6AF]/20 backdrop-blur-sm border border-[#2BB6AF]/40 hover:bg-[#2BB6AF]/30 hover:border-[#2BB6AF]/60 transition-all duration-300 cursor-default">
             <span className="text-sm font-semibold text-white drop-shadow-lg">
               {currentPet?.type || 'Pet'} Care Platform
             </span>
-          </motion.div>
+          </div>
 
           {/* Main Heading - Properly aligned */}
           <h1 className="text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold mb-3 leading-tight text-white drop-shadow-2xl">
@@ -209,18 +194,14 @@ const HeroSection: React.FC = () => {
 
           {/* Description - Above buttons */}
           {currentPet?.description && (
-            <motion.div
+            <div
               key={currentIndex}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.8, delay: 0.3 }}
               className="mb-6 max-w-3xl mx-auto"
             >
               <p className="text-base md:text-lg text-white/95 drop-shadow-lg leading-relaxed">
                 {currentPet.description}
               </p>
-            </motion.div>
+            </div>
           )}
 
           {/* CTA Buttons - All in One Line */}
@@ -254,14 +235,13 @@ const HeroSection: React.FC = () => {
               </Button>
             </Link>
           </div>
-        </motion.div>
+        </div>
         
       </div>
 
       {/* All Animals Grid Below Hero (Scroll Indicator) */}
       <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-10 w-full max-w-7xl px-4">
         <div className="text-center text-white mb-4">
-          <p className="text-sm font-semibold mb-3 drop-shadow-lg">All Pet Types We Support</p>
           <div className="flex flex-nowrap justify-center items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
             {petImages.slice(0, 11).map((pet, index) => (
               <button
@@ -370,7 +350,7 @@ const WhatWeDo: React.FC = () => {
   };
 
   return (
-    <section className="py-20 sm:py-24 lg:py-28 bg-white relative overflow-hidden">
+    <section className="py-20 sm:py-24 lg:py-28 bg-transparent relative overflow-hidden">
       {/* Subtle Background Pattern */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <motion.div
@@ -466,7 +446,7 @@ const WhatWeDo: React.FC = () => {
                 >
                   {/* Front of Card */}
                   <div
-                    className="absolute inset-0 rounded-3xl p-8 backface-hidden flex flex-col bg-white border-2 border-gray-100 hover:border-teal-300 transition-all duration-300 shadow-sm hover:shadow-xl"
+                    className="absolute inset-0 rounded-3xl p-8 backface-hidden flex flex-col bg-transparent backdrop-blur-sm border-2 border-teal-200/50 hover:border-teal-300 transition-all duration-300 shadow-sm hover:shadow-xl overflow-hidden"
                     style={{
                       backfaceVisibility: 'hidden',
                       WebkitBackfaceVisibility: 'hidden',
@@ -487,7 +467,7 @@ const WhatWeDo: React.FC = () => {
                         rotate: [0, 5, 0],
                       } : {}}
                       transition={{ duration: 0.6, type: "spring", stiffness: 200 }}
-                      className="relative mb-6"
+                      className="relative mb-6 flex-shrink-0"
                     >
                       <div 
                         className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto relative bg-gradient-to-br from-teal-600 to-cyan-600 shadow-lg"
@@ -509,20 +489,20 @@ const WhatWeDo: React.FC = () => {
                     </motion.div>
 
                     {/* Title */}
-                    <h3 className="text-2xl font-bold mb-3 text-gray-900">
+                    <h3 className="text-2xl font-bold mb-3 text-gray-900 flex-shrink-0">
                       {feature.title}
                     </h3>
 
                     {/* Description */}
-                    <p className="text-gray-600 leading-relaxed mb-4">
+                    <p className="text-gray-600 leading-relaxed mb-4 flex-1 overflow-y-auto min-h-0">
                       {feature.description}
                     </p>
 
                     {/* Flip Hint */}
-                    <div className="mt-auto pt-4 border-t border-gray-100">
-                      <p className="text-sm text-teal-600 font-semibold flex items-center gap-2">
+                    <div className="mt-auto pt-4 border-t border-gray-100 flex-shrink-0">
+                      <p className="text-sm text-teal-600 font-semibold flex items-center justify-start gap-2">
                         <span>Click to learn more</span>
-                        <ArrowRight className="h-4 w-4" />
+                        <ArrowRight className="h-4 w-4 flex-shrink-0" />
                       </p>
                     </div>
                   </div>
@@ -686,11 +666,25 @@ const CommunityFeatures: React.FC = () => {
   const [hoveredCard, setHoveredCard] = useState<number | null>(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
 
+  const getFeatureContent = (feature: typeof communityFeatures[0]) => {
+    const contentMap: { [key: string]: string } = {
+      'Shelters': 'Connect with verified animal shelters in your area. View shelter capacity, available pets, and contact information. Help pets find safe temporary homes.',
+      'Feeding': 'Join community feeding programs for stray animals. Set up feeding points, track feeding schedules, and coordinate with other volunteers to ensure no pet goes hungry.',
+      'Home Checks': 'Schedule home visits for adoption verification. Ensure safe and suitable environments for pets. Help verify that adopters can provide proper care and love.',
+      'Volunteer Network': 'Join a community of dedicated volunteers making a difference. Participate in rescue operations, adoption events, and community outreach programs.',
+      'Emergency Rescue': 'Report and respond to pet emergencies in real-time. Get immediate help for injured or distressed animals. Coordinate with rescue teams for urgent situations.',
+      'Pet Fostering': 'Provide temporary homes for pets awaiting adoption. Give pets a safe, loving environment while they wait for their forever families. Make a direct impact on pet welfare.',
+      'Community Forum': 'Connect, share experiences, and get advice from pet owners. Share success stories, ask questions, and learn from experienced community members.',
+      'Pet Transportation': 'Coordinate safe transport for rescued and adopted pets. Help pets reach their new homes safely. Connect with transportation volunteers and schedule pickups.',
+    };
+    return contentMap[feature.title] || feature.description;
+  };
+
   const handleFeatureClick = (feature: typeof communityFeatures[0]) => {
     if (feature.requiresAuth && !isAuthenticated) {
       setAuthDialog({
         open: true,
-        message: feature.authMessage || 'Please sign in to access this feature.',
+        message: getFeatureContent(feature),
         link: feature.link,
       });
     } else {
@@ -789,8 +783,8 @@ const CommunityFeatures: React.FC = () => {
                         className="relative h-full p-8 rounded-3xl overflow-hidden"
                         style={{
                           background: isHovered
-                            ? 'linear-gradient(135deg, rgba(20, 184, 166, 0.1) 0%, rgba(8, 145, 178, 0.1) 100%)'
-                            : 'rgba(255, 255, 255, 0.7)',
+                            ? 'linear-gradient(135deg, rgba(20, 184, 166, 0.15) 0%, rgba(8, 145, 178, 0.15) 100%)'
+                            : 'rgba(255, 255, 255, 0.1)',
                           backdropFilter: 'blur(10px) saturate(180%)',
                           border: '1px solid rgba(255, 255, 255, 0.2)',
                           boxShadow: isHovered
@@ -813,7 +807,7 @@ const CommunityFeatures: React.FC = () => {
 
                         {/* Blur Effect on Adjacent Cards */}
                         {hoveredCard !== null && hoveredCard !== index && (
-                          <div className="absolute inset-0 bg-white/50 backdrop-blur-sm rounded-3xl" />
+                          <div className="absolute inset-0 bg-teal-50/30 backdrop-blur-sm rounded-3xl" />
                         )}
 
                         {/* Content */}
@@ -889,28 +883,30 @@ const CommunityFeatures: React.FC = () => {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Info className="w-5 h-5 text-[#2BB6AF]" />
-              Sign In Required
+              Community Feature
             </DialogTitle>
-            <DialogDescription className="pt-2">
-              {authDialog.message}
-            </DialogDescription>
           </DialogHeader>
-          <div className="flex gap-3 mt-4">
-            <Button
-              onClick={() => {
-                setAuthDialog({ ...authDialog, open: false });
-                navigate('/auth/login');
-              }}
-              className="bg-[#2BB6AF] hover:bg-[#239a94]"
-            >
-              Sign In
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => setAuthDialog({ ...authDialog, open: false })}
-            >
-              Cancel
-            </Button>
+          <div className="pt-2">
+            <p className="text-gray-700 leading-relaxed mb-6">
+              {authDialog.message}
+            </p>
+            <div className="flex gap-3">
+              <Button
+                onClick={() => {
+                  setAuthDialog({ ...authDialog, open: false });
+                  navigate('/auth/login');
+                }}
+                className="bg-[#2BB6AF] hover:bg-[#239a94] flex-1"
+              >
+                Sign In
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setAuthDialog({ ...authDialog, open: false })}
+              >
+                Cancel
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
@@ -1000,7 +996,7 @@ const HowItWorks: React.FC = () => {
   ];
 
   return (
-    <section id="how-it-works-section" className="py-20 sm:py-24 lg:py-28 bg-white relative overflow-hidden">
+    <section id="how-it-works-section" className="py-20 sm:py-24 lg:py-28 bg-transparent relative overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         {/* Section Header */}
         <motion.div
@@ -1032,16 +1028,23 @@ const HowItWorks: React.FC = () => {
 
         {/* Modern Timeline with Cards */}
         <div className="relative">
-          {/* Animated Connecting Line */}
-          <div className="hidden lg:block absolute top-1/2 left-0 w-full h-1 -translate-y-1/2 z-0">
-            <motion.div
-              initial={{ scaleX: 0 }}
-              whileInView={{ scaleX: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 1.5, ease: "easeInOut" }}
-              className="h-full bg-gradient-to-r from-teal-600 to-cyan-600 rounded-full shadow-lg"
-              style={{ transformOrigin: 'left' }}
-            />
+          {/* Connecting Line with Arrows - Static Background */}
+          <div className="hidden lg:block absolute top-1/2 left-0 w-full h-0.5 -translate-y-1/2 z-0">
+            <div className="h-full bg-gradient-to-r from-teal-600 via-cyan-600 to-teal-600 relative">
+              {/* Arrow symbols along the line - positioned between steps */}
+              {[1, 2, 3, 4].map((arrowIndex) => (
+                <div
+                  key={arrowIndex}
+                  className="absolute top-1/2 -translate-y-1/2 bg-white rounded-full p-1 shadow-md"
+                  style={{
+                    left: `${(arrowIndex * 100) / 5}%`,
+                    transform: 'translate(-50%, -50%)',
+                  }}
+                >
+                  <ArrowRight className="w-4 h-4 text-teal-600" />
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* Steps Grid */}
@@ -1065,7 +1068,7 @@ const HowItWorks: React.FC = () => {
                   }}
                   onMouseEnter={() => setActiveStep(index)}
                   onMouseLeave={() => setActiveStep(null)}
-                  className="relative group"
+                  className="relative group h-full"
                 >
                   {/* Main Card */}
                   <motion.div
@@ -1076,50 +1079,29 @@ const HowItWorks: React.FC = () => {
                       y: 0,
                       scale: 1,
                     }}
-                    className={`relative bg-white rounded-3xl p-6 border-2 transition-all duration-500 shadow-xl ${isActive ? stepDetail.borderColor : 'border-gray-200'}`}
+                    className={`relative bg-transparent backdrop-blur-sm rounded-3xl p-6 border-2 transition-all duration-500 shadow-xl h-full flex flex-col ${isActive ? stepDetail.borderColor : 'border-teal-200/50'}`}
                     style={{
                       boxShadow: isActive
                         ? `0 25px 70px ${stepDetail.glowColor}, 0 0 0 1px rgba(20, 184, 166, 0.2)`
                         : '0 8px 32px rgba(0, 0, 0, 0.08)',
+                      minHeight: '200px',
                     }}
                   >
                     {/* Icon */}
-                    <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${stepDetail.gradient} flex items-center justify-center mb-4 mx-auto shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                    <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${stepDetail.gradient} flex items-center justify-center mb-4 mx-auto shadow-lg group-hover:scale-110 transition-transform duration-300 flex-shrink-0`}>
                       <IconComponent className="h-8 w-8 text-white" />
                     </div>
 
                     {/* Title */}
-                    <h3 className={`text-lg font-bold mb-3 text-center ${stepDetail.textColor} group-hover:scale-105 transition-transform duration-300`}>
+                    <h3 className={`text-lg font-bold mb-3 text-center ${stepDetail.textColor} group-hover:scale-105 transition-transform duration-300 flex-shrink-0`}>
                       {step.title}
                     </h3>
 
                     {/* Description */}
-                    <p className="text-gray-600 text-center text-sm leading-relaxed">
+                    <p className="text-gray-600 text-center text-sm leading-relaxed flex-1 flex items-center justify-center">
                       {step.description}
                     </p>
                   </motion.div>
-
-                  {/* Arrow to Next Step */}
-                  {index < howItWorksSteps.length - 1 && (
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      whileInView={{ opacity: 1 }}
-                      viewport={{ once: true }}
-                      transition={{ duration: 0.6, delay: index * 0.1 + 0.3 }}
-                      className="hidden lg:block absolute top-1/2 -right-3 z-10"
-                    >
-                      <motion.div
-                        animate={{
-                          x: [0, 8, 0],
-                        }}
-                        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                      >
-                        <ArrowRight className="w-6 h-6 text-teal-600" style={{
-                          filter: 'drop-shadow(0 0 8px rgba(20, 184, 166, 0.6))',
-                        }} />
-                      </motion.div>
-                    </motion.div>
-                  )}
                 </motion.div>
               );
             })}
@@ -1207,7 +1189,7 @@ const AdoptionAwareness: React.FC = () => {
   ];
 
   return (
-    <section id="adoption-section" className="py-20 sm:py-24 lg:py-28 bg-white relative overflow-hidden">
+    <section id="adoption-section" className="py-20 sm:py-24 lg:py-28 bg-transparent relative overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         {/* Section Header */}
         <motion.div
@@ -1241,7 +1223,7 @@ const AdoptionAwareness: React.FC = () => {
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
                 whileHover={{ scale: 1.02, y: -5 }}
-                className="group relative bg-white rounded-2xl p-6 border-2 border-gray-200 hover:border-teal-300 transition-all duration-300 shadow-sm hover:shadow-xl"
+                className="group relative bg-transparent backdrop-blur-sm rounded-2xl p-6 border-2 border-teal-200/50 hover:border-teal-300 transition-all duration-300 shadow-sm hover:shadow-xl"
               >
                 <div className="flex items-start gap-4">
                   <div className="flex-shrink-0 w-14 h-14 rounded-xl bg-gradient-to-br from-teal-600 to-cyan-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
@@ -1352,8 +1334,11 @@ const MedicalSection: React.FC = () => {
         }
         // Limit to 3 most recent camps for display
         setVaccinationCamps(campsArray.slice(0, 3));
-      } catch (error) {
+      } catch (error: any) {
+        // Only log non-connection errors to avoid console spam
+        if (error?.code !== 'ERR_NETWORK' && error?.code !== 'ECONNREFUSED' && error?.message?.includes('Network Error') === false) {
         console.error('Error loading vaccination camps:', error);
+        }
         // Set empty array on error (backend might be offline)
         setVaccinationCamps([]);
       } finally {
@@ -1403,7 +1388,7 @@ const MedicalSection: React.FC = () => {
                     whileInView={{ opacity: 1, x: 0 }}
                     viewport={{ once: true }}
                     transition={{ duration: 0.5, delay: index * 0.1 }}
-                    className="group bg-white p-6 rounded-3xl transition-all duration-300 border border-gray-100 hover:border-[#2BB6AF] hover:shadow-xl hover:shadow-[#2BB6AF]/20 hover:translate-y-1 cursor-pointer"
+                    className="group bg-transparent backdrop-blur-sm p-6 rounded-3xl transition-all duration-300 border border-teal-200/50 hover:border-[#2BB6AF] hover:shadow-xl hover:shadow-[#2BB6AF]/20 hover:translate-y-1 cursor-pointer"
                   >
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex-1">
@@ -1457,7 +1442,7 @@ const MedicalSection: React.FC = () => {
               <Stethoscope className="w-8 h-8 text-[#2BB6AF]" />
               <h3 className="text-3xl font-bold text-gray-900">Pet Vaccination & Health</h3>
             </div>
-            <div className="bg-white p-8 rounded-3xl border border-gray-100 hover:border-[#2BB6AF]/30 hover:shadow-xl transition-all duration-300">
+            <div className="bg-transparent backdrop-blur-sm p-8 rounded-3xl border border-teal-200/50 hover:border-[#2BB6AF]/30 hover:shadow-xl transition-all duration-300">
               <ul className="space-y-6 mb-8">
                 {healthInfo.map((info, index) => (
                   <li key={index} className="group/item flex items-start gap-4 hover:bg-gray-50 p-3 rounded-xl transition-all duration-300 cursor-default">
@@ -1570,10 +1555,10 @@ const NGOCollaboration: React.FC = () => {
   ];
 
   return (
-    <section className="py-20 sm:py-24 lg:py-28 bg-gradient-to-br from-white via-green-50/30 to-white relative overflow-hidden">
+    <section className="py-20 sm:py-24 lg:py-28 bg-gradient-to-br from-white via-[#2BB6AF]/5 to-white relative overflow-hidden">
       {/* Decorative Animated Shapes */}
-      <div className="absolute top-20 right-20 w-64 h-64 bg-green-200/10 rounded-full blur-3xl animate-pulse" />
-      <div className="absolute bottom-20 left-20 w-80 h-80 bg-blue-200/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+      <div className="absolute top-20 right-20 w-64 h-64 bg-[#2BB6AF]/10 rounded-full blur-3xl animate-pulse" />
+      <div className="absolute bottom-20 left-20 w-80 h-80 bg-[#2BB6AF]/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         {/* Section Header */}
@@ -1584,11 +1569,11 @@ const NGOCollaboration: React.FC = () => {
           transition={{ duration: 0.8 }}
           className="text-center mb-16"
         >
-          <Badge className="inline-flex items-center gap-2 px-6 py-3 rounded-full mb-6 bg-gradient-to-r from-green-500/10 to-emerald-500/10 backdrop-blur-sm border-2 border-green-200">
-            <Handshake className="h-5 w-5 text-green-600 animate-bounce" />
-            <span className="text-sm font-bold text-green-700">Trusted Partnerships</span>
+          <Badge className="inline-flex items-center gap-2 px-6 py-3 rounded-full mb-6 bg-[#2BB6AF]/10 backdrop-blur-sm border-2 border-[#2BB6AF]/20">
+            <Handshake className="h-5 w-5 text-[#2BB6AF] animate-bounce" />
+            <span className="text-sm font-bold text-[#2BB6AF]">Trusted Partnerships</span>
           </Badge>
-          <h2 className="text-4xl md:text-5xl lg:text-6xl font-extrabold mb-6 bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 bg-clip-text text-transparent">
+          <h2 className="text-4xl md:text-5xl lg:text-6xl font-extrabold mb-6 bg-gradient-to-r from-[#2BB6AF] via-[#239a94] to-[#2BB6AF] bg-clip-text text-transparent">
             NGO Collaboration Network
           </h2>
           <p className="text-xl md:text-2xl text-gray-700 max-w-3xl mx-auto font-light leading-relaxed">
@@ -1607,12 +1592,12 @@ const NGOCollaboration: React.FC = () => {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
-                className={`group bg-white rounded-3xl p-8 border-2 ${benefit.borderColor} hover:shadow-2xl hover:-translate-y-2 transition-all duration-300`}
+                className={`group bg-transparent backdrop-blur-sm rounded-3xl p-8 border-2 ${benefit.borderColor} hover:shadow-2xl hover:-translate-y-2 transition-all duration-300`}
               >
                 <div className={`w-20 h-20 rounded-full bg-gradient-to-br ${benefit.gradient} flex items-center justify-center mb-6 mx-auto shadow-lg group-hover:scale-110 group-hover:rotate-6 transition-all duration-300`}>
                   <IconComponent className="h-10 w-10 text-white" />
             </div>
-                <h3 className={`text-2xl font-bold text-gray-900 mb-3 group-hover:text-green-600 transition-colors text-center`}>
+                <h3 className={`text-2xl font-bold text-gray-900 mb-3 group-hover:text-[#2BB6AF] transition-colors text-center`}>
                   {benefit.title}
                 </h3>
                 <p className="text-gray-600 leading-relaxed group-hover:text-gray-700 transition-colors text-center">
@@ -1626,7 +1611,7 @@ const NGOCollaboration: React.FC = () => {
         {/* Partner Showcase */}
         <div className="mb-16">
           <h3 className="text-3xl font-bold text-center text-gray-900 mb-12">
-            <Award className="inline mr-3 text-green-600" />
+            <Award className="inline mr-3 text-[#2BB6AF]" />
             Our Trusted NGO Partners
           </h3>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8">
@@ -1639,15 +1624,15 @@ const NGOCollaboration: React.FC = () => {
                   whileInView={{ opacity: 1, scale: 1 }}
                   viewport={{ once: true }}
                   transition={{ duration: 0.5, delay: index * 0.1 }}
-                  className="group bg-white rounded-3xl p-6 border-2 border-gray-100 hover:border-green-300 hover:shadow-xl hover:-translate-y-2 transition-all duration-300 text-center relative"
+                  className="group bg-transparent backdrop-blur-sm rounded-3xl p-6 border-2 border-teal-200/50 hover:border-[#2BB6AF] hover:shadow-xl hover:-translate-y-2 transition-all duration-300 text-center relative"
                 >
-                  <div className="relative w-24 h-24 rounded-full bg-gradient-to-br from-green-100 to-emerald-100 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shadow-md">
-                    <IconComponent className="h-12 w-12 text-green-600" />
+                  <div className="relative w-24 h-24 rounded-full bg-gradient-to-br from-[#2BB6AF]/10 to-[#2BB6AF]/20 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shadow-md">
+                    <IconComponent className="h-12 w-12 text-[#2BB6AF]" />
                     <div className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center border-2 border-white shadow-lg">
                       <CheckCircle2 className="h-5 w-5 text-white" />
           </div>
           </div>
-                  <h4 className="text-sm font-bold text-gray-900 mb-2 group-hover:text-green-600 transition-colors">
+                  <h4 className="text-sm font-bold text-gray-900 mb-2 group-hover:text-[#2BB6AF] transition-colors">
                     {partner.name}
                   </h4>
                   <div className="flex justify-center gap-4 text-xs text-gray-500">
@@ -1661,7 +1646,7 @@ const NGOCollaboration: React.FC = () => {
                     </div>
                   </div>
                   <div className="mt-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Badge className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-green-100 text-green-700 text-xs font-semibold">
+                    <Badge className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-[#2BB6AF]/10 text-[#2BB6AF] text-xs font-semibold">
                       <Award className="h-3 w-3" />
                       Verified Partner
                     </Badge>
@@ -1678,7 +1663,7 @@ const NGOCollaboration: React.FC = () => {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.8 }}
-          className="bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 rounded-3xl p-12 text-white relative overflow-hidden"
+          className="bg-gradient-to-r from-[#2BB6AF] via-[#239a94] to-[#2BB6AF] rounded-3xl p-12 text-white relative overflow-hidden"
         >
           <div className="absolute inset-0 opacity-10">
             <PawPrint className="absolute top-10 left-10 w-32 h-32" />
@@ -1696,7 +1681,7 @@ const NGOCollaboration: React.FC = () => {
                 Our NGO collaboration network has transformed animal welfare. From emergency rescues to medical camps, we're creating a safer world for every animal.
               </p>
               <Link to="/pets/adopt">
-                <Button className="group bg-white text-green-600 hover:bg-gray-50 font-bold px-8 py-4 rounded-2xl transition-all duration-300 transform hover:scale-105 hover:shadow-2xl">
+                <Button className="group bg-white text-[#2BB6AF] hover:bg-gray-50 font-bold px-8 py-4 rounded-2xl transition-all duration-300 transform hover:scale-105 hover:shadow-2xl">
                   Join Our Network
                   <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-2 transition-transform" />
                 </Button>
@@ -2027,7 +2012,7 @@ const TestimonialsSection: React.FC = () => {
               className="group relative"
             >
               {/* Main Card */}
-              <div className="relative bg-white rounded-3xl p-8 border-2 border-gray-200 hover:border-teal-300 transition-all duration-500 shadow-lg hover:shadow-2xl hover:shadow-teal-500/20 h-full flex flex-col">
+              <div className="relative bg-transparent backdrop-blur-sm rounded-3xl p-8 border-2 border-teal-200/50 hover:border-teal-300 transition-all duration-500 shadow-lg hover:shadow-2xl hover:shadow-teal-500/20 h-full flex flex-col">
                 {/* Quote Icon */}
                 <div className="absolute -top-4 -left-4 w-16 h-16 rounded-full bg-gradient-to-br from-teal-600 to-cyan-600 flex items-center justify-center shadow-xl z-10">
                   <Quote className="w-8 h-8 text-white" />
