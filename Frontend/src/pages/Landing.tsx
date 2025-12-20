@@ -170,7 +170,7 @@ const HeroSection: React.FC = () => {
       </div>
 
       {/* Content Overlay - Text and CTA */}
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-white w-full pt-[10px]">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-white w-full">
         <div
           key={currentIndex}
           className="max-w-4xl mx-auto"
@@ -960,43 +960,41 @@ const HowItWorks: React.FC = () => {
   const stepDetails = [
     {
       icon: AlertCircle,
-      gradient: 'from-teal-600 to-cyan-600',
-      borderColor: 'border-teal-300',
-      textColor: 'text-teal-600',
-      glowColor: 'rgba(20, 184, 166, 0.4)',
+      color: '#2BB6AF',
+      bgColor: 'bg-teal-50',
+      borderColor: 'border-teal-400',
     },
     {
       icon: FileText,
-      gradient: 'from-teal-600 to-cyan-600',
-      borderColor: 'border-teal-300',
-      textColor: 'text-teal-600',
-      glowColor: 'rgba(20, 184, 166, 0.4)',
+      color: '#F97316',
+      bgColor: 'bg-orange-50',
+      borderColor: 'border-orange-400',
     },
     {
       icon: ShieldCheck,
-      gradient: 'from-teal-600 to-cyan-600',
-      borderColor: 'border-teal-300',
-      textColor: 'text-teal-600',
-      glowColor: 'rgba(20, 184, 166, 0.4)',
+      color: '#8B5CF6',
+      bgColor: 'bg-purple-50',
+      borderColor: 'border-purple-400',
     },
     {
       icon: Eye,
-      gradient: 'from-teal-600 to-cyan-600',
-      borderColor: 'border-teal-300',
-      textColor: 'text-teal-600',
-      glowColor: 'rgba(20, 184, 166, 0.4)',
+      color: '#3B82F6',
+      bgColor: 'bg-blue-50',
+      borderColor: 'border-blue-400',
     },
     {
       icon: Building2,
-      gradient: 'from-teal-600 to-cyan-600',
-      borderColor: 'border-teal-300',
-      textColor: 'text-teal-600',
-      glowColor: 'rgba(20, 184, 166, 0.4)',
+      color: '#10B981',
+      bgColor: 'bg-emerald-50',
+      borderColor: 'border-emerald-400',
     },
   ];
 
   return (
-    <section id="how-it-works-section" className="py-20 sm:py-24 lg:py-28 bg-transparent relative overflow-hidden">
+    <section id="how-it-works-section" className="py-20 sm:py-24 lg:py-28 relative overflow-hidden">
+      {/* Background gradient */}
+      <div className="absolute inset-0 bg-gradient-to-b from-gray-50 via-white to-gray-50" />
+      
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         {/* Section Header */}
         <motion.div
@@ -1026,29 +1024,35 @@ const HowItWorks: React.FC = () => {
           </p>
         </motion.div>
 
-        {/* Modern Timeline with Cards */}
+        {/* Connected Circles Design - TCS iON Style */}
         <div className="relative">
-          {/* Connecting Line with Arrows - Static Background */}
-          <div className="hidden lg:block absolute top-1/2 left-0 w-full h-0.5 -translate-y-1/2 z-0">
-            <div className="h-full bg-gradient-to-r from-teal-600 via-cyan-600 to-teal-600 relative">
-              {/* Arrow symbols along the line - positioned between steps */}
-              {[1, 2, 3, 4].map((arrowIndex) => (
-                <div
-                  key={arrowIndex}
-                  className="absolute top-1/2 -translate-y-1/2 bg-white rounded-full p-1 shadow-md"
-                  style={{
-                    left: `${(arrowIndex * 100) / 5}%`,
-                    transform: 'translate(-50%, -50%)',
-                  }}
-                >
-                  <ArrowRight className="w-4 h-4 text-teal-600" />
-                </div>
-              ))}
-            </div>
-          </div>
+          {/* SVG Curved Connection Lines - Desktop */}
+          <svg 
+            className="hidden lg:block absolute top-1/2 left-0 w-full h-32 -translate-y-1/2 z-0"
+            viewBox="0 0 1200 120"
+            preserveAspectRatio="none"
+          >
+            {/* Curved connecting lines between circles */}
+            <path
+              d="M 120 60 Q 180 20, 240 60 Q 300 100, 360 60 Q 420 20, 480 60 Q 540 100, 600 60 Q 660 20, 720 60 Q 780 100, 840 60 Q 900 20, 960 60 Q 1020 100, 1080 60"
+              fill="none"
+              stroke="url(#curveGradient)"
+              strokeWidth="3"
+              strokeLinecap="round"
+            />
+            <defs>
+              <linearGradient id="curveGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#2BB6AF" />
+                <stop offset="25%" stopColor="#F97316" />
+                <stop offset="50%" stopColor="#8B5CF6" />
+                <stop offset="75%" stopColor="#3B82F6" />
+                <stop offset="100%" stopColor="#10B981" />
+              </linearGradient>
+            </defs>
+          </svg>
 
-          {/* Steps Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 lg:gap-8 relative z-10">
+          {/* Steps - Circle Style */}
+          <div className="flex flex-col lg:flex-row items-center justify-between gap-8 lg:gap-4 relative z-10">
             {howItWorksSteps.map((step, index) => {
               const isActive = activeStep === index;
               const stepDetail = stepDetails[index];
@@ -1057,51 +1061,102 @@ const HowItWorks: React.FC = () => {
               return (
                 <motion.div
                   key={index}
-                  initial={{ opacity: 0, y: 50 }}
-                  whileInView={{ opacity: 1, y: 0 }}
+                  initial={{ opacity: 0, scale: 0.5 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
                   viewport={{ once: true }}
                   transition={{ 
-                    duration: 0.6, 
-                    delay: index * 0.1,
+                    duration: 0.5, 
+                    delay: index * 0.15,
                     type: "spring",
-                    stiffness: 100
+                    stiffness: 150
                   }}
                   onMouseEnter={() => setActiveStep(index)}
                   onMouseLeave={() => setActiveStep(null)}
-                  className="relative group h-full"
+                  className="relative flex flex-col items-center group"
                 >
-                  {/* Main Card */}
+                  {/* Outer Ring with Arc */}
+                  <div className="relative">
+                    {/* Decorative Arc - Left side */}
+                    <svg 
+                      className="absolute -left-4 top-1/2 -translate-y-1/2 w-8 h-24"
+                      viewBox="0 0 30 80"
+                    >
+                      <path
+                        d="M 25 10 Q 5 40, 25 70"
+                        fill="none"
+                        stroke={stepDetail.color}
+                        strokeWidth="3"
+                        strokeLinecap="round"
+                        className="opacity-60"
+                      />
+                    </svg>
+
+                    {/* Main Circle */}
                   <motion.div
-                    animate={isActive ? {
-                      y: -15,
-                      scale: 1.05,
-                    } : {
-                      y: 0,
-                      scale: 1,
-                    }}
-                    className={`relative bg-transparent backdrop-blur-sm rounded-3xl p-6 border-2 transition-all duration-500 shadow-xl h-full flex flex-col ${isActive ? stepDetail.borderColor : 'border-teal-200/50'}`}
+                      animate={isActive ? { scale: 1.1, y: -5 } : { scale: 1, y: 0 }}
+                      transition={{ type: "spring", stiffness: 300 }}
+                      className={`relative w-28 h-28 md:w-32 md:h-32 rounded-full ${stepDetail.bgColor} border-4 ${stepDetail.borderColor} flex items-center justify-center shadow-xl cursor-pointer`}
                     style={{
                       boxShadow: isActive
-                        ? `0 25px 70px ${stepDetail.glowColor}, 0 0 0 1px rgba(20, 184, 166, 0.2)`
-                        : '0 8px 32px rgba(0, 0, 0, 0.08)',
-                      minHeight: '200px',
+                          ? `0 20px 40px ${stepDetail.color}40, 0 0 0 8px ${stepDetail.color}15`
+                          : `0 10px 30px rgba(0,0,0,0.1)`,
                     }}
                   >
-                    {/* Icon */}
-                    <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${stepDetail.gradient} flex items-center justify-center mb-4 mx-auto shadow-lg group-hover:scale-110 transition-transform duration-300 flex-shrink-0`}>
-                      <IconComponent className="h-8 w-8 text-white" />
+                      {/* Inner white circle */}
+                      <div className="w-20 h-20 md:w-24 md:h-24 rounded-full bg-white flex items-center justify-center shadow-inner">
+                        <IconComponent 
+                          className="h-10 w-10 md:h-12 md:w-12 transition-transform duration-300 group-hover:scale-110" 
+                          style={{ color: stepDetail.color }}
+                        />
+                      </div>
+                    </motion.div>
+
+                    {/* Decorative Arc - Right side */}
+                    <svg 
+                      className="absolute -right-4 top-1/2 -translate-y-1/2 w-8 h-24"
+                      viewBox="0 0 30 80"
+                    >
+                      <path
+                        d="M 5 10 Q 25 40, 5 70"
+                        fill="none"
+                        stroke={stepDetail.color}
+                        strokeWidth="3"
+                        strokeLinecap="round"
+                        className="opacity-60"
+                      />
+                    </svg>
+                  </div>
+
+                  {/* Step Number Badge */}
+                  <div 
+                    className="absolute -top-2 -right-2 w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg"
+                    style={{ backgroundColor: stepDetail.color }}
+                  >
+                    {index + 1}
                     </div>
 
                     {/* Title */}
-                    <h3 className={`text-lg font-bold mb-3 text-center ${stepDetail.textColor} group-hover:scale-105 transition-transform duration-300 flex-shrink-0`}>
+                  <motion.h3 
+                    animate={isActive ? { scale: 1.05 } : { scale: 1 }}
+                    className="mt-6 text-lg md:text-xl font-bold text-gray-800 text-center max-w-[160px]"
+                  >
                       {step.title}
-                    </h3>
+                  </motion.h3>
 
-                    {/* Description */}
-                    <p className="text-gray-600 text-center text-sm leading-relaxed flex-1 flex items-center justify-center">
+                  {/* Description - Shows on hover */}
+                  <motion.p 
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={isActive ? { opacity: 1, height: 'auto' } : { opacity: 0, height: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="mt-2 text-sm text-gray-600 text-center max-w-[180px] overflow-hidden"
+                  >
                       {step.description}
-                    </p>
-                  </motion.div>
+                  </motion.p>
+
+                  {/* Mobile connector line */}
+                  {index < howItWorksSteps.length - 1 && (
+                    <div className="lg:hidden w-1 h-8 mt-4" style={{ backgroundColor: stepDetail.color, opacity: 0.3 }} />
+                  )}
                 </motion.div>
               );
             })}

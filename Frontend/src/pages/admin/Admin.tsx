@@ -16,8 +16,6 @@ import { adminApi } from '@/api';
 import { getImageUrl } from '@/services/api';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
-import { AdminSidebar } from '@/components/layout/AdminSidebar';
-import { AdminTopNav } from '@/components/layout/AdminTopNav';
 
 export default function Admin() {
   const { isAdmin, user } = useAuth();
@@ -593,8 +591,6 @@ export default function Admin() {
     }
   };
 
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-white">
@@ -611,34 +607,7 @@ export default function Admin() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Fixed Sidebar */}
-      <div className="hidden lg:block">
-        <AdminSidebar isOpen={true} onClose={() => setSidebarOpen(false)} />
-      </div>
-      
-      {/* Mobile Sidebar */}
-      <div className="lg:hidden">
-        <AdminSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      </div>
-
-      {/* Main Content */}
-      <div className="flex flex-col min-w-0 lg:ml-64">
-        {/* Top Navigation */}
-        <AdminTopNav 
-          onMenuToggle={() => setSidebarOpen(!sidebarOpen)} 
-          sidebarOpen={sidebarOpen}
-          onRefresh={() => {
-            if (!isRefreshing) {
-              loadDashboardData(true);
-            }
-          }}
-          isRefreshing={isRefreshing}
-        />
-
-        {/* Main Content Area - Scrollable */}
-        <main className="flex-1 overflow-y-auto bg-white">
-          <div className="p-6 lg:p-8 space-y-6 lg:space-y-8">
+    <div className="p-6 lg:p-8 space-y-6 lg:space-y-8">
           {/* Dashboard Content - Only show when not viewing #shelter-reg */}
           {currentHash !== '#shelter-reg' && (
             <>
@@ -1944,9 +1913,6 @@ export default function Admin() {
         </div>
       )}
 
-          </div>
-        </main>
-      </div>
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Send, Paperclip, User, Shield, CheckCircle, ArrowLeft, Wifi, WifiOff } from 'lucide-react';
+import { Send, Paperclip, User, Shield, CheckCircle, ArrowLeft, Wifi, WifiOff, Image as ImageIcon, X, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,6 +12,7 @@ import { useAuth } from '@/lib/auth';
 import { useToast } from '@/hooks/use-toast';
 import { useChatSSE } from '@/hooks/useChatSSE';
 import { format } from 'date-fns';
+import { getImageUrl } from '@/services/api';
 
 interface Message {
   id: number;
@@ -21,6 +22,10 @@ interface Message {
     email: string;
   };
   content: string;
+  message_type?: 'text' | 'image';
+  image?: string;
+  image_url?: string;
+  is_deleted?: boolean;
   timestamp: string;
   created_at?: string;
   read_status: boolean;
@@ -41,6 +46,8 @@ export default function Chat() {
   const [room, setRoom] = useState<ChatRoom | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [isTyping, setIsTyping] = useState(false);
   const [typingUsers, setTypingUsers] = useState<Set<number>>(new Set());
@@ -48,12 +55,13 @@ export default function Chat() {
   const [isOnline, setIsOnline] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Server-Sent Events (SSE) connection - simpler and more reliable than WebSocket
   const { isConnected, sendMessage: sendSSEMessage } = useChatSSE({
     roomId: roomId || null,
     onMessageReceived: (message: any) => {
-      // Convert message format if needed
+      // Convert message format if needed - include all image-related fields
       const formattedMessage: Message = {
         id: message.id,
         sender: message.sender || {
@@ -61,7 +69,11 @@ export default function Chat() {
           name: message.sender_name || message.sender?.name || 'Unknown',
           email: message.sender?.email || '',
         },
-        content: message.content,
+        content: message.content || '',
+        message_type: message.message_type || (message.image || message.image_url ? 'image' : 'text'),
+        image: message.image,
+        image_url: message.image_url || (message.image ? (message.image.startsWith('http') ? message.image : `${import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'}${message.image}`) : undefined),
+        is_deleted: message.is_deleted || false,
         timestamp: message.created_at || message.timestamp,
         read_status: message.read_status || false,
       };
@@ -134,20 +146,50 @@ export default function Chat() {
     }
   };
 
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.type.startsWith('image/')) {
+        setSelectedImage(file);
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setImagePreview(reader.result as string);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        toast({
+          title: 'Invalid file',
+          description: 'Please select an image file',
+          variant: 'destructive',
+        });
+      }
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setSelectedImage(null);
+    setImagePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   const handleSendMessage = async () => {
-    if (!newMessage.trim() || !roomId) return;
+    if ((!newMessage.trim() && !selectedImage) || !roomId) return;
 
     const messageContent = newMessage.trim();
+    const imageToSend = selectedImage;
     setNewMessage('');
+    setSelectedImage(null);
+    setImagePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
 
-    // Send via SSE hook (which uses REST API internally)
+    // Send via REST API (supports images)
     const actualRoomId = room?.room_id || room?.roomId || room?.id || roomId;
-    const success = await sendSSEMessage(messageContent);
-    
-    if (!success) {
-      // Fallback to direct REST API call
       try {
-        const message = await chatApi.sendMessage(actualRoomId.toString(), messageContent);
+      const message = await chatApi.sendMessage(actualRoomId.toString(), messageContent, imageToSend || undefined);
         setMessages(prev => [...prev, message]);
       } catch (error) {
         toast({
@@ -156,9 +198,36 @@ export default function Chat() {
           variant: 'destructive',
         });
         setNewMessage(messageContent); // Restore message on error
+      if (imageToSend) {
+        setSelectedImage(imageToSend);
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setImagePreview(reader.result as string);
+        };
+        reader.readAsDataURL(imageToSend);
       }
     }
-    // If success, message will be added via SSE callback
+  };
+
+  const handleDeleteImage = async (messageId: number) => {
+    try {
+      await chatApi.deleteMessageImage(messageId);
+      setMessages(prev => prev.map(msg => 
+        msg.id === messageId 
+          ? { ...msg, is_deleted: true, image: undefined, image_url: undefined }
+          : msg
+      ));
+      toast({
+        title: 'Image deleted',
+        description: 'The image has been deleted',
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Could not delete image',
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleMarkReunified = () => {
@@ -231,7 +300,14 @@ export default function Chat() {
                       </Avatar>
                       <div className={`flex flex-col ${isOwn ? 'items-end' : ''}`}>
                         <div className="flex items-center gap-2 mb-1">
-                          <span className="text-sm font-medium">{message.sender.name}</span>
+                          <span className="text-sm font-medium">
+                            {message.sender.name}
+                            {message.sender.is_staff || message.sender.is_superuser ? (
+                              <span className="text-xs text-blue-600 ml-1">(admin)</span>
+                            ) : (
+                              <span className="text-xs text-gray-500 ml-1">(user)</span>
+                            )}
+                          </span>
                           <span className="text-xs text-muted-foreground">
                             {format(new Date(message.timestamp || message.created_at || Date.now()), 'HH:mm')}
                           </span>
@@ -243,7 +319,43 @@ export default function Chat() {
                               : 'bg-muted'
                           }`}
                         >
-                          {message.content || message.text}
+                          {message.message_type === 'image' && (message.image_url || message.image) && !message.is_deleted ? (
+                            <div className="relative group">
+                              <img 
+                                src={
+                                  message.image_url 
+                                    ? (message.image_url.startsWith('http') ? message.image_url : getImageUrl(message.image_url) || message.image_url)
+                                    : (message.image ? (message.image.startsWith('http') ? message.image : getImageUrl(message.image) || message.image) : '')
+                                } 
+                                alt="Chat image" 
+                                className="max-w-full h-auto rounded-lg mb-2"
+                                onError={(e) => {
+                                  // Fallback if image fails to load
+                                  const target = e.target as HTMLImageElement;
+                                  if (message.image_url && !message.image_url.startsWith('http')) {
+                                    const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+                                    target.src = `${apiUrl}${message.image_url}`;
+                                  }
+                                }}
+                              />
+                              {isOwn && (
+                                <button
+                                  onClick={() => handleDeleteImage(message.id)}
+                                  className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  title="Delete image"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              )}
+                            </div>
+                          ) : message.message_type === 'image' && message.is_deleted ? (
+                            <div className="text-sm italic text-muted-foreground">
+                              Image deleted
+                            </div>
+                          ) : null}
+                          {message.content && (
+                            <div>{message.content || message.text}</div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -263,22 +375,53 @@ export default function Chat() {
 
               {/* Message Input */}
               <div className="border-t p-4">
+                {imagePreview && (
+                  <div className="mb-2 relative inline-block">
+                    <img 
+                      src={imagePreview} 
+                      alt="Preview" 
+                      className="max-w-xs h-auto rounded-lg border-2 border-primary"
+                    />
+                    <Button
+                      variant="destructive"
+                      size="icon"
+                      className="absolute top-2 right-2 h-6 w-6"
+                      onClick={handleRemoveImage}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
                 <div className="flex gap-2">
-                  <Button variant="outline" size="icon">
-                    <Paperclip className="h-4 w-4" />
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    accept="image/*"
+                    onChange={handleImageSelect}
+                    className="hidden"
+                  />
+                  <Button 
+                    variant="outline" 
+                    size="icon"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <ImageIcon className="h-4 w-4" />
                   </Button>
                   <Input
                     placeholder="Type your message..."
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+                    onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
                   />
-                  <Button onClick={handleSendMessage}>
+                  <Button 
+                    onClick={handleSendMessage}
+                    disabled={!newMessage.trim() && !selectedImage}
+                  >
                     <Send className="h-4 w-4" />
                   </Button>
                 </div>
                 <p className="mt-2 text-xs text-muted-foreground">
-                  Press Enter to send • Attach files with the paperclip
+                  Press Enter to send • Click image icon to attach photos
                 </p>
               </div>
             </Card>
@@ -292,44 +435,138 @@ export default function Chat() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-3">
-                  <div className="flex items-center gap-3">
-                    <Avatar>
-                      <AvatarFallback className="bg-primary/10 text-primary">
-                        <User className="h-4 w-4" />
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium">Pet Owner</p>
-                      <p className="text-xs text-muted-foreground truncate">Lost their pet</p>
-                    </div>
-                    <Badge variant="secondary">Owner</Badge>
-                  </div>
+                  {room?.participants && room.participants.length > 0 ? (
+                    room.participants.map((participant: any) => {
+                      const isParticipantAdmin = participant.is_staff || participant.is_superuser;
+                      const isCurrentUser = participant.id === user?.id;
+                      return (
+                        <div key={participant.id} className="flex items-center gap-3">
+                          <Avatar>
+                            <AvatarFallback className={isParticipantAdmin ? 'bg-blue-100 text-blue-700' : 'bg-primary/10 text-primary'}>
+                              {participant.name?.charAt(0) || participant.email?.charAt(0) || <User className="h-4 w-4" />}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium">
+                              {participant.name || participant.email || 'Unknown'}
+                              {isParticipantAdmin ? (
+                                <span className="text-xs text-blue-600 ml-1">(admin)</span>
+                              ) : (
+                                <span className="text-xs text-gray-500 ml-1">(user)</span>
+                              )}
+                              {isCurrentUser && (
+                                <span className="text-xs text-green-600 ml-1">(you)</span>
+                              )}
+                            </p>
+                            <p className="text-xs text-muted-foreground truncate">
+                              {participant.email || 'No email'}
+                            </p>
+                          </div>
+                          <Badge variant={isParticipantAdmin ? 'default' : 'secondary'}>
+                            {isParticipantAdmin ? 'Admin' : 'User'}
+                          </Badge>
+                        </div>
+                      );
+                    })
+                  ) : otherUser ? (
+                    <>
+                      <div className="flex items-center gap-3">
+                        <Avatar>
+                          <AvatarFallback className="bg-primary/10 text-primary">
+                            {otherUser.name?.charAt(0) || otherUser.email?.charAt(0) || <User className="h-4 w-4" />}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium">
+                            {otherUser.name || otherUser.email || 'Unknown'}
+                            {otherUser.is_staff || otherUser.is_superuser ? (
+                              <span className="text-xs text-blue-600 ml-1">(admin)</span>
+                            ) : (
+                              <span className="text-xs text-gray-500 ml-1">(user)</span>
+                            )}
+                          </p>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {otherUser.email || 'No email'}
+                          </p>
+                        </div>
+                        <Badge variant={(otherUser.is_staff || otherUser.is_superuser) ? 'default' : 'secondary'}>
+                          {(otherUser.is_staff || otherUser.is_superuser) ? 'Admin' : 'User'}
+                        </Badge>
+                      </div>
+                      {user && (
+                        <div className="flex items-center gap-3">
+                          <Avatar>
+                            <AvatarFallback className="bg-green-100 text-green-700">
+                              {user.name?.charAt(0) || user.email?.charAt(0) || <User className="h-4 w-4" />}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium">
+                              {user.name || user.email || 'You'}
+                              {isAdmin ? (
+                                <span className="text-xs text-blue-600 ml-1">(admin)</span>
+                              ) : (
+                                <span className="text-xs text-gray-500 ml-1">(user)</span>
+                              )}
+                              <span className="text-xs text-green-600 ml-1">(you)</span>
+                            </p>
+                            <p className="text-xs text-muted-foreground truncate">
+                              {user.email || 'No email'}
+                            </p>
+                          </div>
+                          <Badge variant={isAdmin ? 'default' : 'secondary'}>
+                            {isAdmin ? 'Admin' : 'User'}
+                          </Badge>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex items-center gap-3">
+                        <Avatar>
+                          <AvatarFallback className="bg-primary/10 text-primary">
+                            <User className="h-4 w-4" />
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium">Pet Owner</p>
+                          <p className="text-xs text-muted-foreground truncate">Lost their pet</p>
+                        </div>
+                        <Badge variant="secondary">Owner</Badge>
+                      </div>
 
-                  <div className="flex items-center gap-3">
-                    <Avatar>
-                      <AvatarFallback className="bg-secondary/10 text-secondary">
-                        <User className="h-4 w-4" />
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium">Rescuer</p>
-                      <p className="text-xs text-muted-foreground truncate">Found the pet</p>
-                    </div>
-                    <Badge variant="secondary">Rescuer</Badge>
-                  </div>
+                      <div className="flex items-center gap-3">
+                        <Avatar>
+                          <AvatarFallback className="bg-secondary/10 text-secondary">
+                            <User className="h-4 w-4" />
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium">Rescuer</p>
+                          <p className="text-xs text-muted-foreground truncate">Found the pet</p>
+                        </div>
+                        <Badge variant="secondary">Rescuer</Badge>
+                      </div>
 
-                  <div className="flex items-center gap-3">
-                    <Avatar>
-                      <AvatarFallback className="bg-accent/10 text-accent">
-                        <Shield className="h-4 w-4" />
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium">Admin</p>
-                      <p className="text-xs text-muted-foreground truncate">Moderator</p>
-                    </div>
-                    <Badge variant="secondary">Admin</Badge>
-                  </div>
+                      {isAdmin && (
+                        <div className="flex items-center gap-3">
+                          <Avatar>
+                            <AvatarFallback className="bg-accent/10 text-accent">
+                              <Shield className="h-4 w-4" />
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium">
+                              Admin
+                              <span className="text-xs text-blue-600 ml-1">(admin)</span>
+                            </p>
+                            <p className="text-xs text-muted-foreground truncate">Moderator</p>
+                          </div>
+                          <Badge variant="default">Admin</Badge>
+                        </div>
+                      )}
+                    </>
+                  )}
                 </div>
 
                 <Separator />

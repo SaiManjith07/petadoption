@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
-import { Info, Image as ImageIcon } from 'lucide-react';
+import { Info, Image as ImageIcon, PawPrint, MapPin, Calendar, User } from 'lucide-react';
 import { getImageUrl } from '@/services/api';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -49,6 +49,7 @@ interface PetCardProps {
   onActionClick?: (pet: Pet) => void;
   actionLabel?: string;
   currentUserId?: string;
+  showViewButton?: boolean; // Show separate view button alongside action button
 }
 
 const getStatusColor = (status: string) => {
@@ -69,7 +70,7 @@ const getStatusColor = (status: string) => {
   }
 };
 
-export const PetCard = ({ pet, onActionClick, actionLabel, currentUserId }: PetCardProps) => {
+export const PetCard = ({ pet, onActionClick, actionLabel, currentUserId, showViewButton = false }: PetCardProps) => {
   const [imageError, setImageError] = useState(false);
 
   // Normalize pet ID
@@ -220,38 +221,62 @@ export const PetCard = ({ pet, onActionClick, actionLabel, currentUserId }: PetC
       </Link>
       
       <CardContent className="p-4 flex-1 flex flex-col">
-        <div className="mb-3">
+        <div className="flex-1">
           <Link to={`/pets/${petId}`} className="block">
-            <p className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">
+            <h3 className="text-lg font-bold text-gray-900 mb-3 line-clamp-1">
               {petSpecies}
-            </p>
-            {pet.breed && (
-              <p className="text-xs text-gray-400 truncate mb-2">{pet.breed}</p>
-            )}
+            </h3>
           </Link>
-          {/* Date uploaded and reported person */}
-          <div className="mt-3 space-y-1.5 border-t border-gray-100 pt-3">
+          
+          {/* Pet Details */}
+          <div className="space-y-2">
+            {pet.breed && (
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <PawPrint className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                <span className="font-medium">Breed:</span>
+                <span className="truncate">{pet.breed}</span>
+              </div>
+            )}
+            {pet.location && (
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <MapPin className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                <span className="font-medium">Location:</span>
+                <span className="truncate">{pet.location}</span>
+              </div>
+            )}
             {pet.created_at && (
-              <div className="flex items-center gap-2 text-xs text-gray-500">
-                <span className="font-medium">Uploaded:</span>
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <Calendar className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                <span className="font-medium">Reported:</span>
                 <span>{new Date(pet.created_at).toLocaleDateString('en-US', { 
-                  year: 'numeric', 
                   month: 'short', 
-                  day: 'numeric' 
+                  day: 'numeric',
+                  year: 'numeric'
                 })}</span>
               </div>
             )}
             {(pet.posted_by?.name || pet.submitted_by?.name) && (
-              <div className="flex items-center gap-2 text-xs text-gray-500">
-                <span className="font-medium">Reported by:</span>
-                <span className="text-gray-700">{pet.posted_by?.name || pet.submitted_by?.name}</span>
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <User className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                <span className="font-medium">By:</span>
+                <span className="truncate">{pet.posted_by?.name || pet.submitted_by?.name}</span>
               </div>
             )}
           </div>
         </div>
       </CardContent>
 
-      <CardFooter className="px-4 pb-4 pt-0 flex gap-2 mt-auto">
+      <CardFooter className="px-4 pb-4 pt-0 mt-auto">
+        {isUploadedByUser ? (
+          <Button 
+            disabled
+            className="w-full bg-gray-400 text-white font-semibold cursor-not-allowed h-10 text-sm opacity-75"
+          >
+            You uploaded this
+          </Button>
+        ) : showViewButton && onActionClick && actionLabel ? (
+          // Two buttons: View + Action (for Found pets)
+          <div className="flex gap-2 w-full">
         <Button 
           variant="outline" 
           asChild 
@@ -259,18 +284,9 @@ export const PetCard = ({ pet, onActionClick, actionLabel, currentUserId }: PetC
         >
           <Link to={`/pets/${petId}`} className="flex items-center justify-center gap-1.5">
             <Info className="h-4 w-4" />
-            View Details
+                View
           </Link>
         </Button>
-        {isUploadedByUser ? (
-          <Button 
-            disabled
-            className="flex-1 bg-gray-400 text-white font-semibold cursor-not-allowed h-10 text-sm opacity-75"
-          >
-            You uploaded this
-          </Button>
-        ) : (
-          onActionClick && actionLabel ? (
             <Button 
               onClick={(e) => {
                 e.preventDefault();
@@ -281,16 +297,29 @@ export const PetCard = ({ pet, onActionClick, actionLabel, currentUserId }: PetC
             >
               {actionLabel}
             </Button>
+          </div>
+        ) : onActionClick && actionLabel ? (
+          // Single action button (for Lost pets)
+          <Button 
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onActionClick(pet);
+            }} 
+            className="w-full bg-gradient-to-r from-[#2BB6AF] to-[#239a94] hover:from-[#239a94] hover:to-[#1E8E87] text-white font-semibold shadow-md hover:shadow-lg transition-all h-10 text-sm"
+            >
+              {actionLabel}
+            </Button>
           ) : (
             <Button 
               asChild
-              className="flex-1 bg-gradient-to-r from-[#2BB6AF] to-[#239a94] hover:from-[#239a94] hover:to-[#1E8E87] text-white font-semibold shadow-md hover:shadow-lg transition-all h-10 text-sm"
+            className="w-full bg-gradient-to-r from-[#2BB6AF] to-[#239a94] hover:from-[#239a94] hover:to-[#1E8E87] text-white font-semibold shadow-md hover:shadow-lg transition-all h-10 text-sm"
             >
-              <Link to={`/pets/${petId}`}>
-                Learn More
+            <Link to={`/pets/${petId}`} className="flex items-center justify-center gap-1.5">
+              <Info className="h-4 w-4" />
+              View Details
               </Link>
             </Button>
-          )
         )}
       </CardFooter>
     </Card>

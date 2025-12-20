@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
-  Heart, Search as SearchIcon, PawPrint, PlusCircle, Search, Activity, Eye, Calendar, CheckCircle
+  Heart, Search as SearchIcon, PawPrint, Search, Activity, Eye, Calendar, CheckCircle, MapPin, AlertCircle, Home
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -130,23 +130,23 @@ export default function UserHome() {
     {
       title: 'Report Found Pet',
       description: 'Found a pet? Help reunite it with its family',
-      icon: PlusCircle,
+      icon: MapPin,
       href: '/pets/report-found',
-      color: 'bg-orange-100 text-orange-600',
+      color: 'bg-emerald-100 text-emerald-600',
     },
     {
       title: 'Report Lost Pet',
       description: 'Lost your pet? Get instant matches',
-      icon: SearchIcon,
+      icon: AlertCircle,
       href: '/pets/report-lost',
-      color: 'bg-yellow-100 text-yellow-600',
+      color: 'bg-orange-100 text-orange-600',
     },
     {
       title: 'Adopt a Pet',
       description: 'Find your perfect companion',
-      icon: Heart,
+      icon: Home,
       href: '/pets/adoptable',
-      color: 'bg-blue-100 text-blue-600',
+      color: 'bg-pink-100 text-pink-600',
     },
   ];
 
@@ -231,10 +231,20 @@ export default function UserHome() {
                     onChange={(e) => setTypeFilter(e.target.value)}
                     className="px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-green-500"
                   >
-                    <option value="all">All Types</option>
-                    <option value="found">Found</option>
-                    <option value="lost">Lost</option>
-                    <option value="adoption">Adoption</option>
+                    <option value="all">All Animals</option>
+                    <option value="dog">Dog</option>
+                    <option value="cat">Cat</option>
+                    <option value="cow">Cow</option>
+                    <option value="buffalo">Buffalo</option>
+                    <option value="goat">Goat</option>
+                    <option value="sheep">Sheep</option>
+                    <option value="horse">Horse</option>
+                    <option value="donkey">Donkey</option>
+                    <option value="camel">Camel</option>
+                    <option value="rabbit">Rabbit</option>
+                    <option value="hen">Hen</option>
+                    <option value="duck">Duck</option>
+                    <option value="other">Other</option>
                   </select>
                   <select
                     value={statusFilter}
@@ -242,13 +252,12 @@ export default function UserHome() {
                     className="px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-green-500"
                   >
                     <option value="all">All Status</option>
-                    <option value="Pending Verification">Pending</option>
-                    <option value="Listed Found">Listed Found</option>
-                    <option value="Listed Lost">Listed Lost</option>
-                    <option value="Matched">Matched</option>
-                    <option value="Reunited">Reunited</option>
+                    <option value="Found">Found</option>
+                    <option value="Lost">Lost</option>
                     <option value="Available for Adoption">Available for Adoption</option>
                     <option value="Adopted">Adopted</option>
+                    <option value="Reunited">Reunited</option>
+                    <option value="Pending">Pending</option>
                   </select>
                   <Button
                     variant="outline"
@@ -294,16 +303,23 @@ export default function UserHome() {
                 }
 
                 const filtered = availablePets.filter((p: any) => {
-                  const reportType = p.adoption_status === 'Found' ? 'found' : 
-                                    p.adoption_status === 'Lost' ? 'lost' : null;
+                  // Get animal type for filtering
+                  const animalType = getPetType(p).toLowerCase();
                   
                   const matchesSearch = !searchTerm || 
                     p.breed?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                     p.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                     p.location?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    p.adoption_status?.toLowerCase().includes(searchTerm.toLowerCase());
-                  const matchesType = typeFilter === 'all' || reportType === typeFilter || p.report_type === typeFilter || p.type === typeFilter;
-                  const matchesStatus = statusFilter === 'all' || p.adoption_status === statusFilter || p.status === statusFilter;
+                    p.adoption_status?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    animalType.includes(searchTerm.toLowerCase());
+                  
+                  // Match animal type filter
+                  const matchesType = typeFilter === 'all' || animalType === typeFilter.toLowerCase();
+                  
+                  // Match status filter
+                  const petStatus = p.adoption_status || p.status || '';
+                  const matchesStatus = statusFilter === 'all' || petStatus === statusFilter;
+                  
                   return matchesSearch && matchesType && matchesStatus;
                 });
 

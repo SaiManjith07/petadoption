@@ -31,7 +31,7 @@ class ChatRoomListView(generics.ListCreateAPIView):
             # Try to prefetch, but don't fail if it doesn't work
             try:
                 # Only try to select_related if fields exist
-                queryset = queryset.select_related('user_a', 'user_b', 'chat_request')
+                queryset = queryset.select_related('user_a', 'user_b', 'chat_request', 'chat_request__pet')
             except Exception:
                 pass  # Fields might not exist, that's okay
             
@@ -87,6 +87,19 @@ class ChatRoomListView(generics.ListCreateAPIView):
                     except Exception:
                         pass
                     
+                    # Get pet_id and type from chat_request
+                    pet_id = None
+                    chat_type = None
+                    try:
+                        if hasattr(room, 'chat_request') and room.chat_request:
+                            chat_request = room.chat_request
+                            if hasattr(chat_request, 'pet') and chat_request.pet:
+                                pet_id = chat_request.pet.id
+                            if hasattr(chat_request, 'type'):
+                                chat_type = chat_request.type
+                    except Exception as e:
+                        print(f"Error getting pet_id/type for room {room.id}: {e}")
+                    
                     data.append({
                         'id': room.id,
                         'room_id': room.room_id or getattr(room, 'room_id', None),
@@ -95,6 +108,9 @@ class ChatRoomListView(generics.ListCreateAPIView):
                         'is_active': room.is_active,
                         'created_at': room.created_at.isoformat() if room.created_at else None,
                         'updated_at': room.updated_at.isoformat() if room.updated_at else None,
+                        'pet_id': pet_id,
+                        'petId': pet_id,  # Also include camelCase for frontend compatibility
+                        'type': chat_type,
                     })
                 except Exception as room_error:
                     # Skip problematic rooms
@@ -208,7 +224,7 @@ def get_room_messages(request, room_id):
             )
         
         messages = Message.objects.filter(room=room).select_related('sender').order_by('created_at')
-        serializer = MessageSerializer(messages, many=True)
+        serializer = MessageSerializer(messages, many=True, context={'request': request})
         return Response({'data': serializer.data})
     except ChatRoom.DoesNotExist:
         return Response(
@@ -314,7 +330,7 @@ def send_message(request, room_id):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def send_message_by_room_id(request, room_id):
-    """Send a message to a chat room by room_id (string like '3_6')."""
+    """Send a message to a chat room by room_id (string like '3_6'). Supports text and images."""
     try:
         room = ChatRoom.objects.get(room_id=room_id)
         # Verify user has access
@@ -330,16 +346,22 @@ def send_message_by_room_id(request, room_id):
         )
 
     content = request.data.get('content', '').strip()
-    if not content:
+    image = request.FILES.get('image')
+    message_type = 'image' if image else 'text'
+    
+    # Validate: must have either content or image
+    if not content and not image:
         return Response(
-            {'error': 'Message content is required'},
+            {'error': 'Message content or image is required'},
             status=status.HTTP_400_BAD_REQUEST
         )
 
     message = Message.objects.create(
         room=room,
         sender=request.user,
-        content=content
+        content=content,
+        message_type=message_type,
+        image=image if image else None
     )
 
     # Update room's updated_at
@@ -347,7 +369,7 @@ def send_message_by_room_id(request, room_id):
     room.updated_at = timezone.now()
     room.save(update_fields=['updated_at'])
 
-    serializer = MessageSerializer(message)
+    serializer = MessageSerializer(message, context={'request': request})
     return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
@@ -397,6 +419,44 @@ def mark_messages_read_by_room_id(request, room_id):
     ).update(read_status=True)
 
     return Response({'message': 'Messages marked as read'}, status=status.HTTP_200_OK)
+
+
+@api_view(['DELETE', 'POST'])
+@permission_classes([IsAuthenticated])
+def delete_message_image(request, message_id):
+    """Delete an image from a message (WhatsApp style - soft delete)."""
+    try:
+        message = Message.objects.get(id=message_id, sender=request.user)
+        
+        # Only allow deletion of image messages
+        if message.message_type != 'image':
+            return Response(
+                {'error': 'This message does not contain an image'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Soft delete the image
+        message.delete_image()
+        
+        serializer = MessageSerializer(message, context={'request': request})
+        return Response({
+            'message': 'Image deleted successfully',
+            'data': serializer.data
+        }, status=status.HTTP_200_OK)
+        
+    except Message.DoesNotExist:
+        return Response(
+            {'error': 'Message not found or you do not have permission'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    except Exception as e:
+        import traceback
+        print(f"Error deleting message image: {e}")
+        print(traceback.format_exc())
+        return Response(
+            {'error': str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
 
 
 @api_view(['POST'])

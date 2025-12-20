@@ -225,6 +225,18 @@ export const TopNav = () => {
                             </div>
                           </div>
                         ))}
+                        <div className="p-3 border-t bg-gray-50">
+                          <Button
+                            variant="ghost"
+                            className="w-full text-[#2BB6AF] hover:text-[#2BB6AF]/80 hover:bg-[#2BB6AF]/10"
+                            onClick={() => {
+                              setNotificationsOpen(false);
+                              navigate('/notifications');
+                            }}
+                          >
+                            View More
+                          </Button>
+                        </div>
                       </div>
                     )}
                   </DropdownMenuContent>

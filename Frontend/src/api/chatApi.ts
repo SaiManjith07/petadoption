@@ -176,19 +176,34 @@ export const chatApi = {
 
   /**
    * Send a message (supports both integer ID and string room_id)
+   * Now supports images via FormData
    */
-  async sendMessage(roomId: number | string, content: string): Promise<Message> {
-    // If roomId is a string (like "3_6"), use the string endpoint
-    // If it's a number, use the integer endpoint
+  async sendMessage(roomId: number | string, content: string, image?: File): Promise<Message> {
     const endpoint = typeof roomId === 'string' 
       ? `/chats/rooms/${roomId}/send/`
       : `/chats/rooms/${roomId}/send/`;
     
     try {
-      const response = await apiClient.post<Message>(endpoint, {
-        content,
-      });
-      return response.data;
+      if (image) {
+        // Send image using FormData
+        const formData = new FormData();
+        formData.append('image', image);
+        if (content) {
+          formData.append('content', content);
+        }
+        const response = await apiClient.post<Message>(endpoint, formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        });
+        return response.data;
+      } else {
+        // Send text message
+        const response = await apiClient.post<Message>(endpoint, {
+          content,
+        });
+        return response.data;
+      }
     } catch (error: any) {
       console.error('Error sending message:', error);
       throw error;
@@ -368,6 +383,51 @@ export const chatApi = {
       if (error.response?.status === 400 || error.response?.status === 404) {
         return [];
       }
+      throw error;
+    }
+  },
+
+  /**
+   * Delete an image from a message (WhatsApp style)
+   */
+  async deleteMessageImage(messageId: number): Promise<any> {
+    try {
+      const response = await apiClient.delete(`/chats/messages/${messageId}/delete-image/`);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error deleting message image:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Admin starts verification (creates verification chat room)
+   */
+  async adminStartVerification(requestId: number): Promise<any> {
+    try {
+      const response = await apiClient.post(`/chats/requests/${requestId}/admin-start-verification/`);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error starting verification:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Admin completes verification (adds target user to existing room)
+   */
+  async adminCompleteVerification(requestId: number, adminNotes?: string, targetUserId?: number): Promise<any> {
+    try {
+      const payload: any = {
+        admin_notes: adminNotes || '',
+      };
+      if (targetUserId) {
+        payload.target_user_id = targetUserId;
+      }
+      const response = await apiClient.post(`/chats/requests/${requestId}/admin-complete-verification/`, payload);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error completing verification:', error);
       throw error;
     }
   },

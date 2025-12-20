@@ -274,7 +274,7 @@ export const AdminSidebar = ({ isOpen = true, onClose }: AdminSidebarProps) => {
                   <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-yellow-500 rounded-r-full" />
                 )}
                 <Icon className={cn('h-5 w-5', active && 'text-[#2BB6AF]', hasPending && !active && 'text-yellow-600')} strokeWidth={2} />
-                <span className="font-medium text-sm flex-1">{item.title}</span>
+                <span className="font-medium text-sm flex-1 pl-4">{item.title}</span>
                 {hasPending && (
                   <Badge 
                     variant="destructive" 

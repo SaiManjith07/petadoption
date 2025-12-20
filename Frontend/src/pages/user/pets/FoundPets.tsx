@@ -217,9 +217,10 @@ export default function FoundPets() {
             pets={pets}
             loading={loading}
             onActionClick={handleClaimPet}
-            actionLabel="This is my pet!"
+            actionLabel="Claim Pet"
             theme="green"
             currentUserId={user?.id}
+            showViewButton={true}
           />
         </div>
       </div>

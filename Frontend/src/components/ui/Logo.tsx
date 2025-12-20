@@ -25,10 +25,10 @@ export function Logo({
 
   const sizeClasses = {
     sm: { 
-      icon: 'h-16 w-16', 
-      text: 'text-lg', 
+      icon: 'h-24 w-24', 
+      text: 'text-2xl', 
       tagline: 'text-sm',
-      image: 'h-16'
+      image: 'h-24'
     },
     md: { 
       icon: 'h-24 w-24', 
@@ -57,7 +57,7 @@ export function Logo({
   const useImageLogo = logoSrc && !imageError;
 
   const LogoContent = (
-    <div className={`flex items-center gap-2 ${className}`}>
+    <div className={`relative flex items-center ${className}`}>
       {/* Logo Image/Icon */}
       <div className={`relative ${currentSize.icon} flex-shrink-0 flex items-center justify-center`}>
         {useImageLogo ? (
@@ -118,10 +118,15 @@ export function Logo({
         )}
       </div>
 
-      {/* Text */}
+      {/* Text - Overlapping the logo image */}
       {!iconOnly && showText && (
-        <div className="flex flex-col min-w-0 flex-1">
-          <span className={`${currentSize.text} font-bold ${textColor} truncate`}>
+        <div className={`absolute left-0 top-[45%] -translate-y-1/2 flex flex-col z-20 ${
+          size === 'sm' ? 'ml-[3.5rem]' : 
+          size === 'md' ? 'ml-[4.5rem]' : 
+          size === 'lg' ? 'ml-[6.5rem]' : 
+          'ml-[7.5rem]'
+        }`}>
+          <span className={`${currentSize.text} font-bold ${textColor} leading-tight`}>
             PetReunite
           </span>
           {showTagline && (

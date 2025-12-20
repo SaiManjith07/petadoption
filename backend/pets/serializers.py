@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from django.conf import settings
 from .models import Category, Pet, PetImage, AdoptionApplication, MedicalRecord
 from users.serializers import UserSerializer
 
@@ -69,11 +70,32 @@ class PetSerializer(serializers.ModelSerializer):
             if obj.image:
                 try:
                     if hasattr(obj.image, 'url'):
+                        image_url = obj.image.url
+                        # Ensure we have a full URL
                         if request:
-                            return request.build_absolute_uri(obj.image.url)
-                        # Fallback if no request context
-                        return obj.image.url
-                except (ValueError, AttributeError):
+                            # Use build_absolute_uri to get full URL
+                            full_url = request.build_absolute_uri(image_url)
+                            return full_url
+                        else:
+                            # If no request context, check if it's already a full URL
+                            if image_url.startswith('http://') or image_url.startswith('https://'):
+                                return image_url
+                            # Otherwise, construct URL from settings
+                            # Ensure path starts with /
+                            if not image_url.startswith('/'):
+                                image_url = '/' + image_url
+                            # Construct full URL using backend URL
+                            # Default to localhost:8000 for development
+                            base_url = getattr(settings, 'BACKEND_URL', 'http://127.0.0.1:8000')
+                            # Remove trailing slash if present
+                            if base_url.endswith('/'):
+                                base_url = base_url.rstrip('/')
+                            return f"{base_url}{image_url}"
+                except (ValueError, AttributeError) as e:
+                    import traceback
+                    print(f"Error getting image URL: {e}")
+                    if getattr(settings, 'DEBUG', False):
+                        print(traceback.format_exc())
                     pass
             
             # If no uploaded image, try the image_url field (external URL)
@@ -81,7 +103,11 @@ class PetSerializer(serializers.ModelSerializer):
                 return obj.image_url
             
             return None
-        except Exception:
+        except Exception as e:
+            import traceback
+            print(f"Error in get_image_url: {e}")
+            if getattr(settings, 'DEBUG', False):
+                print(traceback.format_exc())
             return None
 
     def get_photos(self, obj):
@@ -100,11 +126,27 @@ class PetSerializer(serializers.ModelSerializer):
                 if img.image:
                     try:
                         if hasattr(img.image, 'url'):
+                            image_url = img.image.url
+                            # Ensure we have a full URL
                             if request:
-                                photos.append(request.build_absolute_uri(img.image.url))
+                                full_url = request.build_absolute_uri(image_url)
+                                photos.append(full_url)
                             else:
-                                photos.append(img.image.url)
-                    except (ValueError, AttributeError):
+                                # If no request context, construct URL
+                                if image_url.startswith('http://') or image_url.startswith('https://'):
+                                    photos.append(image_url)
+                                else:
+                                    if not image_url.startswith('/'):
+                                        image_url = '/' + image_url
+                                    base_url = getattr(settings, 'BACKEND_URL', 'http://127.0.0.1:8000')
+                                    if base_url.endswith('/'):
+                                        base_url = base_url.rstrip('/')
+                                    photos.append(f"{base_url}{image_url}")
+                    except (ValueError, AttributeError) as e:
+                        import traceback
+                        print(f"Error getting PetImage URL: {e}")
+                        if getattr(settings, 'DEBUG', False):
+                            print(traceback.format_exc())
                         pass
                 # Also check if PetImage has image_url field
                 if hasattr(img, 'image_url') and img.image_url:
@@ -117,9 +159,17 @@ class PetSerializer(serializers.ModelSerializer):
         if category_id:
             from .models import Category
             try:
+                # Ensure category_id is an integer
+                if isinstance(category_id, str):
+                    category_id = int(category_id)
                 category = Category.objects.get(id=category_id)
                 validated_data['category'] = category
-            except Category.DoesNotExist:
+            except (Category.DoesNotExist, ValueError, TypeError) as e:
+                # Log error but continue without category (it's optional)
+                import traceback
+                print(f"Error setting category in PetSerializer.create: {e}")
+                if getattr(settings, 'DEBUG', False):
+                    print(traceback.format_exc())
                 pass
         
         # Set posted_by to current user if available in context

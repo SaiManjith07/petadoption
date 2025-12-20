@@ -59,13 +59,22 @@ class ChatRoom(models.Model):
 
 class Message(models.Model):
     """Message model for chat conversations."""
+    MESSAGE_TYPE_CHOICES = [
+        ('text', 'Text'),
+        ('image', 'Image'),
+    ]
+    
     room = models.ForeignKey(ChatRoom, on_delete=models.CASCADE, related_name='messages')
     sender = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name='sent_messages'
     )
-    content = models.TextField()
+    content = models.TextField(blank=True)  # Can be empty for image-only messages
+    message_type = models.CharField(max_length=10, choices=MESSAGE_TYPE_CHOICES, default='text')
+    image = models.ImageField(upload_to='chat_images/', null=True, blank=True)
+    is_deleted = models.BooleanField(default=False)  # For soft delete (WhatsApp style)
+    deleted_at = models.DateTimeField(null=True, blank=True)
     read_status = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -82,13 +91,27 @@ class Message(models.Model):
         """Mark message as read."""
         self.read_status = True
         self.save(update_fields=['read_status'])
+    
+    def delete_image(self):
+        """Soft delete image (WhatsApp style)."""
+        from django.utils import timezone
+        self.is_deleted = True
+        self.deleted_at = timezone.now()
+        # Optionally delete the actual file
+        if self.image:
+            try:
+                self.image.delete(save=False)
+            except Exception:
+                pass
+        self.save(update_fields=['is_deleted', 'deleted_at'])
 
 
 class ChatRequest(models.Model):
     """Model for chat requests between users with approval workflow."""
     STATUS_CHOICES = [
         ('pending', 'Pending Admin Approval'),
-        ('admin_approved', 'Admin Approved - Pending User Acceptance'),
+        ('admin_verifying', 'Admin Verifying - Chat with Admin'),
+        ('admin_approved', 'Admin Approved - Ready to Connect Users'),
         ('active', 'Active Chat'),
         ('rejected', 'Rejected'),
     ]
@@ -101,7 +124,10 @@ class ChatRequest(models.Model):
     target = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name='chat_requests_received'
+        related_name='chat_requests_received',
+        null=True,
+        blank=True,
+        help_text='Target user (may be null initially, admin will set during verification)'
     )
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     message = models.TextField(blank=True)
@@ -110,6 +136,30 @@ class ChatRequest(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     admin_approved_at = models.DateTimeField(null=True, blank=True)
     user_accepted_at = models.DateTimeField(null=True, blank=True)
+    verified_by_admin = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name='verified_chat_requests',
+        null=True,
+        blank=True,
+        help_text='Admin who verified/accepted this chat request'
+    )
+    admin_verification_room = models.ForeignKey(
+        ChatRoom,
+        on_delete=models.SET_NULL,
+        related_name='verification_requests',
+        null=True,
+        blank=True,
+        help_text='Chat room between admin and requester for verification'
+    )
+    final_chat_room = models.ForeignKey(
+        ChatRoom,
+        on_delete=models.SET_NULL,
+        related_name='final_chat_requests',
+        null=True,
+        blank=True,
+        help_text='Final chat room between both users (admin can also join)'
+    )
     
     # Optional: Keep pet reference for pet-related chats
     pet = models.ForeignKey(
@@ -127,7 +177,7 @@ class ChatRequest(models.Model):
     
     class Meta:
         ordering = ['-created_at']
-        unique_together = [['requester', 'target', 'status']]
+        # Removed unique_together since target can be null
         indexes = [
             models.Index(fields=['requester', 'status']),
             models.Index(fields=['target', 'status']),

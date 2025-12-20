@@ -15,6 +15,7 @@ import {
   MessageCircle,
   AlertCircle,
   Trash2,
+  ArrowRight,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -36,6 +37,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/lib/auth';
 import { adminApi } from '@/api';
 import { AdminSidebar } from '@/components/layout/AdminSidebar';
 import { AdminTopNav } from '@/components/layout/AdminTopNav';
@@ -43,6 +45,7 @@ import { AdminTopNav } from '@/components/layout/AdminTopNav';
 export default function AdminChats() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [chatRequests, setChatRequests] = useState<any[]>([]);
   const [activeChats, setActiveChats] = useState<any[]>([]);
@@ -60,20 +63,70 @@ export default function AdminChats() {
   useEffect(() => {
     loadData();
   }, []);
+  
+  // Reload data when switching to Active Chats tab
+  useEffect(() => {
+    if (activeTab === 'chats') {
+      console.log('Switched to Active Chats tab, reloading data...');
+      loadData();
+    }
+  }, [activeTab]);
 
   const loadData = async () => {
     try {
       setLoading(true);
-      const [requests, chats, stats] = await Promise.all([
+      // Use Promise.allSettled to handle partial failures gracefully
+      const [requestsResult, chatsResult, statsResult] = await Promise.allSettled([
         adminApi.getAllChatRequests(),
         adminApi.getAllChats(),
         adminApi.getChatStats(),
       ]);
-      setChatRequests(Array.isArray(requests) ? requests : []);
       
-      setActiveChats(Array.isArray(chats) ? chats : []);
-      setChatStats(stats || {});
+      // Handle requests
+      if (requestsResult.status === 'fulfilled') {
+        setChatRequests(Array.isArray(requestsResult.value) ? requestsResult.value : []);
+      } else {
+        console.error('Error loading chat requests:', requestsResult.reason);
+        setChatRequests([]);
+        toast({
+          title: 'Warning',
+          description: 'Failed to load some chat requests. Please refresh.',
+          variant: 'destructive',
+        });
+      }
+      
+      // Handle chats
+      if (chatsResult.status === 'fulfilled') {
+        const chats = Array.isArray(chatsResult.value) ? chatsResult.value : [];
+        console.log('✓ Loaded chats from API:', chats.length);
+        if (chats.length > 0) {
+          console.log('Sample chat data:', JSON.stringify(chats[0], null, 2));
+          console.log('All chat room IDs:', chats.map((c: any) => ({
+            id: c.id,
+            roomId: c.roomId || c.room_id,
+            isActive: c.is_active,
+            participants: c.participants?.length || 0
+          })));
+        } else {
+          console.warn('⚠ No chats returned from API. Check backend logs.');
+        }
+        setActiveChats(chats);
+      } else {
+        console.error('✗ Error loading chats:', chatsResult.reason);
+        console.error('Error details:', chatsResult.reason?.response?.data);
+        console.error('Error status:', chatsResult.reason?.response?.status);
+        setActiveChats([]);
+      }
+      
+      // Handle stats
+      if (statsResult.status === 'fulfilled') {
+        setChatStats(statsResult.value || {});
+      } else {
+        console.error('Error loading chat stats:', statsResult.reason);
+        setChatStats({});
+      }
     } catch (error: any) {
+      console.error('Unexpected error in loadData:', error);
       toast({
         title: 'Error',
         description: error.message || 'Failed to load chat data',
@@ -86,28 +139,79 @@ export default function AdminChats() {
 
   const handleRespondToRequest = async (requestId: string, approved: boolean) => {
     try {
-      // Use the new workflow endpoint according to workflow_verification.md
+      // Use the new verification workflow
       if (approved) {
-        await adminApi.approveChatRequest(parseInt(requestId));
+        // Start verification - creates chat room with requester and sends notification
+        const requestIdNum = parseInt(requestId);
+        if (isNaN(requestIdNum)) {
         toast({
-          title: 'Request Approved',
-          description: 'The request has been forwarded to the pet owner for their approval.',
+            title: 'Error',
+            description: 'Invalid request ID',
+            variant: 'destructive',
+          });
+          return;
+        }
+        
+        console.log('Starting verification for request ID:', requestIdNum);
+        const result = await adminApi.startVerification(requestIdNum);
+        console.log('Verification started, result:', result);
+        console.log('Verification room ID:', result?.verification_room_id);
+        
+        toast({
+          title: 'Verification Started',
+          description: 'Chat room created with requester. They have been notified. You can now chat with them to verify.',
         });
+        
+        // Wait a moment for backend to save, then reload data
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Reload data immediately to show the new room in Active Chats
+        console.log('Reloading data to show new verification room...');
+        await loadData();
+        
+        // Optionally navigate to the verification chat room
+        if (result?.verification_room_id) {
+          const shouldNavigate = window.confirm('Verification chat room created and added to Active Chats. Would you like to open it now?');
+          if (shouldNavigate) {
+            navigate(`/chat/${result.verification_room_id}`);
+          }
+        }
       } else {
         await adminApi.rejectChatRequest(parseInt(requestId));
       toast({
           title: 'Request Rejected',
           description: 'The chat request has been rejected.',
       });
+        await loadData();
       }
-      loadData();
     } catch (error: any) {
       console.error('Error responding to request:', error);
+      console.error('Error details:', {
+        message: error?.message,
+        response: error?.response?.data,
+        status: error?.response?.status,
+        url: error?.config?.url,
+      });
+      
+      // If room was created but there's an error, still show success
+      if (error?.response?.status === 404) {
+        toast({
+          title: 'Warning',
+          description: 'The request may have been processed, but the response was not received. Please refresh the page.',
+          variant: 'destructive',
+        });
+      } else {
       toast({
         title: 'Error',
         description: error?.response?.data?.error || error?.response?.data?.detail || error?.message || 'Failed to respond to request',
         variant: 'destructive',
       });
+      }
+      
+      // Still reload data in case the operation succeeded, but with a delay to avoid race conditions
+      setTimeout(() => {
+        loadData();
+      }, 500);
     }
   };
 
@@ -196,13 +300,27 @@ export default function AdminChats() {
   });
 
   const filteredChats = activeChats.filter((chat: any) => {
+    const roomId = chat.roomId || chat.room_id || chat.id || '';
+    const petId = chat.petId || chat.pet_id || chat.pet?.id || '';
+    const participants = chat.participants || [];
+    
     const matchesSearch = !searchTerm || 
-      chat.roomId?.toString().includes(searchTerm) ||
-      chat.petId?.toString().includes(searchTerm) ||
-      chat.participants?.some((p: any) => p.toString().includes(searchTerm));
-    const matchesType = typeFilter === 'all' || chat.type === typeFilter;
+      roomId.toString().toLowerCase().includes(searchTerm.toLowerCase()) ||
+      petId.toString().toLowerCase().includes(searchTerm.toLowerCase()) ||
+      participants.some((p: any) => 
+        (p.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (p.email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        p.id?.toString().includes(searchTerm)
+      ) ||
+      (chat.room_id || '').toString().toLowerCase().includes(searchTerm.toLowerCase());
+    
+    // For verification rooms, don't filter by type (they might not have a type)
+    const isVerificationRoom = roomId && String(roomId).startsWith('admin_verification_');
+    const matchesType = typeFilter === 'all' || chat.type === typeFilter || isVerificationRoom;
     return matchesSearch && matchesType;
   });
+  
+  console.log('Active chats:', activeChats.length, 'Filtered chats:', filteredChats.length);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -303,7 +421,7 @@ export default function AdminChats() {
                         : 'text-gray-600 hover:text-gray-900'
                     }`}
                   >
-                    Active Chats ({activeChats.length})
+                    Active Chats ({activeChats.length}) {activeChats.length > 0 && `(${filteredChats.length} shown)`}
                   </button>
                 </div>
               </CardHeader>
@@ -343,6 +461,7 @@ export default function AdminChats() {
                       >
                         <option value="all">All Status</option>
                       <option value="pending">Pending Admin</option>
+                      <option value="admin_verifying">Verifying</option>
                       <option value="admin_approved">Admin Approved</option>
                       <option value="active">Active</option>
                         <option value="rejected">Rejected</option>
@@ -424,6 +543,11 @@ export default function AdminChats() {
                                       <Clock className="h-3 w-3 mr-1" />
                                       Pending Admin
                                     </Badge>
+                                  ) : req.status === 'admin_verifying' ? (
+                                    <Badge variant="outline" className="bg-purple-50 text-purple-700">
+                                      <Shield className="h-3 w-3 mr-1" />
+                                      Verifying
+                                    </Badge>
                                   ) : req.status === 'admin_approved' ? (
                                     <Badge variant="outline" className="bg-blue-50 text-blue-700">
                                       <Clock className="h-3 w-3 mr-1" />
@@ -467,10 +591,10 @@ export default function AdminChats() {
                                           variant="outline"
                                           size="sm"
                                           onClick={() => handleRespondToRequest(req.id || req._id, true)}
-                                          className="gap-1 bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
+                                          className="gap-1 bg-green-600 hover:bg-green-700 text-white border-green-600"
                                       >
-                                        <CheckCircle className="h-4 w-4" />
-                                          Approve & Forward
+                                        <Shield className="h-4 w-4" />
+                                          Verify
                                       </Button>
                                       <Button
                                         variant="outline"
@@ -480,6 +604,72 @@ export default function AdminChats() {
                                       >
                                         <XCircle className="h-4 w-4" />
                                         Reject
+                                      </Button>
+                                      </React.Fragment>
+                                    )}
+                                    {req.status === 'admin_verifying' && (
+                                      <React.Fragment key={`verifying-actions-${req._id || req.id || index}`}>
+                                        {(req.admin_verification_room?.room_id || req.admin_verification_room?.id) && (
+                                          <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => {
+                                              const roomId = req.admin_verification_room?.room_id || req.admin_verification_room?.id || req.admin_verification_room;
+                                              console.log('Opening verification chat. Request:', req);
+                                              console.log('Admin verification room:', req.admin_verification_room);
+                                              console.log('Room ID to navigate:', roomId);
+                                              if (roomId) {
+                                                try {
+                                                  navigate(`/chat/${roomId}`);
+                                                } catch (error) {
+                                                  console.error('Navigation error:', error);
+                                                  toast({
+                                                    title: 'Navigation Error',
+                                                    description: 'Failed to navigate to chat. Error: ' + (error as Error).message,
+                                                    variant: 'destructive',
+                                                  });
+                                                }
+                                              } else {
+                                                toast({
+                                                  title: 'Error',
+                                                  description: 'Room ID not found. Please refresh the page. Request data: ' + JSON.stringify(req),
+                                                  variant: 'destructive',
+                                                });
+                                              }
+                                            }}
+                                            className="gap-1"
+                                          >
+                                            <MessageSquare className="h-4 w-4" />
+                                            Open Chat
+                                          </Button>
+                                        )}
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={async () => {
+                                            try {
+                                              await adminApi.completeVerification(
+                                                parseInt(req.id || req._id),
+                                                req.target?.id || req.target_id,
+                                                ''
+                                              );
+                                              toast({
+                                                title: 'Verification Complete',
+                                                description: 'Target user added to chat room. All users can now communicate.',
+                                              });
+                                              loadData();
+                                            } catch (error: any) {
+                                              toast({
+                                                title: 'Error',
+                                                description: error?.response?.data?.error || error?.message || 'Failed to complete verification',
+                                                variant: 'destructive',
+                                              });
+                                            }
+                                          }}
+                                          className="gap-1 bg-green-600 hover:bg-green-700 text-white border-green-600"
+                                        >
+                                          <ArrowRight className="h-4 w-4" />
+                                          Forward & Add User
                                       </Button>
                                       </React.Fragment>
                                     )}
@@ -510,12 +700,21 @@ export default function AdminChats() {
                     ) : filteredChats.length === 0 ? (
                       <div className="text-center py-12">
                         <MessageCircle className="h-16 w-16 mx-auto text-gray-400 mb-4" />
-                        <h3 className="text-lg font-semibold text-gray-900 mb-2">No Active Chats</h3>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                          {activeChats.length === 0 ? 'No Active Chats' : 'No Chats Match Filters'}
+                        </h3>
                         <p className="text-gray-600">
                           {searchTerm || typeFilter !== 'all'
                             ? 'Try adjusting your search or filters'
-                            : 'No active chat conversations at the moment.'}
+                            : activeChats.length === 0 
+                              ? 'No active chat conversations at the moment. Click "Verify" on a chat request to create a verification room.'
+                              : `${activeChats.length} chat(s) found but filtered out.`}
                         </p>
+                        {activeChats.length > 0 && (
+                          <p className="text-sm text-gray-500 mt-2">
+                            Total chats loaded: {activeChats.length} | Filtered: {filteredChats.length}
+                          </p>
+                        )}
                       </div>
                     ) : (
                       <div className="overflow-x-auto">
@@ -532,116 +731,139 @@ export default function AdminChats() {
                             </TableRow>
                           </TableHeader>
                           <TableBody>
-                            {filteredChats.map((chat: any, index: number) => (
-                              <TableRow key={chat.roomId || chat.room_id || chat.id || chat._id || `chat-${index}`}>
+                            {filteredChats.map((chat: any, index: number) => {
+                              const roomId = chat.roomId || chat.room_id || chat.id || chat._id;
+                              const isVerificationRoom = roomId && String(roomId).startsWith('admin_verification_');
+                              const participants = chat.participants || [];
+                              
+                              return (
+                              <TableRow key={roomId || `chat-${index}`}>
                                 <TableCell>
-                                  <Badge variant={chat.type === 'adoption' ? 'default' : 'secondary'}>
-                                    {chat.type === 'adoption' ? 'ADOPTION' : 'CLAIM'}
+                                  {isVerificationRoom ? (
+                                    <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
+                                      <Shield className="h-3 w-3 mr-1" />
+                                      VERIFICATION
+                                    </Badge>
+                                  ) : (
+                                  <Badge 
+                                    variant={
+                                      chat.type === 'adoption' 
+                                        ? 'default' 
+                                        : chat.type === 'normal'
+                                          ? 'outline'
+                                          : 'secondary'
+                                    }
+                                    className={
+                                      chat.type === 'normal'
+                                        ? 'bg-blue-50 text-blue-700 border-blue-200'
+                                        : ''
+                                    }
+                                  >
+                                    {chat.type === 'adoption' 
+                                      ? 'ADOPTION' 
+                                      : chat.type === 'normal' 
+                                        ? 'NORMAL' 
+                                        : chat.type === 'claim'
+                                          ? 'CLAIM'
+                                          : (chat.type || 'NORMAL').toUpperCase()}
                                   </Badge>
+                                  )}
                                 </TableCell>
-                                <TableCell className="font-mono text-xs">{chat.roomId || chat.room_id || chat.id || chat._id || 'N/A'}</TableCell>
-                                <TableCell className="font-mono text-xs">{chat.petId || 'N/A'}</TableCell>
+                                <TableCell className="font-mono text-xs">{roomId || 'N/A'}</TableCell>
+                                <TableCell className="font-mono text-xs">{chat.pet_id || chat.petId || chat.pet?.id || 'N/A'}</TableCell>
                                 <TableCell>
-                                  {chat.participants?.length || 0} participant(s)
+                                  <div className="flex flex-col">
+                                    <span className="text-sm font-medium">{participants.length} participant(s)</span>
+                                    {participants.length > 0 && (
+                                      <span className="text-xs text-gray-500">
+                                        {participants.slice(0, 3).map((p: any) => {
+                                          const name = p.name || p.email || `User ${p.id}`;
+                                          const isAdmin = p.is_staff || p.is_superuser;
+                                          return `${name}${isAdmin ? ' (admin)' : ' (user)'}`;
+                                        }).join(', ')}
+                                        {participants.length > 3 && ` +${participants.length - 3} more`}
+                                      </span>
+                                    )}
+                                  </div>
                                 </TableCell>
-                                <TableCell>{chat.messages?.length || 0}</TableCell>
+                                <TableCell>{chat.messages?.length || chat.last_message ? 1 : 0}</TableCell>
                                 <TableCell className="text-sm text-gray-600">
-                                  {chat.createdAt
-                                    ? format(new Date(chat.createdAt), 'MMM dd, yyyy')
+                                  {chat.created_at || chat.createdAt
+                                    ? format(new Date(chat.created_at || chat.createdAt), 'MMM dd, yyyy')
                                     : 'N/A'}
                                 </TableCell>
                                 <TableCell className="text-right">
                                   <div className="flex justify-end gap-2">
-                                    <Button
-                                      key={`view-${chat.roomId || chat.room_id || chat.id || chat._id || index}`}
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => handleViewChat(chat)}
-                                      className="gap-1"
-                                    >
-                                      <Eye className="h-4 w-4" />
-                                      View
-                                    </Button>
-                                    <Button
-                                      key={`monitor-${chat.roomId || chat.room_id || chat.id || chat._id || index}`}
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={async () => {
-                                        try {
-                                          // Try multiple ways to get the room ID
-                                          const roomId = chat.roomId || chat.room_id || chat.id || chat._id;
-                                          
-                                          if (!roomId) {
-                                            toast({
-                                              title: 'Error',
-                                              description: 'Room ID not found in chat data',
-                                              variant: 'destructive',
-                                            });
-                                            console.error('Chat object:', chat);
-                                            return;
-                                          }
-                                          
-                                          // Navigate to monitor page
-                                          navigate(`/admin/chats/monitor/${roomId}`);
-                                        } catch (error: any) {
-                                          toast({
-                                            title: 'Error',
-                                            description: error.message || 'Failed to open chat monitor',
-                                            variant: 'destructive',
-                                          });
-                                        }
-                                      }}
-                                      className="gap-1 bg-[#2BB6AF]/10 hover:bg-[#2BB6AF]/20 text-[#2BB6AF] border-[#2BB6AF]/30"
-                                    >
-                                      <Shield className="h-4 w-4" />
-                                      Monitor
-                                    </Button>
-                                    <Button
-                                      key={`close-${chat.roomId || chat.room_id || chat.id || chat._id || index}`}
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => {
-                                        const roomId = chat.roomId || chat.room_id || chat.id || chat._id;
-                                        if (roomId) {
-                                          handleCloseChat(roomId.toString());
-                                        } else {
-                                          toast({
-                                            title: 'Error',
-                                            description: 'Room ID not found',
-                                            variant: 'destructive',
-                                          });
-                                        }
-                                      }}
-                                      className="gap-1 text-orange-600 border-orange-200 hover:bg-orange-50"
-                                    >
-                                      <X className="h-4 w-4" />
-                                      Close
-                                    </Button>
-                                    <Button
-                                      key={`delete-${chat.roomId || chat.room_id || chat.id || chat._id || index}`}
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => {
-                                        const roomId = chat.roomId || chat.room_id || chat.id || chat._id;
-                                        if (roomId) {
-                                          handleDeleteChat(roomId.toString());
-                                        } else {
-                                          toast({
-                                            title: 'Error',
-                                            description: 'Room ID not found',
-                                            variant: 'destructive',
-                                          });
-                                        }
-                                      }}
-                                      className="gap-1 text-red-600 border-red-200 hover:bg-red-50"
-                                    >
-                                      <Trash2 className="h-4 w-4" />
-                                      Delete
-                                    </Button>
+                                    {(() => {
+                                      const currentUserId = user?.id || user?._id || user?.user_id;
+                                      
+                                      // Check if current admin is a participant in the room
+                                      const isParticipant = participants.some((p: any) => {
+                                        const participantId = p.id || p._id || p.user_id;
+                                        return participantId && currentUserId && String(participantId) === String(currentUserId);
+                                      });
+                                      
+                                      // Check if current admin is the verifying admin (for pet-related chats)
+                                      const isVerifyingAdmin = chat.chat_request?.verified_by_admin?.id === currentUserId ||
+                                                               chat.verified_by_admin_id === currentUserId;
+                                      
+                                      const roomIdToOpen = roomId || chat.roomId || chat.room_id || chat.id || chat._id;
+                                      
+                                      // If admin is a participant OR is the verifying admin, they can open full chat
+                                      if (isParticipant || isVerifyingAdmin) {
+                                        return (
+                                          <Button
+                                            key={`view-${roomId || index}`}
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => {
+                                              if (roomIdToOpen) {
+                                                navigate(`/chat/${roomIdToOpen}`);
+                                              } else {
+                                                toast({
+                                                  title: 'Error',
+                                                  description: 'Room ID not found',
+                                                  variant: 'destructive',
+                                                });
+                                              }
+                                            }}
+                                            className="gap-1"
+                                          >
+                                            <MessageSquare className="h-4 w-4" />
+                                            Open Chat
+                                          </Button>
+                                        );
+                                      } else {
+                                        // Other admins (not participants) can only view in read-only mode
+                                        return (
+                                          <Button
+                                            key={`view-readonly-${roomId || index}`}
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => {
+                                              if (roomIdToOpen) {
+                                                navigate(`/admin/chats/view/${roomIdToOpen}`);
+                                              } else {
+                                                toast({
+                                                  title: 'Error',
+                                                  description: 'Room ID not found',
+                                                  variant: 'destructive',
+                                                });
+                                              }
+                                            }}
+                                            className="gap-1 text-blue-600 border-blue-200 hover:bg-blue-50"
+                                          >
+                                            <Eye className="h-4 w-4" />
+                                            View Read-Only
+                                          </Button>
+                                        );
+                                      }
+                                    })()}
                                   </div>
                                 </TableCell>
                               </TableRow>
-                            ))}
+                            );
+                            })}
                           </TableBody>
                         </Table>
                       </div>

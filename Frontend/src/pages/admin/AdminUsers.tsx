@@ -147,67 +147,37 @@ export default function AdminUsers() {
     try {
       setConnectingUserId(targetUserId);
       
-      // Create a chat request from admin to user
-      try {
-        const result = await adminApi.createChatRequest(
-          targetUserId,
-          `Admin ${currentUser.name || currentUser.email || 'Administrator'} wants to connect with you.`
-        );
-        
+      // Create a direct chat room (no pet, no request) from admin to user
+      const result = await adminApi.createChatRequest(
+        targetUserId,
+        `Admin ${currentUser.name || currentUser.email || 'Administrator'} wants to connect with you.`
+      );
+      
+      // The endpoint now creates a direct chat room, not a request
+      const roomId = result?.room_id || result?.data?.room_id;
+      
+      if (roomId) {
         toast({
-          title: 'Chat Request Sent',
-          description: `A chat request has been sent to ${targetUser.name || targetUser.email}. They will be notified and can approve to start chatting.`,
+          title: 'Chat Room Created',
+          description: `Direct chat room created with ${targetUser.name || targetUser.email}. Opening chat...`,
         });
-      } catch (adminError: any) {
-        // If admin API endpoint doesn't exist, try alternative approach
-        try {
-          // First try admin API to create room directly
-          let room;
-          try {
-            room = await adminApi.createChatRoom(targetUserId);
-          } catch (adminRoomError: any) {
-            // If admin room creation fails, try regular chat API
-            room = await chatApi.getOrCreateRoom(parseInt(String(targetUserId)));
-          }
-          
-          // Check if we got a valid room
-          if (room && (room.id || room.room_id || room._id)) {
-            toast({
-              title: 'Chat Room Created',
-              description: `You can now chat with ${targetUser.name || targetUser.email}.`,
-            });
-            navigate(`/admin/chats/monitor/${room.id || room.room_id || room._id}`);
-          } else {
-            throw new Error('Invalid room response');
-          }
-        } catch (roomError: any) {
-          // If all else fails, show error with helpful guidance
-          let errorMsg = roomError?.response?.data?.detail || 
-                        roomError?.response?.data?.error || 
-                        roomError?.message || 
-                        adminError?.response?.data?.detail || 
-                        adminError?.response?.data?.error || 
-                        adminError?.message;
-          
-          // If it's a 404 or 500 error, provide more helpful message
-          if (roomError?.response?.status === 404 || roomError?.response?.status === 500 || 
-              adminError?.response?.status === 404 || adminError?.response?.status === 500) {
-            errorMsg = 'The chat system is currently unavailable. Please try using the Chat Management section to connect with users, or contact the system administrator.';
-          } else if (!errorMsg) {
-            errorMsg = 'Failed to create chat request. The chat system may be temporarily unavailable. Please try using the chat management section.';
-          }
-          
-          toast({
-            title: 'Unable to Connect',
-            description: errorMsg,
-            variant: 'destructive',
-          });
-        }
+        navigate(`/chat/${roomId}`);
+      } else {
+        toast({
+          title: 'Error',
+          description: 'Chat room was created but room ID not found',
+          variant: 'destructive',
+        });
       }
     } catch (error: any) {
+      const errorMsg = error?.response?.data?.error || 
+                      error?.response?.data?.detail || 
+                      error?.message || 
+                      'Failed to send chat request';
+      
       toast({
         title: 'Error',
-        description: error?.response?.data?.detail || error?.response?.data?.error || error?.message || 'Failed to send chat request',
+        description: errorMsg,
         variant: 'destructive',
       });
     } finally {

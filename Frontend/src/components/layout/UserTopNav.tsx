@@ -117,6 +117,13 @@ export function UserTopNav({ onMenuToggle, sidebarOpen, onRefresh }: UserTopNavP
                   ))}
                 </div>
               )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="text-center justify-center text-[#2BB6AF] font-medium hover:text-[#239a94] cursor-pointer"
+                onClick={() => navigate('/notifications')}
+              >
+                View More
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
 

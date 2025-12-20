@@ -116,5 +116,26 @@ export const authApi = {
     const response = await apiClient.post('/users/admin/register/verify/', payload);
     return response.data;
   },
+
+  /**
+   * Request password reset - sends reset token to email
+   */
+  async forgotPassword(email: string): Promise<{ message: string; uid?: string; token?: string; reset_url?: string }> {
+    const response = await apiClient.post<{ message: string; uid?: string; token?: string; reset_url?: string }>('/auth/forgot-password/', { email });
+    return response.data;
+  },
+
+  /**
+   * Reset password using token
+   */
+  async resetPassword(payload: {
+    uid: string;
+    token: string;
+    new_password: string;
+    confirm_password: string;
+  }): Promise<{ message: string }> {
+    const response = await apiClient.post<{ message: string }>('/auth/reset-password/', payload);
+    return response.data;
+  },
 };
 

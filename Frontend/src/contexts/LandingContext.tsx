@@ -140,7 +140,7 @@ export const LandingDataProvider: React.FC<{ children: ReactNode }> = ({ childre
   // Pet Images - All 11 types
   const [petImages] = useState<PetImage[]>([
     {
-      url: 'https://images.unsplash.com/photo-1552053831-71594a27632d?w=1920&q=90',
+      url: 'https://thumbs.dreamstime.com/b/golden-retriever-dog-21668976.jpg',
       type: 'Dogs',
       text: 'Find Your Lost Dog',
       subtitle: 'Every Dog Deserves to Come Home',

@@ -53,6 +53,7 @@ interface PetGalleryProps {
   showFilters?: boolean;
   theme?: 'green' | 'orange' | 'blue';
   currentUserId?: string;
+  showViewButton?: boolean;
 }
 
 export const PetGallery = ({
@@ -63,6 +64,7 @@ export const PetGallery = ({
   showFilters = true,
   theme = 'green',
   currentUserId,
+  showViewButton = false,
 }: PetGalleryProps) => {
   const themeColors = {
     green: {
@@ -94,15 +96,18 @@ export const PetGallery = ({
     const breed = pet.breed || '';
     const location = pet.location || '';
     const color = pet.color || '';
-    const species = pet.species || pet.category?.name || '';
+    const species = (pet.species || pet.category?.name || '').toString().trim();
     
     const matchesSearch = !searchTerm || (
       breed.toLowerCase().includes(searchTerm.toLowerCase()) ||
       location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      color.toLowerCase().includes(searchTerm.toLowerCase())
+      color.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      species.toLowerCase().includes(searchTerm.toLowerCase())
     );
     
-    const matchesSpecies = speciesFilter === 'all' || species === speciesFilter;
+    // Case-insensitive species matching
+    const matchesSpecies = speciesFilter === 'all' || 
+      species.toLowerCase() === speciesFilter.toLowerCase();
 
     return matchesSearch && matchesSpecies;
   });
@@ -170,7 +175,15 @@ export const PetGallery = ({
                   <SelectItem value="Dog">Dog</SelectItem>
                   <SelectItem value="Cat">Cat</SelectItem>
                   <SelectItem value="Cow">Cow</SelectItem>
+                  <SelectItem value="Buffalo">Buffalo</SelectItem>
+                  <SelectItem value="Goat">Goat</SelectItem>
+                  <SelectItem value="Sheep">Sheep</SelectItem>
+                  <SelectItem value="Horse">Horse</SelectItem>
+                  <SelectItem value="Donkey">Donkey</SelectItem>
                   <SelectItem value="Camel">Camel</SelectItem>
+                  <SelectItem value="Rabbit">Rabbit</SelectItem>
+                  <SelectItem value="Hen">Hen</SelectItem>
+                  <SelectItem value="Duck">Duck</SelectItem>
                   <SelectItem value="Other">Other</SelectItem>
                 </SelectContent>
               </Select>
@@ -213,6 +226,7 @@ export const PetGallery = ({
                   onActionClick={onActionClick}
                   actionLabel={actionLabel}
                   currentUserId={currentUserId}
+                  showViewButton={showViewButton}
                 />
               );
             })}

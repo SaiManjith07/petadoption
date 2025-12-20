@@ -198,6 +198,11 @@ export function ChatWindow({ roomId, otherUser, isOnline = false }: ChatWindowPr
                     {!isOwn && (
                       <p className="text-xs font-semibold mb-1 opacity-80">
                         {message.sender.name}
+                        {message.sender.is_staff || message.sender.is_superuser ? (
+                          <span className="text-blue-600 ml-1">(admin)</span>
+                        ) : (
+                          <span className="text-gray-500 ml-1">(user)</span>
+                        )}
                       </p>
                     )}
                     <p className="text-sm whitespace-pre-wrap break-words">

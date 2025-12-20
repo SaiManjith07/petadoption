@@ -11,6 +11,7 @@ import { UserPageWrapper } from "./components/layout/UserPageWrapper";
 import { UserProtectedRoute } from "./components/UserProtectedRoute";
 import { AdminProtectedRoute } from "./components/AdminProtectedRoute";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import { AdminLayout } from "./components/layout/AdminLayout";
 // Common/Public pages
 import Landing from "./pages/Landing";
 import Policy from "./pages/Policy";
@@ -21,6 +22,7 @@ import NotFound from "./pages/NotFound";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
 import RegisterAdmin from "./pages/auth/RegisterAdmin";
+import ForgotPassword from "./pages/auth/ForgotPassword";
 
 // User pages
 import UserHome from "./pages/user/UserHome";
@@ -42,6 +44,7 @@ import HomeCheckTracker from "./pages/user/HomeCheckTracker";
 import NeighborhoodAlerts from "./pages/user/NeighborhoodAlerts";
 import NGOVerification from "./pages/user/NGOVerification";
 import HealthVaccination from "./pages/user/HealthVaccination";
+import Notifications from "./pages/user/Notifications";
 
 // Admin pages
 import Admin from "./pages/admin/Admin";
@@ -52,6 +55,7 @@ import AdminRequests from "./pages/admin/AdminRequests";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminChats from "./pages/admin/AdminChats";
 import AdminChatMonitor from "./pages/admin/AdminChatMonitor";
+import AdminChatReadOnly from "./pages/admin/AdminChatReadOnly";
 import AdminProfile from "./pages/admin/AdminProfile";
 import AllPets from "./pages/admin/AllPets";
 import AdminFeedingPoints from "./pages/admin/AdminFeedingPoints";
@@ -59,6 +63,7 @@ import AdminShelterLocations from "./pages/admin/AdminShelterLocations";
 import AdminAllPets from "./pages/admin/AdminAllPets";
 import AdminRoleRequests from "./pages/admin/AdminRoleRequests";
 import AdminMedicalRecords from "./pages/admin/AdminMedicalRecords";
+import AdminNotifications from "./pages/admin/AdminNotifications";
 
 const queryClient = new QueryClient();
 
@@ -66,6 +71,7 @@ const AppContent = () => {
   const location = useLocation();
   const isLoginPage = location.pathname === '/auth/login';
   const isRegisterPage = location.pathname === '/auth/register';
+  const isForgotPasswordPage = location.pathname === '/auth/forgot-password';
   const isAdminPage = location.pathname.startsWith('/admin');
   const isPublicPage = location.pathname === '/' || 
     location.pathname.startsWith('/auth') || 
@@ -75,7 +81,7 @@ const AppContent = () => {
   return (
     <div className="flex min-h-screen flex-col">
       {/* TopNav for landing page and public pages */}
-      {isPublicPage && !isLoginPage && !isRegisterPage && <TopNav />}
+      {isPublicPage && !isLoginPage && !isRegisterPage && !isForgotPasswordPage && <TopNav />}
       <main className="flex-1">
         <Routes>
           {/* Public Routes */}
@@ -83,6 +89,7 @@ const AppContent = () => {
           <Route path="/auth/login" element={<Login />} />
           <Route path="/auth/register" element={<Register />} />
           <Route path="/auth/register-admin" element={<RegisterAdmin />} />
+          <Route path="/auth/forgot-password" element={<ForgotPassword />} />
           <Route path="/policy" element={<Policy />} />
           <Route path="/safety" element={<Safety />} />
 
@@ -318,12 +325,24 @@ const AppContent = () => {
               </UserProtectedRoute>
             } 
           />
+          <Route 
+            path="/notifications" 
+            element={
+              <UserProtectedRoute>
+              <UserPageWrapper>
+                <Notifications />
+              </UserPageWrapper>
+              </UserProtectedRoute>
+            } 
+          />
           {/* Admin Protected Routes */}
           <Route 
             path="/admin" 
             element={
               <AdminProtectedRoute>
-                <Admin />
+                <AdminLayout>
+                  <Admin />
+                </AdminLayout>
               </AdminProtectedRoute>
             } 
           />
@@ -331,7 +350,9 @@ const AppContent = () => {
             path="/admin/found-pets" 
             element={
               <AdminProtectedRoute>
-                <AdminFoundPets />
+                <AdminLayout>
+                  <AdminFoundPets />
+                </AdminLayout>
               </AdminProtectedRoute>
             } 
           />
@@ -339,7 +360,9 @@ const AppContent = () => {
             path="/admin/lost-pets" 
             element={
               <AdminProtectedRoute>
-                <AdminLostPets />
+                <AdminLayout>
+                  <AdminLostPets />
+                </AdminLayout>
               </AdminProtectedRoute>
             } 
           />
@@ -372,6 +395,14 @@ const AppContent = () => {
             element={
               <AdminProtectedRoute>
                 <AdminChatMonitor />
+              </AdminProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin/chats/view/:roomId" 
+            element={
+              <AdminProtectedRoute>
+                <AdminChatReadOnly />
               </AdminProtectedRoute>
             } 
           />
@@ -439,11 +470,19 @@ const AppContent = () => {
               </AdminProtectedRoute>
             } 
           />
+          <Route 
+            path="/admin/notifications" 
+            element={
+              <AdminProtectedRoute>
+                <AdminNotifications />
+              </AdminProtectedRoute>
+            } 
+          />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
-      {!isLoginPage && !isRegisterPage && !isAdminPage && isPublicPage && <Footer />}
+      {!isLoginPage && !isRegisterPage && !isForgotPasswordPage && !isAdminPage && isPublicPage && <Footer />}
     </div>
   );
 };

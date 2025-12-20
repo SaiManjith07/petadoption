@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/lib/auth';
 
 interface UserProtectedRouteProps {
@@ -8,6 +8,7 @@ interface UserProtectedRouteProps {
 
 export function UserProtectedRoute({ children }: UserProtectedRouteProps) {
   const { isAuthenticated, isAdmin, loading } = useAuth();
+  const location = useLocation();
 
   // Show loading state while checking auth
   if (loading) {
@@ -26,7 +27,18 @@ export function UserProtectedRoute({ children }: UserProtectedRouteProps) {
     return <Navigate to="/auth/login" replace />;
   }
 
-  // If user is admin, redirect to admin dashboard
+  // Allow admins to access chat routes (for verification and monitoring)
+  const isChatRoute = location.pathname.startsWith('/chat/');
+  if (isAdmin && !isChatRoute) {
+    return <Navigate to="/admin" replace />;
+  }
+
+  // If user is admin and accessing chat route, allow it
+  if (isAdmin && isChatRoute) {
+    return <>{children}</>;
+  }
+
+  // If user is admin but not on chat route, redirect to admin dashboard
   if (isAdmin) {
     return <Navigate to="/admin" replace />;
   }

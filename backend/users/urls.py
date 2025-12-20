@@ -13,6 +13,8 @@ urlpatterns = [
     path('me/', views.get_current_user, name='current-user'),
     path('check-email/', views.check_email, name='check-email'),
     path('check-phone/', views.check_phone, name='check-phone'),
+    path('forgot-password/', views.forgot_password, name='forgot-password'),
+    path('reset-password/', views.reset_password, name='reset-password'),
     
     # Profile management
     path('profile/', views.UserProfileView.as_view(), name='user-profile'),

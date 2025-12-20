@@ -412,6 +412,8 @@ def pending_adoptions(request):
 def all_chats(request):
     """Get all chat rooms."""
     try:
+        print(f"\n=== all_chats endpoint called by user {request.user.id} ({request.user.email}) ===")
+        
         # Check if ChatRoom table exists
         from django.db import connection
         with connection.cursor() as cursor:
@@ -423,19 +425,68 @@ def all_chats(request):
             """)
             table_exists = cursor.fetchone()[0]
         
+        print(f"Table exists: {table_exists}")
+        
         if not table_exists:
+            print("⚠ ChatRoom table does not exist!")
             return Response({'data': []})
         
-        rooms = ChatRoom.objects.all().prefetch_related('participants', 'messages')
-        from chats.serializers import ChatRoomSerializer
-        serializer = ChatRoomSerializer(rooms, many=True, context={'request': request})
-        return Response({'data': serializer.data})
+        # Get ALL chat rooms - return everything for now to debug
+        from django.db.models import Q
+        
+        # Get ALL rooms first to see what we have
+        # Don't prefetch messages to avoid accessing fields that might not exist
+        all_rooms = ChatRoom.objects.all().select_related(
+            'user_a', 'user_b', 'chat_request', 'chat_request__pet', 'chat_request__verified_by_admin'
+        ).prefetch_related(
+            'participants'
+        ).order_by('-created_at')
+        
+        print(f"✓ Total rooms in database: {all_rooms.count()}")
+        
+        # List all rooms for debugging
+        if all_rooms.count() > 0:
+            for room in all_rooms[:20]:
+                participants_count = room.participants.count()
+                participants_list = [p.id for p in room.participants.all()[:5]]
+                print(f"  Room {room.id}: room_id='{room.room_id}', is_active={room.is_active}, participants={participants_count} {participants_list}")
+        else:
+            print("  ⚠ No rooms found in database!")
+        
+        # For now, return ALL rooms to ensure we see verification rooms
+        # Later we can filter to only active + verification
+        rooms = all_rooms
+        
+        try:
+            from chats.serializers import ChatRoomListSerializer
+            serializer = ChatRoomListSerializer(rooms, many=True, context={'request': request})
+            serialized_data = serializer.data
+            print(f"✓ Serialized {len(serialized_data)} rooms")
+            if serialized_data:
+                print(f"  First room serialized: id={serialized_data[0].get('id')}, room_id={serialized_data[0].get('room_id')}, participants={len(serialized_data[0].get('participants', []))}")
+                # Check for verification rooms in serialized data
+                verification_rooms = [r for r in serialized_data if r.get('room_id', '').startswith('admin_verification_')]
+                print(f"  Verification rooms in response: {len(verification_rooms)}")
+            else:
+                print("⚠ Serialized data is empty - check serializer for errors")
+            return Response({'data': serialized_data})
+        except Exception as ser_error:
+            import traceback
+            print(f"✗ Serialization error: {ser_error}")
+            print(traceback.format_exc())
+            # Return empty array on serialization error
+            return Response({'data': []})
     except Exception as e:
         # Return empty array on error instead of crashing
         import traceback
-        print(f"Error in all_chats: {e}")
-        print(traceback.format_exc())
-        return Response({'data': []})
+        error_trace = traceback.format_exc()
+        print(f"✗ Error in all_chats: {type(e).__name__}: {str(e)}")
+        print(error_trace)
+        return Response({
+            'data': [],
+            'error': str(e),
+            'error_type': type(e).__name__
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @api_view(['GET'])
@@ -510,17 +561,26 @@ def chat_requests(request):
         from chats.serializers import ChatRequestSerializer
         
         # Get all chat requests, ordered by most recent first
+        # Include all related fields for the new workflow
         requests = ChatRequest.objects.select_related(
-            'requester', 'target', 'pet'
+            'requester', 'target', 'pet', 'admin_verification_room', 'final_chat_room', 'verified_by_admin'
         ).prefetch_related('pet__category').order_by('-created_at')
         
-        serializer = ChatRequestSerializer(requests, many=True)
+        serializer = ChatRequestSerializer(requests, many=True, context={'request': request})
         return Response({'data': serializer.data})
     except Exception as e:
         import traceback
-        print(f"Error fetching chat requests: {traceback.format_exc()}")
+        error_trace = traceback.format_exc()
+        print(f"Error fetching chat requests: {error_trace}")
+        print(f"Error type: {type(e).__name__}")
+        print(f"Error message: {str(e)}")
         return Response(
-            {'error': str(e), 'data': []},
+            {
+                'error': str(e),
+                'error_type': type(e).__name__,
+                'detail': 'Failed to load chat requests. Check server logs for details.',
+                'data': []
+            },
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
@@ -528,14 +588,12 @@ def chat_requests(request):
 @api_view(['POST'])
 @permission_classes([IsAdminUser])
 def admin_create_chat_request(request):
-    """Admin endpoint to create a chat request from admin to a user."""
+    """Admin endpoint to create a direct chat room (no pet, no chat request) for admin-to-user communication."""
     try:
-        from chats.models import ChatRequest
-        from chats.serializers import ChatRequestSerializer
+        from chats.models import ChatRoom
+        from chats.serializers import ChatRoomListSerializer
         
         target_user_id = request.data.get('target_user_id') or request.data.get('user_id')
-        message = request.data.get('message', 'Admin wants to connect with you.')
-        request_type = request.data.get('type', 'admin_contact')
         
         if not target_user_id:
             return Response(
@@ -553,38 +611,57 @@ def admin_create_chat_request(request):
         
         if target_user == request.user:
             return Response(
-                {'error': 'Cannot create chat request with yourself'},
+                {'error': 'Cannot create chat room with yourself'},
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        # Check if request already exists
-        existing_request = ChatRequest.objects.filter(
-            requester=request.user,
-            target=target_user,
-            status__in=['pending', 'admin_approved', 'active']
+        # Check if there's already an active chat room between these users
+        user_ids = sorted([request.user.id, target_user.id])
+        room_id = f"{user_ids[0]}_{user_ids[1]}"
+        
+        existing_room = ChatRoom.objects.filter(
+            room_id=room_id,
+            is_active=True
         ).first()
         
-        if existing_request:
-            serializer = ChatRequestSerializer(existing_request)
+        if existing_room:
+            # Room already exists - return it
+            room_serializer = ChatRoomListSerializer(existing_room, context={'request': request})
             return Response({
-                'message': 'Chat request already exists',
-                'data': serializer.data
+                'message': 'Chat room already exists',
+                'room_id': existing_room.room_id,
+                'status': 'active',
+                'data': {
+                    'room_id': existing_room.room_id,
+                    'status': 'active',
+                    'room': room_serializer.data
+                }
             }, status=status.HTTP_200_OK)
         
-        # Create chat request (admin-created requests are auto-approved)
-        chat_request = ChatRequest.objects.create(
-            requester=request.user,
-            target=target_user,
-            message=message,
-            type=request_type,
-            status='admin_approved',  # Admin requests are auto-approved
-            admin_approved_at=timezone.now()
+        # Create direct chat room (no ChatRequest, no pet_id)
+        # This is for direct admin-to-user communication
+        chat_room = ChatRoom.objects.create(
+            room_id=room_id,
+            user_a_id=user_ids[0],
+            user_b_id=user_ids[1],
+            is_active=True,
+            # chat_request is left as None - this is a direct communication room
         )
         
-        serializer = ChatRequestSerializer(chat_request)
+        # Add participants
+        chat_room.participants.add(request.user, target_user)
+        
+        # Serialize and return
+        room_serializer = ChatRoomListSerializer(chat_room, context={'request': request})
         return Response({
-            'message': 'Chat request created successfully',
-            'data': serializer.data
+            'message': 'Direct chat room created successfully',
+            'room_id': chat_room.room_id,
+            'status': 'active',
+            'data': {
+                'room_id': chat_room.room_id,
+                'status': 'active',
+                'room': room_serializer.data
+            }
         }, status=status.HTTP_201_CREATED)
         
     except Exception as e:
@@ -593,7 +670,7 @@ def admin_create_chat_request(request):
         print(f"Error in admin_create_chat_request: {e}")
         print(error_trace)
         return Response(
-            {'error': f'Failed to create chat request: {str(e)}'},
+            {'error': f'Failed to create chat room: {str(e)}'},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 

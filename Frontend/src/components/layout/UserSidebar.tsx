@@ -102,9 +102,9 @@ export function UserSidebar({ isOpen = true, onClose }: UserSidebarProps) {
       >
         <div className="flex h-full flex-col">
           {/* Logo/Header */}
-          <div className="flex h-16 items-center border-b border-gray-200/80 px-4 bg-gradient-to-r from-[#2BB6AF]/5 to-transparent">
+          <div className="flex h-24 items-center border-b border-gray-200/80 px-4 bg-gradient-to-r from-[#2BB6AF]/5 to-transparent">
             <Logo 
-              size="sm" 
+              size="md" 
               showText={true} 
               showTagline={false}
               linkTo="/home"
@@ -113,7 +113,7 @@ export function UserSidebar({ isOpen = true, onClose }: UserSidebarProps) {
           </div>
 
           {/* Navigation Menu */}
-          <nav className="flex-1 space-y-2 overflow-y-auto px-4 py-6 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
+          <nav className="flex-1 space-y-1 px-3 py-3">
             {menuItems.map((item) => {
               const Icon = item.icon;
               const isActive = location.pathname === item.path || 
@@ -134,7 +134,7 @@ export function UserSidebar({ isOpen = true, onClose }: UserSidebarProps) {
                     }
                   }}
                   className={cn(
-                    'group flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 relative',
+                    'group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 relative',
                     isActive
                       ? 'bg-[#E8F8EE] text-[#2BB6AF]'
                       : 'text-gray-700 hover:bg-gray-50 hover:text-[#2BB6AF]'
@@ -164,7 +164,7 @@ export function UserSidebar({ isOpen = true, onClose }: UserSidebarProps) {
 
           {/* Admin Link */}
           {isAdmin && (
-            <div className="px-4 pb-2">
+            <div className="px-3 pb-2">
               <Link
                 to="/admin"
                 className="flex items-center gap-3 rounded-xl px-4 py-3 bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200/50 hover:from-purple-100 hover:to-indigo-100 transition-all group"
@@ -186,10 +186,10 @@ export function UserSidebar({ isOpen = true, onClose }: UserSidebarProps) {
           )}
 
           {/* User Info Footer */}
-          <div className="border-t border-gray-200/80 p-4 bg-gradient-to-r from-gray-50/50 to-transparent">
+          <div className="border-t border-gray-200/80 p-3 bg-gradient-to-r from-gray-50/50 to-transparent">
             <Link
               to="/profile"
-              className="flex items-center gap-3 rounded-xl p-3 hover:bg-gray-100/80 transition-colors group"
+              className="flex items-center gap-3 rounded-xl p-2 hover:bg-gray-100/80 transition-colors group"
               onClick={() => {
                 if (window.innerWidth < 1024 && onClose) {
                   onClose();
@@ -197,10 +197,10 @@ export function UserSidebar({ isOpen = true, onClose }: UserSidebarProps) {
               }}
             >
               <div className="relative">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#2BB6AF] to-[#239a94] text-white font-bold text-lg shadow-md group-hover:scale-105 transition-transform">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#2BB6AF] to-[#239a94] text-white font-bold text-base shadow-md group-hover:scale-105 transition-transform">
                   {user?.name?.charAt(0)?.toUpperCase() || 'U'}
                 </div>
-                <div className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full bg-[#2BB6AF] border-2 border-white"></div>
+                <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-[#2BB6AF] border-2 border-white"></div>
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-gray-900 truncate">

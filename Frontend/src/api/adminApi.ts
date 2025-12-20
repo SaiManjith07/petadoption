@@ -161,8 +161,21 @@ export const adminApi = {
    * Get all chats
    */
   async getAllChats(): Promise<any[]> {
+    try {
     const response = await apiClient.get('/admin/chats');
-    return response.data.data || response.data || [];
+      const data = response.data.data || response.data || [];
+      console.log('API Response:', {
+        status: response.status,
+        dataLength: Array.isArray(data) ? data.length : 0,
+        hasError: !!response.data.error,
+        error: response.data.error
+      });
+      return data;
+    } catch (error: any) {
+      console.error('Error in getAllChats:', error);
+      console.error('Error response:', error?.response?.data);
+      throw error;
+    }
   },
 
   /**
@@ -183,8 +196,15 @@ export const adminApi = {
    * Get all chat requests
    */
   async getAllChatRequests(): Promise<any[]> {
-    const response = await apiClient.get('/admin/chats/requests');
+    try {
+      // Use the new endpoint from chats app instead of adminpanel
+      const response = await apiClient.get('/chats/requests/all/');
     return response.data.data || response.data || [];
+    } catch (error: any) {
+      console.error('Error fetching chat requests:', error);
+      // Fallback to empty array if endpoint fails
+      return [];
+    }
   },
 
   /**
@@ -199,13 +219,37 @@ export const adminApi = {
   },
 
   /**
-   * Approve a chat request (new workflow)
+   * Start verification for a chat request (new workflow)
    */
-  async approveChatRequest(requestId: number, adminNotes?: string): Promise<any> {
-    const response = await apiClient.patch(`/chats/requests/${requestId}/admin-approve/`, {
+  async startVerification(requestId: number): Promise<any> {
+    try {
+      const response = await apiClient.post(`/chats/requests/${requestId}/admin-start-verification/`);
+      return response.data;
+    } catch (error: any) {
+      console.error('startVerification error:', error);
+      console.error('Request URL:', `/chats/requests/${requestId}/admin-start-verification/`);
+      console.error('Request ID:', requestId);
+      throw error;
+    }
+  },
+
+  /**
+   * Complete verification and add target user (new workflow)
+   */
+  async completeVerification(requestId: number, targetUserId?: number, adminNotes?: string): Promise<any> {
+    const response = await apiClient.post(`/chats/requests/${requestId}/admin-complete-verification/`, {
+      target_user_id: targetUserId,
       admin_notes: adminNotes || '',
     });
     return response.data;
+  },
+
+  /**
+   * Approve a chat request (legacy - redirects to start verification)
+   */
+  async approveChatRequest(requestId: number, adminNotes?: string): Promise<any> {
+    // Use the new verification workflow
+    return this.startVerification(requestId);
   },
 
   /**
@@ -283,20 +327,28 @@ export const adminApi = {
   /**
    * Create a chat request from admin to user (admin-initiated chat)
    */
+  /**
+   * Create a direct chat room between admin and user (no pet, no chat request).
+   * This is for normal communication, not pet-related.
+   */
   async createChatRequest(userId: string | number, message?: string): Promise<any> {
     try {
-      // Try admin-specific endpoint for creating chat requests
+      // Admin endpoint creates a direct chat room (not a chat request)
       const response = await apiClient.post('/admin/chats/request/', {
         target_user_id: userId,
         user_id: userId,  // Support both field names
         message: message || 'Admin wants to connect with you.',
         type: 'admin_contact',
       });
-      return response.data.data || response.data;
+      // Return the full response data structure
+      const responseData = response.data.data || response.data;
+      // If response has room_id at top level, include it
+      if (response.data.room_id) {
+        return { ...responseData, room_id: response.data.room_id };
+      }
+      return responseData;
     } catch (error: any) {
-      // If admin endpoint doesn't exist, try using regular chat API with a workaround
-      // We'll need to use the chatApi.sendChatRequest but it requires petId
-      // For now, throw the error and let the caller handle it
+      console.error('Error creating direct chat room:', error);
       throw error;
     }
   },
@@ -360,6 +412,21 @@ export const adminApi = {
    */
   async deletePet(petId: string | number): Promise<any> {
     return { success: true, message: 'Pet deleted' };
+  },
+
+  /**
+   * View chat in read-only mode (for admins who didn't verify the request)
+   */
+  async viewChatReadOnly(roomId: string): Promise<{
+    room: any;
+    messages: any[];
+    participants: any[];
+    is_readonly: boolean;
+    is_verifying_admin: boolean;
+    chat_request: any;
+  }> {
+    const response = await apiClient.get(`/chats/rooms/${roomId}/admin-view/`);
+    return response.data;
   },
 };
 

@@ -1,8 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Shield, CheckCircle, X, AlertCircle, Search, ArrowLeft, Eye, Stethoscope } from 'lucide-react';
-import { AdminSidebar } from '@/components/layout/AdminSidebar';
-import { AdminTopNav } from '@/components/layout/AdminTopNav';
 import { MedicalDetailsDialog } from '@/components/admin/MedicalDetailsDialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -38,7 +36,6 @@ export default function AdminLostPets() {
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showMedicalDialog, setShowMedicalDialog] = useState(false);
   const [selectedPetForMedical, setSelectedPetForMedical] = useState<{ id: number; name?: string } | null>(null);
 
@@ -300,28 +297,7 @@ export default function AdminLostPets() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Fixed Sidebar - Desktop */}
-      <div className="hidden lg:block">
-        <AdminSidebar isOpen={true} onClose={() => setSidebarOpen(false)} />
-      </div>
-      
-      {/* Mobile Sidebar */}
-      <div className="lg:hidden">
-        <AdminSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      </div>
-
-      {/* Main Content */}
-      <div className="flex flex-col min-w-0 lg:ml-64">
-        <AdminTopNav 
-          onMenuToggle={() => setSidebarOpen(!sidebarOpen)} 
-          sidebarOpen={sidebarOpen}
-          onRefresh={loadLostPets}
-        />
-
-        {/* Main Content Area - Scrollable */}
-        <main className="flex-1 overflow-y-auto">
-          <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6">
             <div className="max-w-7xl mx-auto space-y-8">
             {/* Header */}
             <div className="flex items-center justify-between">
@@ -704,9 +680,6 @@ export default function AdminLostPets() {
             </Card>
           </div>
         )}
-            </div>
-          </div>
-        </main>
       </div>
 
       {/* Medical Details Dialog */}

@@ -272,7 +272,7 @@ export default function ChatList() {
                             </Badge>
                           </div>
                           <p className="text-sm text-gray-600 mb-3">
-                            Pet ID: {chat.petId}
+                            Pet ID: {chat.petId || chat.pet_id || 'N/A'}
                           </p>
                           {chat.messages && chat.messages.length > 0 && (
                             <p className="text-sm text-gray-500 line-clamp-2">
@@ -475,18 +475,21 @@ export default function ChatList() {
                               variant={
                                 request.status === 'active' ? 'default' :
                                 request.status === 'admin_approved' ? 'secondary' :
+                                request.status === 'admin_verifying' ? 'secondary' :
                                 request.status === 'rejected' ? 'destructive' :
                                 'outline'
                               }
                               className={
                                 request.status === 'active' ? 'bg-green-600' :
                                 request.status === 'admin_approved' ? 'bg-blue-600' :
+                                request.status === 'admin_verifying' ? 'bg-purple-600' :
                                 request.status === 'rejected' ? 'bg-red-600' :
                                 'bg-yellow-600'
                               }
                             >
                               {request.status === 'active' ? 'Active Chat' :
                                request.status === 'admin_approved' ? 'Waiting for Owner' :
+                               request.status === 'admin_verifying' ? 'Admin Verifying' :
                                request.status === 'rejected' ? 'Rejected' :
                                request.status === 'pending' ? 'Pending Admin' :
                                request.status}
@@ -510,7 +513,7 @@ export default function ChatList() {
                             <div className="mt-3">
                               <Button
                                 onClick={() => {
-                                  const roomId = request.chat_room?.room_id || request.chat_room?.id || request.room_id;
+                                  const roomId = request.final_chat_room?.room_id || request.chat_room?.room_id || request.chat_room?.id || request.room_id;
                                   if (roomId) {
                                     navigate(`/chat/${roomId}`);
                                   } else {
@@ -527,6 +530,26 @@ export default function ChatList() {
                                 <MessageSquare className="h-4 w-4 mr-2" />
                                 Open Chat
                               </Button>
+                            </div>
+                          )}
+                          {request.status === 'admin_verifying' && (
+                            <div className="mt-2 space-y-2">
+                              <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 text-xs">
+                                ⏳ Admin is verifying your request
+                              </Badge>
+                              {request.admin_verification_room?.room_id && (
+                                <Button
+                                  onClick={() => {
+                                    navigate(`/chat/${request.admin_verification_room.room_id}`);
+                                  }}
+                                  variant="outline"
+                                  size="sm"
+                                  className="w-full"
+                                >
+                                  <MessageSquare className="h-4 w-4 mr-2" />
+                                  Chat with Admin
+                                </Button>
+                              )}
                             </div>
                           )}
                           {request.status === 'admin_approved' && (

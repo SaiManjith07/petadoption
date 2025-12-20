@@ -130,7 +130,7 @@ export function AdminSidebarNew({ isOpen = true, onClose }: AdminSidebarNewProps
                 )}
               >
                 <Icon className={cn('h-5 w-5', active && 'text-[#2E7D32]')} />
-                <span>{item.title}</span>
+                <span className="pl-4">{item.title}</span>
               </Link>
             );
           })}

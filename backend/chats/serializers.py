@@ -10,11 +10,84 @@ except ImportError:
 class MessageSerializer(serializers.ModelSerializer):
     """Serializer for Message model."""
     sender = UserSerializer(read_only=True)
+    image_url = serializers.SerializerMethodField()
+    message_type = serializers.SerializerMethodField()
+    image = serializers.SerializerMethodField()
+    is_deleted = serializers.SerializerMethodField()
 
     class Meta:
         model = Message
-        fields = ['id', 'room', 'sender', 'content', 'read_status', 'created_at']
-        read_only_fields = ['id', 'created_at']
+        fields = [
+            'id', 'room', 'sender', 'content', 'message_type', 
+            'image', 'image_url', 'is_deleted', 'deleted_at',
+            'read_status', 'created_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'deleted_at']
+    
+    def get_image(self, obj):
+        """Get image field safely."""
+        try:
+            if hasattr(obj, 'image'):
+                image_value = getattr(obj, 'image', None)
+                if image_value:
+                    return str(image_value)
+        except Exception:
+            pass
+        return None
+    
+    def get_is_deleted(self, obj):
+        """Get is_deleted field safely."""
+        try:
+            return getattr(obj, 'is_deleted', False)
+        except Exception:
+            return False
+    
+    def get_message_type(self, obj):
+        """Get message_type safely, defaulting to 'text' if column doesn't exist."""
+        try:
+            # First try to get message_type directly
+            if hasattr(obj, 'message_type'):
+                try:
+                    return obj.message_type
+                except Exception:
+                    pass
+            # Check if it's an image message (only if image field exists)
+            try:
+                if hasattr(obj, 'image'):
+                    image_value = getattr(obj, 'image', None)
+                    if image_value:
+                        return 'image'
+            except Exception:
+                pass
+            return 'text'
+        except Exception:
+            return 'text'
+    
+    def get_image_url(self, obj):
+        """Get full URL for image."""
+        try:
+            # Check if image field exists and has a value
+            if hasattr(obj, 'image'):
+                image_value = getattr(obj, 'image', None)
+                if image_value:
+                    # Check if is_deleted exists and is False
+                    is_deleted = getattr(obj, 'is_deleted', False)
+                    if not is_deleted:
+                        try:
+                            # Try to get the URL safely
+                            if hasattr(image_value, 'url'):
+                                image_url = image_value.url
+                            else:
+                                image_url = str(image_value)
+                            request = self.context.get('request')
+                            if request:
+                                return request.build_absolute_uri(image_url)
+                            return image_url
+                        except (AttributeError, Exception) as url_error:
+                            print(f"Error getting image URL: {url_error}")
+        except Exception as e:
+            print(f"Error in get_image_url: {e}")
+        return None
 
 
 class ChatRoomSerializer(serializers.ModelSerializer):
@@ -40,9 +113,12 @@ class ChatRoomSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'room_id', 'user_a', 'user_b', 'created_at', 'updated_at']
 
     def get_last_message(self, obj):
-        last_msg = obj.messages.last()
-        if last_msg:
-            return MessageSerializer(last_msg).data
+        try:
+            last_msg = obj.messages.last()
+            if last_msg:
+                return MessageSerializer(last_msg, context=self.context).data
+        except Exception as e:
+            print(f"Error in ChatRoomSerializer.get_last_message: {e}")
         return None
 
     def get_unread_count(self, obj):
@@ -68,12 +144,17 @@ class ChatRoomListSerializer(serializers.ModelSerializer):
     last_message = serializers.SerializerMethodField()
     unread_count = serializers.SerializerMethodField()
     other_participant = serializers.SerializerMethodField()
+    pet_id = serializers.SerializerMethodField()
+    type = serializers.SerializerMethodField()
+    verified_by_admin_id = serializers.SerializerMethodField()
+    chat_request = serializers.SerializerMethodField()
 
     class Meta:
         model = ChatRoom
         fields = [
             'id', 'room_id', 'user_a', 'user_b', 'participants', 'other_participant', 
-            'created_at', 'updated_at', 'is_active', 'last_message', 'unread_count'
+            'created_at', 'updated_at', 'is_active', 'last_message', 'unread_count',
+            'pet_id', 'type', 'verified_by_admin_id', 'chat_request'
         ]
     
     def get_participants(self, obj):
@@ -155,27 +236,40 @@ class ChatRoomListSerializer(serializers.ModelSerializer):
     def get_last_message(self, obj):
         try:
             if hasattr(obj, 'messages'):
-                last_msg = obj.messages.last()
-                if last_msg:
+                # Use values() to avoid loading full Message objects and accessing fields that might not exist
+                # Only select fields that definitely exist
+                last_msg_data = obj.messages.values('id', 'content', 'created_at', 'sender_id').order_by('-created_at').first()
+                if last_msg_data:
                     sender_name = None
-                    if last_msg.sender:
-                        sender_name = getattr(last_msg.sender, 'name', None) or getattr(last_msg.sender, 'email', str(last_msg.sender))
+                    if last_msg_data.get('sender_id'):
+                        try:
+                            from django.contrib.auth import get_user_model
+                            User = get_user_model()
+                            sender = User.objects.get(id=last_msg_data['sender_id'])
+                            sender_name = getattr(sender, 'name', None) or getattr(sender, 'email', str(sender))
+                        except Exception:
+                            sender_name = f"User {last_msg_data['sender_id']}"
+                    content = last_msg_data.get('content', '')
+                    created_at = last_msg_data.get('created_at')
                     return {
-                        'content': last_msg.content[:50] + '...' if len(last_msg.content) > 50 else last_msg.content,
-                        'created_at': last_msg.created_at.isoformat() if hasattr(last_msg, 'created_at') and last_msg.created_at else None,
+                        'content': content[:50] + '...' if len(content) > 50 else content,
+                        'created_at': created_at.isoformat() if created_at else None,
                         'sender': sender_name
                     }
         except Exception as e:
-            print(f"Error in get_last_message: {e}")
+            print(f"Error in ChatRoomListSerializer.get_last_message: {e}")
+            import traceback
+            print(traceback.format_exc())
         return None
 
     def get_unread_count(self, obj):
         try:
             request = self.context.get('request')
             if request and request.user:
-                return obj.messages.filter(read_status=False).exclude(sender=request.user).count()
-        except Exception:
-            pass
+                # Use values() to avoid loading full Message objects
+                return obj.messages.filter(read_status=False).exclude(sender_id=request.user.id).count()
+        except Exception as e:
+            print(f"Error in get_unread_count: {e}")
         return 0
 
     def get_other_participant(self, obj):
@@ -208,17 +302,101 @@ class ChatRoomListSerializer(serializers.ModelSerializer):
         except Exception as e:
             print(f"Error in get_other_participant: {e}")
         return None
+    
+    def get_pet_id(self, obj):
+        """Get pet ID from chat_request if available."""
+        try:
+            if hasattr(obj, 'chat_request') and obj.chat_request:
+                chat_request = obj.chat_request
+                if hasattr(chat_request, 'pet') and chat_request.pet:
+                    return chat_request.pet.id
+        except Exception as e:
+            print(f"Error in get_pet_id: {e}")
+        return None
+    
+    def get_type(self, obj):
+        """Get chat type from chat_request if available. For direct admin-created rooms (no chat_request), return 'normal'."""
+        try:
+            # Check if this is a direct chat room (no chat_request) - admin-created communication
+            if not hasattr(obj, 'chat_request') or not obj.chat_request:
+                # This is a direct communication room created by admin (no pet, no request)
+                return 'normal'
+            
+            # If there's a chat_request, get type from it
+            chat_request = obj.chat_request
+            if hasattr(chat_request, 'type') and chat_request.type:
+                return chat_request.type
+        except Exception as e:
+            print(f"Error in get_type: {e}")
+        # Default to 'normal' for direct communication
+        return 'normal'
+    
+    def get_verified_by_admin_id(self, obj):
+        """Get verified_by_admin ID from chat_request if available."""
+        try:
+            if hasattr(obj, 'chat_request') and obj.chat_request:
+                chat_request = obj.chat_request
+                if hasattr(chat_request, 'verified_by_admin') and chat_request.verified_by_admin:
+                    return chat_request.verified_by_admin.id
+        except Exception as e:
+            print(f"Error in get_verified_by_admin_id: {e}")
+        return None
+    
+    def get_chat_request(self, obj):
+        """Get chat_request data if available."""
+        try:
+            if hasattr(obj, 'chat_request') and obj.chat_request:
+                return ChatRequestSerializer(obj.chat_request, context=self.context).data
+        except Exception as e:
+            print(f"Error in get_chat_request: {e}")
+        return None
 
 
 class ChatRequestSerializer(serializers.ModelSerializer):
     """Serializer for ChatRequest model."""
     requester = UserSerializer(read_only=True)
-    target = UserSerializer(read_only=True)
+    target = UserSerializer(read_only=True, allow_null=True)
+    verified_by_admin = UserSerializer(read_only=True, allow_null=True)
     pet = serializers.SerializerMethodField()
     pet_id = serializers.SerializerMethodField()
-    target_id = serializers.IntegerField(write_only=True, required=False)
+    target_id = serializers.SerializerMethodField()
     requester_id = serializers.IntegerField(write_only=True, required=False)
     room_id = serializers.SerializerMethodField()
+    admin_verification_room = serializers.SerializerMethodField()
+    final_chat_room = serializers.SerializerMethodField()
+    
+    def get_admin_verification_room(self, obj):
+        """Get admin_verification_room safely."""
+        try:
+            if hasattr(obj, 'admin_verification_room') and obj.admin_verification_room:
+                return ChatRoomSerializer(obj.admin_verification_room, context=self.context).data
+        except Exception as e:
+            print(f"Error serializing admin_verification_room: {e}")
+        return None
+    
+    def get_final_chat_room(self, obj):
+        """Get final_chat_room safely."""
+        try:
+            if hasattr(obj, 'final_chat_room') and obj.final_chat_room:
+                return ChatRoomSerializer(obj.final_chat_room, context=self.context).data
+        except Exception as e:
+            print(f"Error serializing final_chat_room: {e}")
+        return None
+    
+    def get_target_id(self, obj):
+        """Get target_id safely."""
+        try:
+            if hasattr(obj, 'target') and obj.target:
+                return obj.target.id
+            # Try to extract from admin_notes if target is null
+            if hasattr(obj, 'admin_notes') and obj.admin_notes:
+                import re
+                match = re.search(r'Target user ID: (\d+)', obj.admin_notes)
+                if match:
+                    return int(match.group(1))
+        except Exception as e:
+            print(f"Error getting target_id: {e}")
+        return None
     
     def get_pet(self, obj):
         """Get pet object safely."""
@@ -262,10 +440,11 @@ class ChatRequestSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'pet', 'pet_id', 'requester', 'requester_id', 'target', 'target_id',
             'type', 'status', 'message', 'admin_notes', 'created_at', 'updated_at',
-            'admin_approved_at', 'user_accepted_at', 'room_id'
+            'admin_approved_at', 'user_accepted_at', 'room_id', 'admin_verification_room', 'final_chat_room',
+            'verified_by_admin'
         ]
         read_only_fields = [
-            'id', 'created_at', 'updated_at', 'admin_approved_at', 'user_accepted_at'
+            'id', 'created_at', 'updated_at', 'admin_approved_at', 'user_accepted_at', 'target_id'
         ]
     
     def get_room_id(self, obj):

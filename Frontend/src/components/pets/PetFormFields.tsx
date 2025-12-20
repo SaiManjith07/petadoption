@@ -17,7 +17,7 @@ export const SpeciesSelector = ({ value, onChange, error }) => {
       <Label htmlFor="species">
         Species <span className="text-red-500">*</span>
       </Label>
-      <Select value={value} onValueChange={onChange}>
+      <Select value={value || ''} onValueChange={onChange}>
         <SelectTrigger id="species" className={error ? 'border-red-500' : ''}>
           <SelectValue placeholder="Select species" />
         </SelectTrigger>
@@ -57,7 +57,7 @@ export const SexSelector = ({ value, onChange, error }) => (
     <Label htmlFor="sex">
       Sex <span className="text-red-500">*</span>
     </Label>
-    <Select value={value} onValueChange={onChange}>
+    <Select value={value || ''} onValueChange={onChange}>
       <SelectTrigger id="sex" className={error ? 'border-red-500' : ''}>
         <SelectValue placeholder="Select sex" />
       </SelectTrigger>
@@ -77,7 +77,7 @@ export const SexSelector = ({ value, onChange, error }) => (
 export const AgeSelector = ({ value, onChange, error }) => (
   <div className="space-y-2">
     <Label htmlFor="age">Estimated Age</Label>
-    <Select value={value} onValueChange={onChange}>
+    <Select value={value || ''} onValueChange={onChange}>
       <SelectTrigger id="age" className={error ? 'border-red-500' : ''}>
         <SelectValue placeholder="Select age" />
       </SelectTrigger>
@@ -99,7 +99,7 @@ export const AgeSelector = ({ value, onChange, error }) => (
 export const SizeSelector = ({ value, onChange, error }) => (
   <div className="space-y-2">
     <Label htmlFor="size">Size</Label>
-    <Select value={value} onValueChange={onChange}>
+    <Select value={value || ''} onValueChange={onChange}>
       <SelectTrigger id="size" className={error ? 'border-red-500' : ''}>
         <SelectValue placeholder="Select size" />
       </SelectTrigger>
@@ -140,7 +140,7 @@ export const ColorInput = ({ label, value, onChange, error, required = false }) 
 export const CoatTypeSelector = ({ value, onChange, error }) => (
   <div className="space-y-2">
     <Label htmlFor="coatType">Coat Type</Label>
-    <Select value={value} onValueChange={onChange}>
+    <Select value={value || ''} onValueChange={onChange}>
       <SelectTrigger id="coatType" className={error ? 'border-red-500' : ''}>
         <SelectValue placeholder="Select coat type" />
       </SelectTrigger>
@@ -297,7 +297,7 @@ export const ContactPreferenceSelector = ({ value, onChange, error }) => (
     <Label htmlFor="contact">
       How should we contact you? <span className="text-red-500">*</span>
     </Label>
-    <Select value={value} onValueChange={onChange}>
+    <Select value={value || ''} onValueChange={onChange}>
       <SelectTrigger id="contact" className={error ? 'border-red-500' : ''}>
         <SelectValue placeholder="Select contact method" />
       </SelectTrigger>

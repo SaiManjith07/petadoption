@@ -201,10 +201,10 @@ export function AdminTopNav({ onMenuToggle, sidebarOpen, onRefresh, isRefreshing
                 <>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
-                    className="text-center justify-center"
-                    onClick={() => navigate('/notifications')}
+                    className="text-center justify-center text-purple-600 font-medium hover:text-purple-700"
+                    onClick={() => navigate('/admin/notifications')}
                   >
-                    View all notifications
+                    View More
                   </DropdownMenuItem>
                 </>
               )}

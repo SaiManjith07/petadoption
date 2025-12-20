@@ -6,8 +6,13 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 from django.utils import timezone
-from channels.layers import get_channel_layer
-from asgiref.sync import async_to_sync
+try:
+    from channels.layers import get_channel_layer
+    from asgiref.sync import async_to_sync
+except ImportError:
+    # Channels not installed - WebSocket notifications will be skipped
+    get_channel_layer = None
+    async_to_sync = lambda x: x
 from .models import ChatRequest, ChatRoom
 from .serializers import ChatRequestSerializer
 import json
@@ -16,188 +21,49 @@ import json
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def create_chat_request(request):
-    """Create a chat request from User A to User B."""
+    """Create a chat request - NEW SIMPLIFIED FLOW.
+    
+    Flow:
+    1. User creates request (status: 'pending') - target user doesn't need to exist
+    2. Admin starts verification - creates room with requester (status: 'admin_verifying')
+    3. Admin completes verification - adds target user to same room (status: 'active')
+    """
     import traceback
     try:
-        # Support both new format (target_id) and old format (pet_id + requester_id)
+        pet_id = request.data.get('pet_id')
         target_id = request.data.get('target_id')
-        pet_id = request.data.get('pet_id')  # Optional
-        requester_id = request.data.get('requester_id')  # For backward compatibility
         message = request.data.get('message', '')
         request_type = request.data.get('type', 'general')
         
-        # Debug logging
-        print(f"=" * 80)
-        print(f"CREATE CHAT REQUEST - Received data:")
+        print(f"CREATE CHAT REQUEST:")
         print(f"  pet_id: {pet_id}")
         print(f"  target_id: {target_id}")
-        print(f"  requester_id: {requester_id}")
-        print(f"  requester (from request.user): {request.user.id} ({request.user.email})")
-        print(f"  type: {request_type}")
-        print(f"  message_length: {len(message) if message else 0}")
-        print(f"=" * 80)
+        print(f"  requester: {request.user.id} ({request.user.email})")
+        print(f"  message: {message[:50] if message else ''}...")
         
-        # If target_id not provided, try to get from pet
-        validated_pet_id = None  # Store validated pet_id for later use
-        user_validated_via_pet = False  # Flag to track if we validated user via pet_id path
+        # Get target_id from pet if not provided directly
         if not target_id and pet_id:
             try:
                 from pets.models import Pet
-                try:
-                    pet_id_int = int(pet_id)
-                    validated_pet_id = pet_id_int  # Store for later
-                except (ValueError, TypeError):
-                    return Response(
-                        {'error': 'Invalid pet_id format'},
-                        status=status.HTTP_400_BAD_REQUEST
-                    )
+                pet = Pet.objects.get(id=int(pet_id))
                 
-                try:
-                    # Get pet without select_related to avoid issues with invalid foreign keys
-                    pet = Pet.objects.get(id=pet_id_int)
-                    
-                    # Check and fix invalid foreign key references BEFORE accessing them
-                    from django.contrib.auth import get_user_model
-                    User = get_user_model()
-                    
-                    # Check and validate posted_by_id
-                    valid_posted_by_id = None
-                    if pet.posted_by_id:
-                        try:
-                            posted_by_user = User.objects.get(id=pet.posted_by_id)
-                            valid_posted_by_id = pet.posted_by_id
-                            print(f"✓ Pet {pet_id_int} posted_by_id {pet.posted_by_id} is valid (user: {posted_by_user.email})")
-                        except User.DoesNotExist:
-                            print(f"✗ Pet {pet_id_int} posted_by_id {pet.posted_by_id} is INVALID - clearing it")
-                            pet.posted_by_id = None
-                            pet.save(update_fields=['posted_by_id'])
-                    
-                    # Check and validate owner_id
-                    valid_owner_id = None
-                    if pet.owner_id:
-                        try:
-                            owner_user = User.objects.get(id=pet.owner_id)
-                            valid_owner_id = pet.owner_id
-                            print(f"✓ Pet {pet_id_int} owner_id {pet.owner_id} is valid (user: {owner_user.email})")
-                        except User.DoesNotExist:
-                            print(f"✗ Pet {pet_id_int} owner_id {pet.owner_id} is INVALID - clearing it")
-                            pet.owner_id = None
-                            pet.save(update_fields=['owner_id'])
-                    
-                    # Refresh to get updated state
-                    pet.refresh_from_db()
-                except Pet.DoesNotExist:
-                    return Response(
-                        {'error': f'Pet with id {pet_id_int} not found'},
-                        status=status.HTTP_404_NOT_FOUND
-                    )
-                
-                # Get pet owner (posted_by for found pets, owner for owned pets)
-                # For "Found" pets, posted_by is the person who found/reported the pet
-                # For "Lost" pets, posted_by is the person who lost the pet
-                # owner is the current owner (if adopted)
-                # IMPORTANT: Only use validated user IDs, not the pet.posted_by/owner objects
-                # which might still have invalid references
-                
-                # Use validated IDs instead of accessing pet.posted_by/owner directly
-                if valid_posted_by_id:
-                    target_id = valid_posted_by_id
-                    print(f"✓ Using posted_by as target: {target_id} (requester is {request.user.id})")
-                elif valid_owner_id:
-                    target_id = valid_owner_id
-                    print(f"✓ Using owner as target: {target_id} (requester is {request.user.id})")
+                # Get target from pet (posted_by or owner) - don't validate user exists
+                if pet.posted_by_id:
+                    target_id = pet.posted_by_id
+                    print(f"✓ Using pet.posted_by_id: {target_id}")
+                elif pet.owner_id:
+                    target_id = pet.owner_id
+                    print(f"✓ Using pet.owner_id: {target_id}")
                 else:
-                    print(f"✗ Pet {pet_id_int} has no valid posted_by or owner. Pet status: {getattr(pet, 'adoption_status', 'unknown')}")
-                    return Response(
-                        {
-                            'error': 'Cannot create chat request',
-                            'detail': 'This pet does not have a valid owner or finder associated with it. The pet\'s owner information may have been invalid and has been cleared. Please contact support to assign a valid owner to this pet before creating a chat request.',
-                            'pet_id': pet_id_int
-                        },
-                        status=status.HTTP_400_BAD_REQUEST
-                    )
-                
-                # Double-check target user exists (should always pass at this point, but be safe)
-                # Use get_user_model() to ensure we're using the correct User model
-                try:
-                    # Try to get the user - use all() manager to bypass any custom filters
-                    target_user_obj = User.objects.filter(id=target_id).first()
-                    if not target_user_obj:
-                        # Try with get() to see the exact error
-                        try:
-                            target_user_obj = User.objects.get(id=target_id)
-                        except User.DoesNotExist:
-                            raise User.DoesNotExist(f"User with id {target_id} does not exist")
-                    
-                    print(f"✓✓ Verified target user {target_id} exists: {target_user_obj.email} (is_active={target_user_obj.is_active})")
-                    
-                    # Mark that we validated the user via pet_id path
-                    user_validated_via_pet = True
-                    
-                    # Check if user is active (optional - you might want to allow inactive users)
-                    if not target_user_obj.is_active:
-                        print(f"⚠ Warning: Target user {target_id} is inactive")
-                except User.DoesNotExist as e:
-                    print(f"✗✗ ERROR: Target user {target_id} does not exist in database after validation!")
-                    print(f"  Error: {e}")
-                    # List all users for debugging
-                    all_users = list(User.objects.all().values_list('id', 'email', 'is_active'))
-                    print(f"  Available users: {all_users}")
-                    print(f"  Looking for user ID: {target_id} (type: {type(target_id)})")
-                    return Response(
-                        {
-                            'error': 'Pet owner not found',
-                            'detail': f'The pet (ID: {pet_id_int}) was associated with user ID {target_id}, but that user does not exist in the database. Please contact support to assign a valid owner to this pet before creating a chat request.',
-                            'pet_id': pet_id_int,
-                            'invalid_user_id': target_id,
-                            'debug_info': {
-                                'available_user_ids': [u[0] for u in all_users],
-                                'target_id_type': str(type(target_id)),
-                                'target_id_value': str(target_id)
-                            }
-                        },
-                        status=status.HTTP_400_BAD_REQUEST
-                    )
-                
-                # Early check: if requester is the same as target, reject immediately
-                if target_id == request.user.id:
-                    print(f"EARLY REJECT: User {request.user.id} is the pet owner/finder. Cannot request chat with themselves.")
-                    return Response(
-                        {
-                            'error': 'Cannot request chat with yourself',
-                            'detail': f'You are the owner/finder of this pet (ID: {pet_id_int}). You cannot create a chat request with yourself.'
-                        },
-                        status=status.HTTP_400_BAD_REQUEST
-                    )
+                    # No owner - use placeholder, admin will handle
+                    target_id = request.user.id  # Placeholder
+                    print(f"⚠ Pet has no owner, using placeholder target_id. Admin will update.")
             except Exception as e:
-                error_msg = str(e)
-                error_trace = traceback.format_exc()
-                print(f"✗✗✗ ERROR in pet_id path: {error_msg}")
-                print(error_trace)
-                # Reset validated_pet_id since we had an error
-                validated_pet_id = None
+                print(f"Error getting pet: {e}")
                 return Response(
-                    {
-                        'error': 'Error getting pet owner',
-                        'detail': error_msg,
-                        'traceback': error_trace if request.user.is_staff else None
-                    },
-                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
-                )
-        
-        # Verify requester is the current user (for backward compatibility)
-        # Only check if requester_id is provided and not empty
-        if requester_id:
-            try:
-                requester_id_int = int(requester_id)
-                if requester_id_int != request.user.id:
-                    return Response(
-                        {'error': 'You can only create requests for yourself'},
-                        status=status.HTTP_403_FORBIDDEN
+                    {'error': f'Pet with id {pet_id} not found'},
+                    status=status.HTTP_404_NOT_FOUND
                     )
-            except (ValueError, TypeError):
-                # If requester_id is invalid, ignore it (will use request.user)
-                pass
         
         if not target_id:
             return Response(
@@ -205,250 +71,79 @@ def create_chat_request(request):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        try:
-            target_id_int = int(target_id)
-        except (ValueError, TypeError):
-            return Response(
-                {'error': 'Invalid target_id format'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        target_id_int = int(target_id)
         
+        # Don't allow self-requests
         if target_id_int == request.user.id:
-            print(f"ERROR: User {request.user.id} is trying to request chat with themselves (target_id={target_id_int})")
             return Response(
-                {
-                    'error': 'Cannot request chat with yourself',
-                    'detail': 'You cannot create a chat request with yourself. The pet owner/finder is the same as you.'
-                },
+                {'error': 'Cannot request chat with yourself'},
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        # Check if request already exists
-        try:
-            existing = ChatRequest.objects.filter(
-                requester=request.user,
-                target_id=target_id_int,
-                status__in=['pending', 'admin_approved']
-            ).first()
-            
-            if existing:
-                return Response(
-                    {'error': 'You already have a pending request with this user'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-        except Exception as e:
-            print(f"Error checking existing requests: {e}")
-            print(traceback.format_exc())
+        # Check for existing pending request
+        existing = ChatRequest.objects.filter(
+            requester=request.user,
+            target_id=target_id_int,
+            status__in=['pending', 'admin_verifying', 'admin_approved']
+        ).first()
         
-        # Create chat request
+        if existing:
+            return Response(
+                {'error': 'You already have a pending request'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Create chat request - DON'T VALIDATE TARGET USER EXISTS
+        # Admin will handle verification and add users to room
+        # First, try to verify if target user exists
+        target_user_obj = None
         try:
-            # Use validated_pet_id if we already validated it, otherwise try to convert pet_id
-            pet_id_to_use = validated_pet_id
-            if pet_id_to_use is None and pet_id:
-                try:
-                    pet_id_to_use = int(pet_id)
-                except (ValueError, TypeError):
-                    pet_id_to_use = None
-            
-            # Create chat request with proper error handling
-            try:
-                # Verify target user exists (only if we didn't already validate it in the pet_id path)
-                # If target_id came from pet_id path, we already validated it at line 113
-                # Only validate here if target_id was provided directly (not from pet)
-                from django.contrib.auth import get_user_model
-                User = get_user_model()
-                
-                # Only check if we haven't already validated (i.e., target_id was provided directly, not from pet)
-                # IMPORTANT: If validated_pet_id is set OR user_validated_via_pet is True, we already validated the user in the pet_id path above
-                print(f"DEBUG: validated_pet_id={validated_pet_id}, user_validated_via_pet={user_validated_via_pet}, target_id_int={target_id_int}, pet_id={pet_id}")
-                
-                if not validated_pet_id and not user_validated_via_pet:  # If we didn't go through pet_id validation path
-                    print(f"DEBUG: Going through direct target_id validation path (validated_pet_id is None)")
-                    try:
-                        target_user = User.objects.get(id=target_id_int)
-                        print(f"✓ Verified target user {target_id_int} exists (direct target_id path): {target_user.email}")
-                    except User.DoesNotExist:
-                        print(f"✗ Target user {target_id_int} does not exist (direct target_id path)")
-                        # List all users for debugging
-                        all_users = list(User.objects.all().values_list('id', 'email', 'is_active'))
-                        print(f"  Available users: {all_users}")
-                        print(f"  Looking for user ID: {target_id_int} (type: {type(target_id_int)})")
-                        return Response(
-                            {
-                                'error': 'Invalid reference',
-                                'detail': f'The target user with id {target_id_int} does not exist. Please verify the user exists.',
-                                'debug_info': {
-                                    'available_user_ids': [u[0] for u in all_users],
-                                    'target_id': target_id_int
-                                }
-                            },
-                            status=status.HTTP_400_BAD_REQUEST
-                        )
-                else:
-                    # We already validated the user in the pet_id path, so we can trust target_id_int
-                    print(f"✓ Skipping redundant validation - already validated target user {target_id_int} in pet_id path (validated_pet_id={validated_pet_id}, user_validated_via_pet={user_validated_via_pet})")
-                    # Double-check anyway (should always pass, but be safe)
-                    try:
-                        target_user_check = User.objects.filter(id=target_id_int).first()
-                        if not target_user_check:
-                            print(f"⚠ WARNING: User {target_id_int} not found even though we validated it earlier!")
-                            # This shouldn't happen, but if it does, we need to handle it
-                            all_users = list(User.objects.all().values_list('id', 'email', 'is_active'))
-                            print(f"  Available users: {all_users}")
-                            return Response(
-                                {
-                                    'error': 'Invalid reference',
-                                    'detail': f'The target user with id {target_id_int} does not exist. This is unexpected - please contact support.',
-                                    'debug_info': {
-                                        'available_user_ids': [u[0] for u in all_users],
-                                        'target_id': target_id_int,
-                                        'validated_pet_id': validated_pet_id
-                                    }
-                                },
-                                status=status.HTTP_400_BAD_REQUEST
-                            )
-                        print(f"✓✓ Double-check passed: User {target_id_int} exists: {target_user_check.email}")
-                    except Exception as check_error:
-                        print(f"⚠ Error during double-check: {check_error}")
-                        # Continue anyway since we already validated
-                
-                # Only include pet_id if it's valid
-                create_kwargs = {
-                    'requester': request.user,
-                    'target_id': target_id_int,
-                    'status': 'pending',
-                    'message': message or '',
-                    'type': request_type or 'general'
-                }
-                
-                # Only add pet_id if it's valid (not None)
-                if pet_id_to_use is not None:
-                    # Verify pet exists before adding it (double-check)
-                    try:
-                        from pets.models import Pet
-                        Pet.objects.get(id=pet_id_to_use)
-                        create_kwargs['pet_id'] = pet_id_to_use
-                        print(f"Creating chat request with pet_id: {pet_id_to_use}")
-                    except Pet.DoesNotExist:
-                        # Pet doesn't exist, but we'll still create the request without pet_id
-                        print(f"Warning: Pet {pet_id_to_use} does not exist, creating request without pet_id")
-                
-                print(f"Creating ChatRequest with kwargs: {create_kwargs}")
-                chat_request = ChatRequest.objects.create(**create_kwargs)
-                # Refresh from DB to get all relationships
-                chat_request.refresh_from_db()
-            except Exception as db_error:
-                error_msg = str(db_error)
-                error_trace = traceback.format_exc()
-                print(f"=" * 80)
-                print(f"Database error creating chat request:")
-                print(f"Error message: {error_msg}")
-                print(f"Pet ID: {pet_id_to_use}")
-                print(f"Target ID: {target_id_int}")
-                print(f"Requester ID: {request.user.id}")
-                print(f"Full traceback:")
-                print(error_trace)
-                print(f"=" * 80)
-                
-                # Check for specific database errors
-                if 'unique' in error_msg.lower() or 'duplicate' in error_msg.lower() or 'UNIQUE constraint' in error_msg:
-                    return Response(
-                        {'error': 'You already have a pending request with this user'},
-                        status=status.HTTP_400_BAD_REQUEST
-                    )
-                # Check for foreign key constraint errors
-                if 'foreign key' in error_msg.lower() or 'does not exist' in error_msg.lower() or 'violates foreign key constraint' in error_msg.lower() or 'insert or update' in error_msg.lower():
-                    # Try to determine which foreign key is the issue
-                    detail_msg = 'The pet or target user does not exist'
-                    if 'pet' in error_msg.lower() or 'pets_pet' in error_msg.lower():
-                        detail_msg = f'The pet with id {pet_id_to_use} does not exist in the database. Please verify the pet exists.'
-                    elif 'target' in error_msg.lower() or 'user' in error_msg.lower() or 'users_user' in error_msg.lower():
-                        detail_msg = f'The target user with id {target_id_int} does not exist. Please verify the user exists.'
-                    
-                    return Response(
-                        {
-                            'error': 'Invalid reference',
-                            'detail': detail_msg,
-                            'debug_info': {
-                                'pet_id': pet_id_to_use,
-                                'target_id': target_id_int,
-                                'requester_id': request.user.id,
-                                'raw_error': error_msg if request.user.is_staff else None
-                            }
-                        },
-                        status=status.HTTP_400_BAD_REQUEST
-                    )
-                raise  # Re-raise to be caught by outer exception handler
-        except Exception as e:
-            error_msg = str(e)
-            error_trace = traceback.format_exc()
-            print(f"Error creating chat request: {error_msg}")
-            print(error_trace)
-            # Check if it's a unique constraint violation
-            if 'unique' in error_msg.lower() or 'duplicate' in error_msg.lower():
-                return Response(
-                    {'error': 'You already have a pending request with this user'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            # Return detailed error for debugging (only in development)
-            import sys
-            if sys.argv and 'runserver' in sys.argv:
-                return Response(
-                    {
-                        'error': 'Failed to create chat request',
-                        'detail': error_msg,
-                        'traceback': error_trace if request.user.is_staff else None
-                    },
-                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
-                )
+            from django.contrib.auth import get_user_model
+            User = get_user_model()
+            target_user_obj = User.objects.filter(id=target_id_int).first()
+            if target_user_obj:
+                print(f"✓ Target user {target_id_int} exists: {target_user_obj.email}")
             else:
-                return Response(
-                    {'error': 'Failed to create chat request. Please try again.'},
-                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
-                )
-        
-        # Serialize the response - prefetch related objects first
-        try:
-            # Prefetch related objects to avoid N+1 queries
-            chat_request = ChatRequest.objects.select_related('requester', 'target', 'pet').get(id=chat_request.id)
-            serializer = ChatRequestSerializer(chat_request, context={'request': request})
-            response_data = serializer.data
+                print(f"⚠ Target user {target_id_int} does not exist. Creating request with null target. Admin will set during verification.")
         except Exception as e:
-            print(f"Error serializing chat request: {e}")
-            print(traceback.format_exc())
-            # Return minimal response if serialization fails
-            response_data = {
-                'id': chat_request.id,
-                'status': chat_request.status,
-                'message': 'Chat request created successfully',
-                'requester_id': request.user.id,
-                'target_id': target_id_int,
-            }
+            print(f"⚠ Could not verify user {target_id_int}: {e}")
         
-        # Send WebSocket notification to target user and admin
-        try:
-            channel_layer = get_channel_layer()
-            if channel_layer:
-                # Notify target user
-                async_to_sync(channel_layer.group_send)(
-                    f'user_{target_id_int}',
-                    {
-                        'type': 'chat_request',
-                        'data': {
-                            'id': chat_request.id,
-                            'requester': {
-                                'id': request.user.id,
-                                'name': getattr(request.user, 'name', request.user.email),
-                                'email': request.user.email,
-                            },
-                            'message': message or '',
-                            'status': 'pending',
-                            'created_at': chat_request.created_at.isoformat() if hasattr(chat_request.created_at, 'isoformat') else str(chat_request.created_at),
-                        }
-                    }
-                )
+        create_kwargs = {
+            'requester': request.user,
+            'status': 'pending',
+            'message': message,
+            'type': request_type
+        }
                 
-                # Notify admin (broadcast to all admin users)
+        # Only set target if user exists, otherwise leave null
+        if target_user_obj:
+            create_kwargs['target_id'] = target_id_int
+        else:
+            # Store target_id in a custom field or admin_notes for reference
+            create_kwargs['admin_notes'] = f'Target user ID: {target_id_int} (to be verified by admin)'
+        
+        if pet_id:
+            try:
+                create_kwargs['pet_id'] = int(pet_id)
+            except:
+                pass
+        
+        chat_request = ChatRequest.objects.create(**create_kwargs)
+        
+        # If target was null, store the target_id somewhere admin can access it
+        if not target_user_obj:
+            # Update admin_notes with target_id for admin reference
+            chat_request.admin_notes = f'Target user ID: {target_id_int} (to be verified by admin)\n{chat_request.admin_notes or ""}'
+            chat_request.save()
+        
+        # Send notifications
+        try:
+            if get_channel_layer:
+                channel_layer = get_channel_layer()
+            else:
+                channel_layer = None
+            if channel_layer:
+                # Notify admin
                 async_to_sync(channel_layer.group_send)(
                     'admin_notifications',
                     {
@@ -459,71 +154,231 @@ def create_chat_request(request):
                                 'id': request.user.id,
                                 'name': getattr(request.user, 'name', request.user.email),
                             },
-                            'target': {
-                                'id': target_id_int,
-                                'name': getattr(chat_request.target, 'name', 'User') if hasattr(chat_request, 'target') and chat_request.target else 'User',
-                            },
                             'status': 'pending',
-                            'created_at': chat_request.created_at.isoformat() if hasattr(chat_request.created_at, 'isoformat') else str(chat_request.created_at),
                         }
                     }
                 )
-        except Exception as ws_error:
-            # WebSocket notification failure shouldn't break the request
-            print(f"WebSocket notification error: {ws_error}")
-            import traceback
-            print(traceback.format_exc())
+        except Exception as e:
+            print(f"WebSocket error: {e}")
         
-        return Response(response_data, status=status.HTTP_201_CREATED)
+        serializer = ChatRequestSerializer(chat_request, context={'request': request})
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
         
-    except ValueError as ve:
-        return Response(
-            {'error': f'Invalid input: {str(ve)}'},
-            status=status.HTTP_400_BAD_REQUEST
-        )
     except Exception as e:
         import traceback
-        error_trace = traceback.format_exc()
-        error_msg = str(e)
-        print(f"Error creating chat request: {error_msg}")
-        print(error_trace)
-        # Return detailed error for debugging
+        print(f"Error: {e}")
+        print(traceback.format_exc())
         return Response(
-            {
-                'error': error_msg,
-                'detail': error_trace if request.user.is_staff else 'An error occurred. Please check server logs.',
-                'type': type(e).__name__
-            },
+            {'error': str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
 
-@api_view(['PATCH'])
+@api_view(['PATCH', 'POST'])
 @permission_classes([IsAdminUser])
-def admin_approve_request(request, request_id):
-    """Admin approves a chat request."""
+def admin_start_verification(request, request_id):
+    """Admin starts verification by creating a chat room with the requester."""
     try:
-        chat_request = ChatRequest.objects.get(id=request_id, status='pending')
-        admin_notes = request.data.get('admin_notes', '')
+        # Try to get the request - don't filter by status initially to provide better error messages
+        try:
+            chat_request = ChatRequest.objects.get(id=request_id)
+        except ChatRequest.DoesNotExist:
+            return Response(
+                {'error': f'Chat request with id {request_id} not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
         
-        chat_request.status = 'admin_approved'
-        chat_request.admin_approved_at = timezone.now()
-        if admin_notes:
-            chat_request.admin_notes = admin_notes
+        # Check if request is in pending status
+        if chat_request.status != 'pending':
+            return Response(
+                {
+                    'error': f'Chat request is not in pending status. Current status: {chat_request.status}',
+                    'current_status': chat_request.status
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Create verification chat room between admin and requester
+        verification_room, created = ChatRoom.objects.get_or_create(
+            room_id=f"admin_verification_{chat_request.id}",
+            defaults={
+                'is_active': True,
+            }
+        )
+        
+        # Ensure is_active is True (in case room already existed)
+        verification_room.is_active = True
+        verification_room.save()
+        
+        # Clear and add admin and requester to verification room
+        verification_room.participants.clear()
+        verification_room.participants.add(request.user, chat_request.requester)
+        
+        # Verify room was created correctly
+        participants = list(verification_room.participants.all())
+        print(f"✓ Created verification room {verification_room.id} (room_id: {verification_room.room_id})")
+        print(f"  is_active: {verification_room.is_active}")
+        print(f"  Participants ({len(participants)}): {[p.id for p in participants]}")
+        
+        # Update chat request status and track verifying admin
+        chat_request.status = 'admin_verifying'
+        chat_request.admin_verification_room = verification_room
+        chat_request.verified_by_admin = request.user  # Track which admin verified
         chat_request.save()
         
         # Send WebSocket notifications
-        channel_layer = get_channel_layer()
+        channel_layer = None
+        if get_channel_layer:
+            channel_layer = get_channel_layer()
         if channel_layer:
             # Notify requester
             async_to_sync(channel_layer.group_send)(
                 f'user_{chat_request.requester.id}',
                 {
-                    'type': 'admin_approved',
+                    'type': 'verification_started',
                     'data': {
                         'id': chat_request.id,
-                        'status': 'admin_approved',
-                        'message': 'Your chat request has been approved by admin',
+                        'status': 'admin_verifying',
+                        'message': 'Admin has started verification. Please chat with admin.',
+                        'room_id': verification_room.room_id or str(verification_room.id),
+                    }
+                }
+            )
+        
+        serializer = ChatRequestSerializer(chat_request, context={'request': request})
+        return Response({
+            **serializer.data,
+            'verification_room_id': verification_room.room_id or str(verification_room.id),
+        }, status=status.HTTP_200_OK)
+        
+    except ChatRequest.DoesNotExist:
+        return Response(
+            {'error': 'Chat request not found'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    except Exception as e:
+        import traceback
+        print(f"Error in admin_start_verification: {e}")
+        print(traceback.format_exc())
+        return Response(
+            {'error': str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(['PATCH', 'POST'])
+@permission_classes([IsAdminUser])
+def admin_complete_verification(request, request_id):
+    """Admin completes verification and adds target user to the existing verification room."""
+    try:
+        chat_request = ChatRequest.objects.get(id=request_id, status='admin_verifying')
+        admin_notes = request.data.get('admin_notes', '')
+        target_user_id = request.data.get('target_user_id')  # Admin can provide target user ID
+        
+        # Get the verification room (already exists with admin and requester)
+        verification_room = chat_request.admin_verification_room
+        if not verification_room:
+            return Response(
+                {'error': 'Verification room not found. Please start verification first.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Get target user - either from chat_request.target or from admin_notes or request data
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        
+        target_user = None
+        if chat_request.target:
+            target_user = chat_request.target
+        elif target_user_id:
+            try:
+                target_user = User.objects.get(id=int(target_user_id))
+                # Update chat_request with target user
+                chat_request.target = target_user
+            except User.DoesNotExist:
+                return Response(
+                    {'error': f'Target user with id {target_user_id} does not exist.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        else:
+            # Try to extract from admin_notes
+            import re
+            notes = chat_request.admin_notes or ''
+            match = re.search(r'Target user ID: (\d+)', notes)
+            if match:
+                target_user_id_from_notes = int(match.group(1))
+                try:
+                    target_user = User.objects.get(id=target_user_id_from_notes)
+                    chat_request.target = target_user
+                except User.DoesNotExist:
+                    return Response(
+                        {'error': f'Target user ID {target_user_id_from_notes} from notes does not exist. Please provide valid target_user_id.'},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+            else:
+                return Response(
+                    {'error': 'Target user not found. Please provide target_user_id in request.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        
+        # STEP 2: Add target user to the SAME verification room (admin and requester stay in room)
+        # The room now becomes the final room with all 3 users: admin, requester, and target
+        
+        # Ensure admin and requester are still in the room (they should be from step 1)
+        verification_room.participants.add(request.user, chat_request.requester)
+        
+        # Add target user to the SAME room
+        verification_room.participants.add(target_user)
+        
+        # Update room metadata (but keep the same room object)
+        user_ids = sorted([chat_request.requester.id, target_user.id])
+        
+        # Update room_id to standard format for compatibility (but admin stays in participants)
+        if not verification_room.room_id or verification_room.room_id.startswith('admin_verification_'):
+            verification_room.room_id = f"{user_ids[0]}_{user_ids[1]}"
+        
+        # Set user_a and user_b for the two main users (requester and target)
+        # Note: Admin is still in participants, just not in user_a/user_b fields
+        verification_room.user_a_id = user_ids[0]
+        verification_room.user_b_id = user_ids[1]
+        verification_room.chat_request = chat_request
+        verification_room.is_active = True
+        verification_room.save()
+        
+        # Verify: Room should now have exactly 3 participants (admin + requester + target)
+        participants = list(verification_room.participants.all())
+        participant_ids = [p.id for p in participants]
+        print(f"✓ STEP 2: Added target user to same room {verification_room.id}")
+        print(f"  Room ID: {verification_room.room_id}")
+        print(f"  Participants (3): Admin (ID: {request.user.id}), Requester (ID: {chat_request.requester.id}), Target (ID: {target_user.id})")
+        assert len(participants) == 3, f"Expected 3 participants, got {len(participants)}"
+        assert request.user.id in participant_ids, "Admin should be in participants"
+        assert chat_request.requester.id in participant_ids, "Requester should be in participants"
+        assert target_user.id in participant_ids, "Target should be in participants"
+        
+        # Update chat request
+        chat_request.status = 'active'
+        chat_request.admin_approved_at = timezone.now()
+        chat_request.final_chat_room = verification_room  # Same room, now with all 3 users
+        if admin_notes:
+            chat_request.admin_notes = admin_notes
+        chat_request.save()
+        
+        # Send WebSocket notifications
+        channel_layer = None
+        if get_channel_layer:
+            channel_layer = get_channel_layer()
+        if channel_layer:
+            # Notify requester
+            async_to_sync(channel_layer.group_send)(
+                f'user_{chat_request.requester.id}',
+                {
+                    'type': 'chat_approved',
+                    'data': {
+                        'id': chat_request.id,
+                        'status': 'active',
+                        'message': 'Your chat request has been approved. You can now chat!',
+                        'room_id': verification_room.room_id or str(verification_room.id),
                     }
                 }
             )
@@ -532,29 +387,36 @@ def admin_approve_request(request, request_id):
             async_to_sync(channel_layer.group_send)(
                 f'user_{chat_request.target.id}',
                 {
-                    'type': 'admin_approved',
+                    'type': 'chat_approved',
                     'data': {
                         'id': chat_request.id,
                         'requester': {
                             'id': chat_request.requester.id,
-                            'name': chat_request.requester.name,
+                            'name': getattr(chat_request.requester, 'name', chat_request.requester.email),
                         },
                         'message': chat_request.message,
-                        'status': 'admin_approved',
-                        'message_text': 'You have a new chat request to review',
+                        'status': 'active',
+                        'message_text': 'A chat has been approved. You can now chat!',
+                        'room_id': verification_room.room_id or str(verification_room.id),
                     }
                 }
             )
         
         serializer = ChatRequestSerializer(chat_request, context={'request': request})
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response({
+            **serializer.data,
+            'final_room_id': verification_room.room_id or str(verification_room.id),
+        }, status=status.HTTP_200_OK)
         
     except ChatRequest.DoesNotExist:
         return Response(
-            {'error': 'Chat request not found'},
+            {'error': 'Chat request not found or not in verification status'},
             status=status.HTTP_404_NOT_FOUND
         )
     except Exception as e:
+        import traceback
+        print(f"Error in admin_complete_verification: {e}")
+        print(traceback.format_exc())
         return Response(
             {'error': str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -591,6 +453,103 @@ def admin_reject_request(request, request_id):
         
         serializer = ChatRequestSerializer(chat_request, context={'request': request})
         return Response(serializer.data, status=status.HTTP_200_OK)
+    except ChatRequest.DoesNotExist:
+        return Response(
+            {'error': 'Chat request not found or not in pending status'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    except Exception as e:
+        import traceback
+        print(f"Error in admin_reject_request: {e}")
+        print(traceback.format_exc())
+        return Response(
+            {'error': str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def admin_view_chat_readonly(request, room_id):
+    """Allow any admin to view a chat room in read-only mode.
+    
+    This endpoint allows admins (who didn't verify the request) to view chats
+    for monitoring purposes. The verifying admin stays in the room and can send messages.
+    Other admins can only view messages.
+    """
+    try:
+        from .models import ChatRoom, Message
+        from .serializers import MessageSerializer, ChatRoomSerializer
+        
+        # Get the chat room
+        try:
+            room = ChatRoom.objects.get(room_id=room_id)
+        except ChatRoom.DoesNotExist:
+            # Try by ID
+            try:
+                room = ChatRoom.objects.get(id=room_id)
+            except ChatRoom.DoesNotExist:
+                return Response(
+                    {'error': 'Chat room not found'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+        
+        # Check if this room is associated with a chat request
+        chat_request = None
+        is_verifying_admin = False
+        
+        # Check if room is linked to a chat request
+        if hasattr(room, 'chat_request'):
+            chat_request = room.chat_request
+        else:
+            # Try to find chat request by verification room or final room
+            try:
+                chat_request = ChatRequest.objects.filter(
+                    Q(admin_verification_room=room) | Q(final_chat_room=room)
+                ).first()
+            except Exception:
+                pass
+        
+        # Check if current admin is the verifying admin
+        if chat_request and chat_request.verified_by_admin:
+            is_verifying_admin = (chat_request.verified_by_admin.id == request.user.id)
+        
+        # Get room details
+        room_serializer = ChatRoomSerializer(room, context={'request': request})
+        
+        # Get messages
+        messages = Message.objects.filter(room=room).select_related('sender').order_by('created_at')
+        messages_serializer = MessageSerializer(messages, many=True, context={'request': request})
+        
+        # Get participants
+        participants = list(room.participants.all())
+        
+        return Response({
+            'room': room_serializer.data,
+            'messages': messages_serializer.data,
+            'participants': [
+                {
+                    'id': p.id,
+                    'name': getattr(p, 'name', p.email),
+                    'email': p.email,
+                    'is_staff': getattr(p, 'is_staff', False),
+                    'is_verifying_admin': chat_request and chat_request.verified_by_admin and chat_request.verified_by_admin.id == p.id if chat_request else False,
+                }
+                for p in participants
+            ],
+            'is_readonly': not is_verifying_admin,  # True for non-verifying admins
+            'is_verifying_admin': is_verifying_admin,
+            'chat_request': ChatRequestSerializer(chat_request, context={'request': request}).data if chat_request else None,
+        }, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        import traceback
+        print(f"Error in admin_view_chat_readonly: {e}")
+        print(traceback.format_exc())
+        return Response(
+            {'error': str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
         
     except ChatRequest.DoesNotExist:
         return Response(
@@ -746,6 +705,66 @@ def get_user_chat_requests(request, user_id):
     
     serializer = ChatRequestSerializer(requests, many=True, context={'request': request})
     return Response({'data': serializer.data})
+
+
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def get_all_chat_requests(request):
+    """Get all chat requests (admin only)."""
+    try:
+        # Get all chat requests with proper related field loading
+        # Use select_related for ForeignKey relationships
+        chat_requests = ChatRequest.objects.select_related(
+            'requester', 'target', 'pet'
+        ).select_related(
+            'admin_verification_room', 'admin_verification_room__user_a', 'admin_verification_room__user_b',
+            'final_chat_room', 'final_chat_room__user_a', 'final_chat_room__user_b'
+        ).prefetch_related(
+            'admin_verification_room__participants',
+            'final_chat_room__participants'
+        ).order_by('-created_at')
+        
+        # Serialize with error handling for each request
+        serialized_data = []
+        for chat_request in chat_requests:
+            try:
+                serializer = ChatRequestSerializer(chat_request, context={'request': request})
+                serialized_data.append(serializer.data)
+            except Exception as ser_error:
+                import traceback
+                print(f"Error serializing chat request {chat_request.id}: {ser_error}")
+                print(traceback.format_exc())
+                # Add a minimal version of the request data
+                serialized_data.append({
+                    'id': chat_request.id,
+                    'requester': {'id': chat_request.requester.id, 'name': getattr(chat_request.requester, 'name', chat_request.requester.email)} if chat_request.requester else None,
+                    'target': {'id': chat_request.target.id, 'name': getattr(chat_request.target, 'name', chat_request.target.email)} if chat_request.target else None,
+                    'status': chat_request.status,
+                    'type': chat_request.type,
+                    'message': chat_request.message,
+                    'created_at': chat_request.created_at.isoformat() if chat_request.created_at else None,
+                    'error': f'Serialization error: {str(ser_error)}'
+                })
+        
+        return Response({
+            'data': serialized_data,
+            'count': len(serialized_data)
+        }, status=status.HTTP_200_OK)
+    except Exception as e:
+        import traceback
+        error_type = type(e).__name__
+        error_msg = str(e)
+        print(f"Error in get_all_chat_requests: {error_type}: {error_msg}")
+        print(traceback.format_exc())
+        return Response(
+            {
+                'error': error_msg,
+                'error_type': error_type,
+                'detail': 'Failed to load all chat requests. Check server logs for details.',
+                'data': []
+            },
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
 
 
 @api_view(['GET'])

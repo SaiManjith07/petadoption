@@ -121,7 +121,8 @@ def stream_messages(request, room_id):
                     ).select_related('sender').order_by('created_at')[:10]
                     
                     for message in new_messages:
-                        serializer = MessageSerializer(message)
+                        # Pass request context to serializer so image URLs are properly generated
+                        serializer = MessageSerializer(message, context={'request': request})
                         yield f"data: {json.dumps({'type': 'message', 'data': serializer.data})}\n\n"
                         last_sent_id = message.id
                     
@@ -142,7 +143,8 @@ def stream_messages(request, room_id):
         response = StreamingHttpResponse(event_stream(), content_type='text/event-stream')
         response['Cache-Control'] = 'no-cache'
         response['X-Accel-Buffering'] = 'no'  # Disable buffering in nginx
-        response['Connection'] = 'keep-alive'
+        # Note: 'Connection: keep-alive' is a hop-by-hop header and cannot be set directly
+        # Django's development server will handle connection management automatically
         # Allow CORS for SSE
         response['Access-Control-Allow-Origin'] = '*'
         response['Access-Control-Allow-Credentials'] = 'true'

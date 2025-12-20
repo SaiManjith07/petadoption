@@ -45,8 +45,13 @@ export const petsApi = {
   /**
    * Update pet
    */
-  async update(id: number, updates: Partial<Pet>): Promise<Pet> {
-    const response = await apiClient.put<Pet>(`/pets/${id}/`, updates);
+  async update(id: number, updates: Partial<Pet> | FormData): Promise<Pet> {
+    // For FormData, don't set Content-Type header - browser will set it with boundary
+    const config = updates instanceof FormData
+      ? { headers: {} } // Let browser set Content-Type with boundary
+      : { headers: { 'Content-Type': 'application/json' } };
+    
+    const response = await apiClient.put<Pet>(`/pets/${id}/`, updates, config);
     return response.data;
   },
 
