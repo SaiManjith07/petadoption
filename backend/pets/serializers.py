@@ -220,6 +220,12 @@ class PetSerializer(serializers.ModelSerializer):
                     print(traceback.format_exc())
                 pass
         
+        # CRITICAL: Remove adoption_status and is_verified from validated_data if they exist
+        # These should ONLY be set in perform_create, not in serializer
+        # This prevents the model default ('Available for Adoption') from being used
+        validated_data.pop('adoption_status', None)
+        validated_data.pop('is_verified', None)
+        
         # Set posted_by to current user if available in context
         # If posted_by is already set (e.g., from perform_create), don't override it
         if 'posted_by' not in validated_data and 'request' in self.context:
@@ -228,7 +234,21 @@ class PetSerializer(serializers.ModelSerializer):
             except (KeyError, AttributeError):
                 pass
         
-        return super().create(validated_data)
+        # IMPORTANT: Set default status to 'Pending' to prevent model default ('Available for Adoption') from being used
+        # perform_create will call serializer.save() with explicit values, which will override this
+        # But if for some reason perform_create doesn't set it, at least it won't be 'Available for Adoption'
+        if 'adoption_status' not in validated_data:
+            validated_data['adoption_status'] = 'Pending'
+        if 'is_verified' not in validated_data:
+            validated_data['is_verified'] = False
+        
+        # Create instance
+        instance = super().create(validated_data)
+        
+        # Log what was created
+        print(f"[DEBUG] PetSerializer.create: Created pet ID {instance.id} with status={instance.adoption_status}, is_verified={instance.is_verified}, found_date={getattr(instance, 'found_date', None)}")
+        
+        return instance
 
 
 class PetListSerializer(serializers.ModelSerializer):
