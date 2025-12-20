@@ -166,26 +166,32 @@ npm run dev
 ## 🛠️ Tech Stack
 
 ### Backend
-- **Django 5.2.8** - Web framework
-- **Django REST Framework** - API framework
-- **PostgreSQL (Neon)** - Database
-- **JWT Authentication** - Token-based auth with refresh tokens
-- **CORS** - Cross-origin support
+- **Django 6.0** - Web framework
+- **Django REST Framework 3.16.1** - API framework
+- **Django Channels 4.3.2** - WebSocket and async support
+- **Daphne 4.2.1** - ASGI server for production
+- **PostgreSQL** - Database (Neon for development, Render PostgreSQL for production)
+- **JWT Authentication** - Token-based auth with refresh tokens (djangorestframework-simplejwt)
+- **CORS** - Cross-origin support (django-cors-headers)
 - **Django Filter** - Advanced filtering and search
 - **Server-Sent Events (SSE)** - Real-time notifications
+- **Redis** - Channel layers for WebSocket (channels-redis)
+- **Pillow** - Image processing
 
 ### Frontend
-- **React 18** - UI library
-- **TypeScript** - Type safety
-- **Vite** - Fast build tool
-- **Axios** - HTTP client with interceptors
-- **Tailwind CSS** - Utility-first styling
-- **shadcn/ui** - Beautiful UI components
-- **React Router** - Client-side navigation
-- **React Hook Form** - Form handling and validation
-- **Zod** - Schema validation
-- **Framer Motion** - Smooth animations
-- **date-fns** - Date formatting
+- **React 18.3.1** - UI library
+- **TypeScript 5.8.3** - Type safety
+- **Vite 5.4.19** - Fast build tool
+- **Axios 1.7.0** - HTTP client with interceptors and auto token refresh
+- **Tailwind CSS 3.4.17** - Utility-first styling
+- **shadcn/ui** - Beautiful UI components (Radix UI based)
+- **React Router 6.30.1** - Client-side navigation
+- **React Hook Form 7.61.1** - Form handling and validation
+- **Zod 3.25.76** - Schema validation
+- **Framer Motion 11.18.2** - Smooth animations
+- **date-fns 3.6.0** - Date formatting
+- **TanStack Query 5.83.0** - Data fetching and caching
+- **Lucide React** - Icon library
 
 ## 🎨 Design System
 
@@ -232,8 +238,8 @@ All buttons, links, badges, and interactive elements use the consistent primary 
 ### Pets
 - `GET /api/pets/` - List all pets (with filters)
 - `GET /api/pets/<id>/` - Get pet details
-- `POST /api/pets/lost/` - Report lost pet
-- `POST /api/pets/found/` - Report found pet
+- `POST /api/lost/` - Report lost pet (creates with 'Pending' status)
+- `POST /api/found/` - Report found pet (creates with 'Pending' status)
 - `POST /api/pets/<id>/workflow/` - Found pet workflow decisions
 - `POST /api/pets/<id>/check-adoption/` - Check 15-day adoption rule
 - `GET /api/pets/lost/<id>/match/` - Match lost pet
@@ -269,7 +275,9 @@ All buttons, links, badges, and interactive elements use the consistent primary 
 
 ## 📝 Environment Variables
 
-### Backend (.env in backend/)
+### Backend (.env in backend/ or Production)
+
+**Development:**
 ```env
 DATABASE_URL=postgresql://user:pass@host/dbname
 SECRET_KEY=your-secret-key-here
@@ -278,9 +286,32 @@ ALLOWED_HOSTS=localhost,127.0.0.1
 CORS_ALLOWED_ORIGINS=http://localhost:8080,http://127.0.0.1:8080
 ```
 
-### Frontend (.env in Frontend/)
+**Production (Render):**
+```env
+PYTHON_VERSION=3.11.0
+DJANGO_SETTINGS_MODULE=backend.settings
+DEBUG=False
+ALLOWED_HOSTS=petadoption-v2q3.onrender.com
+BACKEND_URL=https://petadoption-v2q3.onrender.com
+SERVE_MEDIA=true
+DATABASE_URL=your-postgresql-connection-string
+SECRET_KEY=your-secret-key
+CORS_ALLOWED_ORIGINS=https://petadoption-amber.vercel.app
+RENDER_EXTERNAL_HOSTNAME=petadoption-v2q3.onrender.com
+```
+
+### Frontend (.env in Frontend/ or Production)
+
+**Development:**
 ```env
 VITE_API_URL=http://127.0.0.1:8000/api
+VITE_WS_URL=ws://127.0.0.1:8000/ws
+```
+
+**Production (Vercel):**
+```env
+VITE_API_URL=https://petadoption-v2q3.onrender.com/api
+VITE_WS_URL=wss://petadoption-v2q3.onrender.com/ws
 ```
 
 ## 🗄️ Database Models
@@ -324,30 +355,38 @@ VITE_API_URL=http://127.0.0.1:8000/api
 ## 📦 Installation
 
 ### Backend Dependencies
+See `backend/requirements.txt` or root `requirements.txt` for complete list:
 ```
-django>=5.2.8
+django>=4.2.0
 djangorestframework>=3.14.0
 django-cors-headers>=4.0.0
-djangorestframework-simplejwt>=5.2.0
+djangorestframework-simplejwt>=5.3.0
 psycopg2-binary>=2.9.0
 python-dotenv>=1.0.0
-django-filter>=23.0
 Pillow>=10.0.0
+dj-database-url>=2.1.0
+django-filter>=23.0
+channels>=4.0.0
+channels-redis>=4.1.0
+gunicorn>=21.2.0
+daphne>=4.0.0
 ```
 
 ### Frontend Dependencies
+See `Frontend/package.json` for complete list. Key dependencies:
 ```
-react>=18.0.0
-typescript>=5.0.0
+react>=18.3.1
+typescript>=5.8.3
 axios>=1.7.0
-react-router-dom>=6.0.0
-tailwindcss>=3.0.0
+react-router-dom>=6.30.1
+tailwindcss>=3.4.17
 @radix-ui/react-* (shadcn/ui components)
-framer-motion>=10.0.0
-react-hook-form>=7.0.0
-zod>=3.0.0
-date-fns>=2.30.0
-lucide-react (icons)
+framer-motion>=11.18.2
+react-hook-form>=7.61.1
+zod>=3.25.76
+date-fns>=3.6.0
+lucide-react>=0.462.0
+@tanstack/react-query>=5.83.0
 ```
 
 ## 🧪 Testing
@@ -366,18 +405,61 @@ npm test
 
 ## 🚀 Deployment
 
-### Backend
-- Deploy to: Railway, Render, Heroku, or any Python hosting
+### Backend (Render)
+
+The backend is configured for deployment on Render. See `render.yaml` for service configuration.
+
+**Environment Variables (Render Dashboard):**
+```env
+PYTHON_VERSION=3.11.0
+DJANGO_SETTINGS_MODULE=backend.settings
+DEBUG=False
+ALLOWED_HOSTS=petadoption-v2q3.onrender.com
+BACKEND_URL=https://petadoption-v2q3.onrender.com
+SERVE_MEDIA=true
+DATABASE_URL=your-postgresql-connection-string
+SECRET_KEY=your-secret-key
+CORS_ALLOWED_ORIGINS=https://petadoption-amber.vercel.app
+```
+
+**Deployment Steps:**
+1. Connect your GitHub repository to Render
+2. Create a new Web Service
+3. Set Build Command: `pip install -r requirements.txt && cd backend && python manage.py migrate && python manage.py collectstatic --noinput`
+4. Set Start Command: `cd backend && daphne -b 0.0.0.0 -p $PORT backend.asgi:application`
+5. Add all environment variables listed above
+6. Deploy!
+
+**Note:** The backend uses Daphne (ASGI server) for Django Channels support (WebSocket/SSE).
+
+### Frontend (Vercel)
+
+The frontend is configured for deployment on Vercel.
+
+**Environment Variables (Vercel Dashboard):**
+```env
+VITE_API_URL=https://petadoption-v2q3.onrender.com/api
+VITE_WS_URL=wss://petadoption-v2q3.onrender.com/ws
+```
+
+**Deployment Steps:**
+1. Connect your GitHub repository to Vercel
+2. Set Root Directory to `Frontend`
+3. Build Command: `npm install && npm run build`
+4. Output Directory: `dist`
+5. Add environment variables listed above
+6. Deploy!
+
+**Alternative:** Deploy to Netlify or Render Static Site (see `DEPLOYMENT.md` for details)
+
+### Other Hosting Options
+
+- **Backend**: Railway, Heroku, DigitalOcean, AWS, or any Python hosting
+- **Frontend**: Netlify, GitHub Pages, AWS S3, or any static hosting
 - Set environment variables in production
 - Run migrations: `python manage.py migrate`
 - Collect static files: `python manage.py collectstatic`
 - Set up cron job for automated tasks (15-day adoption check)
-
-### Frontend
-- Build: `npm run build`
-- Deploy to: Vercel, Netlify, or any static hosting
-- Set `VITE_API_URL` environment variable to production API URL
-- Configure CORS on backend for production domain
 
 ## 🔄 Automated Features
 
@@ -412,14 +494,43 @@ MIT License
 
 For issues and questions, please open an issue on the repository.
 
+## 🐛 Recent Bug Fixes & Improvements
+
+### Latest Updates (December 2024)
+- ✅ Fixed API endpoints for lost/found pet reports (`/api/lost/` and `/api/found/`)
+- ✅ Removed duplicate admin check logic in UserProtectedRoute
+- ✅ Added support for `/chats/` route in protected routes
+- ✅ Enhanced error handling in pet creation endpoints
+- ✅ Fixed image URL generation in production using `BACKEND_URL`
+- ✅ Improved CORS configuration for production deployment
+- ✅ Added comprehensive error handling for form submissions
+- ✅ Fixed media file serving in production environment
+
+### Known Issues & Solutions
+- **Media Files Not Loading**: Ensure `SERVE_MEDIA=true` and `BACKEND_URL` are set in production
+- **CORS Errors**: Verify `CORS_ALLOWED_ORIGINS` includes your frontend URL
+- **500 Errors on Pet Creation**: Fixed with enhanced error handling in serializers and views
+
+## 📚 Additional Documentation
+
+- **DEPLOYMENT.md** - Detailed deployment instructions for Render and Vercel
+- **CORS_FIX_INSTRUCTIONS.md** - CORS configuration guide
+- **MEDIA_FILES_FIX.md** - Media file serving configuration
+- **RENDER_FRONTEND_DEPLOYMENT.md** - Render static site deployment
+
 ## 🙏 Acknowledgments
 
 - Built with modern web technologies
 - Designed for pet rescue and adoption communities
 - Inspired by the need to help pets find their way home
+- Deployed on Render (backend) and Vercel (frontend)
 
 ---
 
 **Built with ❤️ for pet rescue and adoption**
 
 *PetReunite - Helping pets find their way home*
+
+**Live Demo:**
+- Frontend: https://petadoption-amber.vercel.app
+- Backend API: https://petadoption-v2q3.onrender.com/api
