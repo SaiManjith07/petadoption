@@ -233,6 +233,10 @@ for origin in production_origins:
     if origin not in CORS_ALLOWED_ORIGINS:
         CORS_ALLOWED_ORIGINS.append(origin)
 
+# Debug: Print CORS origins (only in development or if explicitly enabled)
+if DEBUG or os.getenv('DEBUG_CORS', '').lower() == 'true':
+    print(f"[CORS] Allowed Origins: {CORS_ALLOWED_ORIGINS}")
+
 # In development, allow all localhost origins (more flexible)
 if DEBUG:
     CORS_ALLOWED_ORIGIN_REGEXES = [
@@ -241,6 +245,9 @@ if DEBUG:
     ]
 
 CORS_ALLOW_CREDENTIALS = True
+
+# Ensure CORS middleware handles preflight requests
+CORS_PREFLIGHT_MAX_AGE = 86400
 
 CORS_ALLOW_METHODS = [
     'DELETE',
