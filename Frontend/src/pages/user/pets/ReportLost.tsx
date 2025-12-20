@@ -69,6 +69,7 @@ export default function ReportLost() {
     if (debouncedSpecies || debouncedColor || debouncedLocation) {
       searchMatches();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSpecies, debouncedColor, debouncedLocation]);
 
   const searchMatches = async () => {
