@@ -277,10 +277,27 @@ class PetListSerializer(serializers.ModelSerializer):
                 if img.image:
                     try:
                         if hasattr(img.image, 'url'):
-                            if request:
-                                photos.append(request.build_absolute_uri(img.image.url))
+                            image_url = img.image.url
+                            
+                            # Always prefer BACKEND_URL from settings
+                            base_url = getattr(settings, 'BACKEND_URL', None)
+                            
+                            # If BACKEND_URL is set, use it (production)
+                            if base_url and base_url != 'http://127.0.0.1:8000':
+                                if not image_url.startswith('/'):
+                                    image_url = '/' + image_url
+                                if base_url.endswith('/'):
+                                    base_url = base_url.rstrip('/')
+                                photos.append(f"{base_url}{image_url}")
+                            # Fallback to request.build_absolute_uri
+                            elif request:
+                                photos.append(request.build_absolute_uri(image_url))
+                            # If already full URL
+                            elif image_url.startswith('http://') or image_url.startswith('https://'):
+                                photos.append(image_url)
+                            # Last resort
                             else:
-                                photos.append(img.image.url)
+                                photos.append(image_url)
                     except (ValueError, AttributeError):
                         pass
         
