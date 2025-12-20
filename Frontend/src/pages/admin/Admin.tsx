@@ -16,6 +16,7 @@ import { adminApi } from '@/api';
 import { getImageUrl } from '@/services/api';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
+import { API_BASE_URL } from '@/config/api';
 
 export default function Admin() {
   const { isAdmin, user } = useAuth();
@@ -270,7 +271,7 @@ export default function Admin() {
   const loadShelterRegistrations = async () => {
     try {
       setShelterRegistrationsLoading(true);
-      const API_URL = import.meta.env.VITE_API_URL || 'https://petadoption-v2q3.onrender.com/api';
+      const API_URL = API_BASE_URL;
       const accessToken = localStorage.getItem('accessToken');
       const response = await fetch(`${API_URL}/shelter-registrations/all`, {
         headers: {
@@ -300,7 +301,7 @@ export default function Admin() {
   const loadRoleRequests = async () => {
     try {
       setRoleRequestsLoading(true);
-      const API_URL = import.meta.env.VITE_API_URL || 'https://petadoption-v2q3.onrender.com/api';
+      const API_URL = API_BASE_URL;
       const accessToken = localStorage.getItem('accessToken');
       const response = await fetch(`${API_URL}/role-requests/all/`, {
         headers: {
@@ -353,7 +354,7 @@ export default function Admin() {
 
   const handleShelterAction = async (shelterId: string, action: 'approve' | 'reject', notes?: string) => {
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'https://petadoption-v2q3.onrender.com/api';
+      const API_URL = API_BASE_URL;
       const response = await fetch(`${API_URL}/shelter-registrations/${shelterId}/${action}`, {
         method: 'POST',
         headers: {
@@ -384,7 +385,7 @@ export default function Admin() {
 
   const handleRoleRequestAction = async (requestId: string | number, action: 'approve' | 'reject', notes?: string) => {
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'https://petadoption-v2q3.onrender.com/api';
+      const API_URL = API_BASE_URL;
       const response = await fetch(`${API_URL}/role-requests/${requestId}/${action}/`, {
         method: 'POST',
         headers: {

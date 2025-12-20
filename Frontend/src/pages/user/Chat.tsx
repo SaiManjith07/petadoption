@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useChatSSE } from '@/hooks/useChatSSE';
 import { format } from 'date-fns';
 import { getImageUrl } from '@/services/api';
+import { getBaseUrl } from '@/config/api';
 
 interface Message {
   id: number;
@@ -72,7 +73,7 @@ export default function Chat() {
         content: message.content || '',
         message_type: message.message_type || (message.image || message.image_url ? 'image' : 'text'),
         image: message.image,
-        image_url: message.image_url || (message.image ? (message.image.startsWith('http') ? message.image : `${import.meta.env.VITE_API_URL || 'https://petadoption-v2q3.onrender.com/api'}${message.image}`) : undefined),
+        image_url: message.image_url || (message.image ? (message.image.startsWith('http') ? message.image : `${getBaseUrl()}${message.image}`) : undefined),
         is_deleted: message.is_deleted || false,
         timestamp: message.created_at || message.timestamp,
         read_status: message.read_status || false,
@@ -333,7 +334,7 @@ export default function Chat() {
                                   // Fallback if image fails to load
                                   const target = e.target as HTMLImageElement;
                                   if (message.image_url && !message.image_url.startsWith('http')) {
-                                    const apiUrl = import.meta.env.VITE_API_URL || 'https://petadoption-v2q3.onrender.com/api';
+                                    const apiUrl = getBaseUrl();
                                     target.src = `${apiUrl}${message.image_url}`;
                                   }
                                 }}

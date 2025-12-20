@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { AdminSidebar } from '@/components/layout/AdminSidebar';
 import { AdminTopNav } from '@/components/layout/AdminTopNav';
+import { API_BASE_URL } from '@/config/api';
 
 export default function AdminRoleRequests() {
   const { isAdmin } = useAuth();
@@ -42,7 +43,7 @@ export default function AdminRoleRequests() {
   const loadRoleRequests = async () => {
     try {
       setRoleRequestsLoading(true);
-      const API_URL = import.meta.env.VITE_API_URL || 'https://petadoption-v2q3.onrender.com/api';
+      const API_URL = API_BASE_URL;
       const accessToken = localStorage.getItem('accessToken');
       const response = await fetch(`${API_URL}/role-requests/all/`, {
         headers: {
@@ -95,7 +96,7 @@ export default function AdminRoleRequests() {
 
   const handleRoleRequestAction = async (requestId: string | number, action: 'approve' | 'reject', notes?: string) => {
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'https://petadoption-v2q3.onrender.com/api';
+      const API_URL = API_BASE_URL;
       const response = await fetch(`${API_URL}/role-requests/${requestId}/${action}/`, {
         method: 'POST',
         headers: {

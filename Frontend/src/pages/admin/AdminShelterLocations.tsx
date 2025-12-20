@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { format } from 'date-fns';
+import { API_BASE_URL } from '@/config/api';
 
 export default function AdminShelterLocations() {
   const { isAdmin, user } = useAuth();
@@ -96,7 +97,7 @@ export default function AdminShelterLocations() {
 
     try {
       setSubmitting(true);
-      const API_URL = import.meta.env.VITE_API_URL || 'https://petadoption-v2q3.onrender.com/api';
+      const API_URL = API_BASE_URL;
       const accessToken = localStorage.getItem('accessToken');
 
       const shelterData = {
@@ -257,7 +258,7 @@ export default function AdminShelterLocations() {
 
     try {
       setSubmitting(true);
-      const API_URL = import.meta.env.VITE_API_URL || 'https://petadoption-v2q3.onrender.com/api';
+      const API_URL = API_BASE_URL;
       const accessToken = localStorage.getItem('accessToken');
       const shelterId = approvingShelter.id || approvingShelter._id;
 
@@ -318,7 +319,7 @@ export default function AdminShelterLocations() {
     }
 
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'https://petadoption-v2q3.onrender.com/api';
+      const API_URL = API_BASE_URL;
       const accessToken = localStorage.getItem('accessToken');
 
       const response = await fetch(`${API_URL}/shelter-registrations/${shelterId}/`, {

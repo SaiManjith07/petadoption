@@ -18,6 +18,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { adminApi } from '@/api';
+import { getBaseUrl } from '@/config/api';
 import { AdminSidebar } from '@/components/layout/AdminSidebar';
 import { AdminTopNav } from '@/components/layout/AdminTopNav';
 
@@ -99,7 +100,7 @@ export default function AdminChatReadOnly() {
     if (imageUrl) return imageUrl;
     if (image) {
       if (image.startsWith('http')) return image;
-      return `${import.meta.env.VITE_API_URL || 'https://petadoption-v2q3.onrender.com/api'}${image}`;
+      return `${getBaseUrl()}${image}`;
     }
     return null;
   };

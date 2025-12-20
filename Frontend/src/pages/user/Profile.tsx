@@ -18,6 +18,7 @@ import { useAuth } from '@/lib/auth';
 import { petsApi, authApi } from '@/api';
 import { getImageUrl } from '@/services/api';
 import { format } from 'date-fns';
+import { API_BASE_URL } from '@/config/api';
 import { useToast } from '@/hooks/use-toast';
 import { shelterApi } from '@/api';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -161,7 +162,7 @@ export default function Profile() {
 
   const loadAdditionalData = async () => {
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'https://petadoption-v2q3.onrender.com/api';
+      const API_URL = API_BASE_URL;
       const token = localStorage.getItem('accessToken');
 
       if (!token) {
@@ -318,7 +319,7 @@ export default function Profile() {
 
     try {
       setChangingPassword(true);
-      const API_URL = import.meta.env.VITE_API_URL || 'https://petadoption-v2q3.onrender.com/api';
+      const API_URL = API_BASE_URL;
       const token = localStorage.getItem('accessToken');
       
       if (!token) {

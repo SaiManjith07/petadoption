@@ -1,15 +1,10 @@
 // Mock API service for development
 // Replace with actual backend URLs when ready
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://petadoption-v2q3.onrender.com/api';
-const WS_URL = import.meta.env.VITE_WS_URL || 'wss://petadoption-v2q3.onrender.com/ws';
+import { API_BASE_URL, WS_BASE_URL, getBaseUrl } from '@/config/api';
 
-// Get base URL for image serving (without /api)
-const getBaseUrl = () => {
-  const apiUrl = import.meta.env.VITE_API_URL || 'https://petadoption-v2q3.onrender.com/api';
-  // Remove /api from the end if present
-  return apiUrl.replace(/\/api\/?$/, '');
-};
+const API_URL = API_BASE_URL;
+const WS_URL = WS_BASE_URL;
 
 // Helper function to convert relative image paths to full URLs
 export const getImageUrl = (imagePath: string | undefined | null): string | null => {

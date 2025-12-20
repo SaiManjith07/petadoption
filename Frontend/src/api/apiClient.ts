@@ -1,7 +1,6 @@
 import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { AuthTokens } from '@/models';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://petadoption-v2q3.onrender.com/api';
+import { API_BASE_URL } from '@/config/api';
 
 // Token storage helpers
 export const tokenStorage = {

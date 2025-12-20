@@ -14,6 +14,7 @@ import { useAuth } from '@/lib/auth';
 import { adminApi } from '@/api';
 import { roleRequestAPI, feedingPointAPI, alertAPI } from '@/services/api';
 import { useToast } from '@/hooks/use-toast';
+import { API_BASE_URL } from '@/config/api';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { format } from 'date-fns';
@@ -87,7 +88,7 @@ export default function AdminRequests() {
     if (!selectedRequest || !actionType) return;
 
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'https://petadoption-v2q3.onrender.com/api';
+      const API_URL = API_BASE_URL;
       let url = '';
       let method = 'POST';
 
