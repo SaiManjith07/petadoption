@@ -1,0 +1,13 @@
+# Render Static Site Configuration for Frontend
+# This file is optional - you can also configure via Render dashboard
+
+services:
+  - type: web
+    name: petadoption-frontend
+    env: static
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    envVars:
+      - key: VITE_API_URL
+        value: https://petadoption-v2q3.onrender.com/api
+

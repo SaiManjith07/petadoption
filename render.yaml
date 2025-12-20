@@ -15,3 +15,12 @@ services:
         generateValue: true
     healthCheckPath: /api/
 
+  - type: web
+    name: petadoption-frontend
+    env: static
+    buildCommand: cd Frontend && npm install && npm run build
+    staticPublishPath: Frontend/dist
+    envVars:
+      - key: VITE_API_URL
+        value: https://petadoption-v2q3.onrender.com/api
+
