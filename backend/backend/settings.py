@@ -263,3 +263,6 @@ CORS_ALLOW_HEADERS = [
     'x-requested-with',
 ]
 
+# Expose headers for CORS
+CORS_EXPOSE_HEADERS = ['content-type', 'authorization']
+
