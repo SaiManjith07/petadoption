@@ -222,17 +222,16 @@ if CORS_ORIGINS_ENV:
     additional_origins = [origin.strip() for origin in CORS_ORIGINS_ENV.split(',') if origin.strip()]
     CORS_ALLOWED_ORIGINS.extend(additional_origins)
 
-# Add common production frontend URLs
+# Add common production frontend URLs (always add these)
 production_origins = [
     "https://petadoption-amber.vercel.app",  # Vercel frontend
     "https://petadoption-frontend.onrender.com",  # Render frontend (if deployed)
 ]
 
-# Only add production origins if not in DEBUG mode or if explicitly allowed
-if not DEBUG or os.getenv('ALLOW_PRODUCTION_ORIGINS', '').lower() == 'true':
-    for origin in production_origins:
-        if origin not in CORS_ALLOWED_ORIGINS:
-            CORS_ALLOWED_ORIGINS.append(origin)
+# Always add production origins
+for origin in production_origins:
+    if origin not in CORS_ALLOWED_ORIGINS:
+        CORS_ALLOWED_ORIGINS.append(origin)
 
 # In development, allow all localhost origins (more flexible)
 if DEBUG:
