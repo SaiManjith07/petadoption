@@ -27,45 +27,38 @@ class Command(BaseCommand):
             days = pet.calculate_days_in_care()
             
             if days >= 15:
-                # Automatically move to adoption
-                pet.moved_to_adoption = True
-                pet.moved_to_adoption_date = timezone.now()
-                pet.adoption_status = 'Available for Adoption'
-                pet.owner_consent_for_adoption = True  # Auto-consent after 15 days
-                pet.save()
+                # Don't automatically move - send notification to uploader asking for consent
+                # Only move when uploader explicitly gives consent via check_15_day_adoption endpoint
                 
-                moved_count += 1
+                # Check if notification already sent
+                existing_notification = Notification.objects.filter(
+                    user=pet.posted_by,
+                    related_pet=pet,
+                    notification_type='consent_required',
+                    is_read=False
+                ).first()
                 
-                # Notify the person who found the pet
-                if pet.posted_by:
+                if not existing_notification and pet.posted_by:
                     Notification.objects.create(
                         user=pet.posted_by,
-                        title='Pet Moved to Adoption',
-                        message=f'"{pet.name}" has been automatically moved to adoption listing after 15 days in care.',
-                        notification_type='system',
+                        title='Action Required: Pet Adoption Decision',
+                        message=f'"{pet.name}" has been in care for {days} days. Please visit the pet page to decide: Keep the pet or move to adoption listing.',
+                        notification_type='consent_required',
+                        link_target=f'/pets/{pet.id}',
                         related_pet=pet
                     )
-                
-                # Notify shelter if pet is in a shelter
-                if pet.current_location_type == 'shelter':
-                    try:
-                        from users.models import Shelter
-                        shelter = Shelter.objects.get(id=pet.current_location_id)
-                        Notification.objects.create(
-                            user=shelter.user,
-                            title='Pet Moved to Adoption',
-                            message=f'"{pet.name}" has been automatically moved to adoption listing after 15 days.',
-                            notification_type='system',
-                            related_pet=pet
+                    
+                    self.stdout.write(
+                        self.style.WARNING(
+                            f'Notification sent to uploader for pet {pet.id} ({pet.name}) - {days} days in care. Waiting for consent.'
                         )
-                    except:
-                        pass
-                
-                self.stdout.write(
-                    self.style.SUCCESS(
-                        f'Moved pet {pet.id} ({pet.name}) to adoption after {days} days'
                     )
-                )
+                else:
+                    self.stdout.write(
+                        self.style.SUCCESS(
+                            f'Pet {pet.id} ({pet.name}) - {days} days in care. Notification already sent or no uploader.'
+                        )
+                    )
         
         if moved_count > 0:
             self.stdout.write(

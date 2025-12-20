@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, MapPin, Calendar, User, MessageSquare, Heart, Image as ImageIcon, 
   Scale, Tag, Hash, Clock, CheckCircle2, Shield, Edit, 
-  Trash2, Share2, PawPrint, Palette, Award, Info, Navigation2, Phone, Mail
+  Trash2, Share2, PawPrint, Palette, Award, Info, Navigation2, Phone, Mail, AlertCircle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -109,10 +109,14 @@ export default function PetDetail() {
   const [showAdoptDialog, setShowAdoptDialog] = useState(false);
   const [showClaimDialog, setShowClaimDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showConsentDialog, setShowConsentDialog] = useState(false);
   const [adoptMessage, setAdoptMessage] = useState('');
   const [claimMessage, setClaimMessage] = useState('');
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const [imageError, setImageError] = useState(false);
+  const [daysInCare, setDaysInCare] = useState<number | null>(null);
+  const [requiresConsent, setRequiresConsent] = useState(false);
+  const [isProcessingConsent, setIsProcessingConsent] = useState(false);
   
   const isUploadedByUser = user?.id && pet && (
     pet.posted_by?.id === user.id || pet.posted_by?._id === user.id ||
@@ -144,12 +148,44 @@ export default function PetDetail() {
       setLoading(true);
       setImageError(false);
       const data = await petsApi.getById(Number(id));
-      setPet({
+      const petData = {
         ...data,
         id: data.id || data._id,
         createdAt: data.created_at || data.createdAt,
         updatedAt: data.updated_at || data.updatedAt,
-      });
+      };
+      setPet(petData);
+      
+      // Check if consent is needed (for found pets uploaded by current user)
+      // Verify user is the uploader
+      const isUserUploader = user?.id && (
+        petData.posted_by?.id === user.id || 
+        petData.posted_by?._id === user.id ||
+        petData.posted_by?.id === Number(user.id) ||
+        petData.posted_by?._id === Number(user.id)
+      );
+      
+      if (petData.adoption_status === 'Found' && 
+          petData.found_date && 
+          !petData.moved_to_adoption && 
+          !petData.is_reunited &&
+          isUserUploader &&
+          isAuthenticated) {
+        try {
+          const consentCheck = await petsApi.check15DayAdoption(Number(id));
+          if (consentCheck.requires_decision) {
+            setDaysInCare(consentCheck.days);
+            setRequiresConsent(true);
+            setShowConsentDialog(true);
+          } else {
+            setDaysInCare(consentCheck.days);
+            setRequiresConsent(false);
+          }
+        } catch (error) {
+          // Silently fail - consent check is optional
+          console.log('Could not check consent status:', error);
+        }
+      }
     } catch (error: any) {
       toast({ title: 'Error', description: 'Could not load pet details', variant: 'destructive' });
       setTimeout(() => navigate('/home'), 2000);
@@ -205,6 +241,40 @@ export default function PetDetail() {
       setAdoptMessage('');
     } catch (error) {
       toast({ title: 'Error', description: 'Could not submit', variant: 'destructive' });
+    }
+  };
+
+  const handleConsentDecision = async (consent: boolean, wantsToKeep: boolean = false) => {
+    if (!pet || !id) return;
+    
+    try {
+      setIsProcessingConsent(true);
+      const result = await petsApi.check15DayAdoption(Number(id), consent, wantsToKeep);
+      
+      if (wantsToKeep) {
+        toast({ 
+          title: 'Pet Ownership Transferred', 
+          description: `You are now the owner of "${pet.name}"` 
+        });
+      } else if (consent) {
+        toast({ 
+          title: 'Pet Moved to Adoption', 
+          description: `"${pet.name}" has been moved to adoption listing. Thank you!` 
+        });
+      }
+      
+      setShowConsentDialog(false);
+      setRequiresConsent(false);
+      // Reload pet to get updated status
+      await loadPet();
+    } catch (error: any) {
+      toast({ 
+        title: 'Error', 
+        description: error.message || 'Could not process your decision', 
+        variant: 'destructive' 
+      });
+    } finally {
+      setIsProcessingConsent(false);
     }
   };
 
@@ -744,8 +814,21 @@ export default function PetDetail() {
 
                 {/* Action Buttons */}
                 {isUploadedByUser ? (
-                  <div className="p-4 bg-blue-50 rounded-lg text-center border border-blue-200">
-                    <p className="text-blue-700 font-medium text-sm">✓ You uploaded this report</p>
+                  <div className="space-y-3">
+                    <div className="p-4 bg-[#E8F8EE] rounded-lg text-center border border-[#2BB6AF]/30">
+                      <p className="text-[#2BB6AF] font-medium text-sm">✓ You uploaded this report</p>
+                    </div>
+                    {/* Show consent button if 15 days passed and consent needed */}
+                    {requiresConsent && pet.adoption_status === 'Found' && !pet.moved_to_adoption && (
+                      <Button
+                        size="lg"
+                        onClick={() => setShowConsentDialog(true)}
+                        className="w-full bg-[#2BB6AF] hover:bg-[#239a94] text-white"
+                      >
+                        <Clock className="mr-2 h-5 w-5" />
+                        Decision Required ({daysInCare} days in care)
+                      </Button>
+                    )}
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -1107,6 +1190,65 @@ export default function PetDetail() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>Cancel</Button>
             <Button variant="destructive" onClick={handleDelete}>Delete</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 15-Day Consent Dialog */}
+      <Dialog open={showConsentDialog} onOpenChange={setShowConsentDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-[#2BB6AF]">
+              <Clock className="h-5 w-5" />
+              Action Required: Pet Adoption Decision
+            </DialogTitle>
+            <DialogDescription>
+              {pet?.name} has been in care for {daysInCare} days. Please make a decision:
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            <div className="p-4 bg-[#E8F8EE] rounded-lg border border-[#2BB6AF]/30">
+              <p className="text-sm text-gray-700 mb-2">
+                <strong>Option 1:</strong> Keep the pet as your own
+              </p>
+              <p className="text-xs text-gray-600">
+                The pet will be marked as "Adopted" and you will become the owner.
+              </p>
+            </div>
+            <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <p className="text-sm text-gray-700 mb-2">
+                <strong>Option 2:</strong> Move to adoption listing
+              </p>
+              <p className="text-xs text-gray-600">
+                The pet will be available for others to adopt.
+              </p>
+            </div>
+          </div>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowConsentDialog(false)}
+              disabled={isProcessingConsent}
+              className="flex-1"
+            >
+              Decide Later
+            </Button>
+            <Button 
+              onClick={() => handleConsentDecision(false, true)}
+              disabled={isProcessingConsent}
+              className="flex-1 bg-[#2BB6AF] hover:bg-[#239a94] text-white"
+            >
+              <Heart className="mr-2 h-4 w-4" />
+              Keep Pet
+            </Button>
+            <Button 
+              onClick={() => handleConsentDecision(true, false)}
+              disabled={isProcessingConsent}
+              className="flex-1 bg-[#2BB6AF] hover:bg-[#239a94] text-white"
+            >
+              <PawPrint className="mr-2 h-4 w-4" />
+              Move to Adoption
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -123,6 +123,17 @@ export const petsApi = {
   },
 
   /**
+   * Check 15-day adoption rule and handle consent
+   */
+  async check15DayAdoption(petId: number, consent?: boolean, wantsToKeep?: boolean): Promise<any> {
+    const response = await apiClient.post<any>(`/pets/${petId}/check-adoption/`, {
+      consent_for_adoption: consent || false,
+      wants_to_keep: wantsToKeep || false,
+    });
+    return response.data;
+  },
+
+  /**
    * Medical Records API (Admin only)
    */
   medicalRecords: {

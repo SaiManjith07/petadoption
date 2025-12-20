@@ -163,6 +163,7 @@ def found_pet_workflow(request, pet_id):
 def check_15_day_adoption(request, pet_id):
     """
     Check if pet has been in care for 15+ days and handle adoption transition.
+    Only the uploader (posted_by) can give consent to move to adoption.
     """
     try:
         pet = Pet.objects.get(id=pet_id)
@@ -172,32 +173,66 @@ def check_15_day_adoption(request, pet_id):
             status=status.HTTP_404_NOT_FOUND
         )
     
+    # Verify that the user is the one who uploaded the pet
+    if pet.posted_by != request.user:
+        return Response(
+            {'message': 'Only the person who uploaded this pet can make this decision'},
+            status=status.HTTP_403_FORBIDDEN
+        )
+    
+    # Verify it's a found pet
+    if pet.adoption_status != 'Found' or not pet.found_date:
+        return Response(
+            {'message': 'This endpoint is only for found pets'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
     # Calculate days
     days = pet.calculate_days_in_care()
     
-    if days >= 15 and not pet.moved_to_adoption:
+    if days >= 15 and not pet.moved_to_adoption and not pet.is_reunited:
         # Ask for consent
         consent = request.data.get('consent_for_adoption', False)
         wants_to_keep = request.data.get('wants_to_keep', False)
         
         if wants_to_keep:
-            # User wants to keep the pet
+            # User wants to keep the pet - transfer ownership
             pet.owner = request.user
             pet.adoption_status = 'Adopted'
+            pet.moved_to_adoption = False  # Don't mark as moved to adoption
             pet.save()
+            
+            # Notify user
+            Notification.objects.create(
+                user=request.user,
+                title='Pet Ownership Transferred',
+                message=f'You are now the owner of "{pet.name}"',
+                notification_type='system',
+                related_pet=pet
+            )
             
             return Response({
                 'message': 'Pet ownership transferred to you',
-                'pet': pet.id
+                'pet': pet.id,
+                'status': 'Adopted'
             })
         
         elif consent:
-            # User consents to move to adoption
+            # User consents to move to adoption - move to adoption listing
             pet.moved_to_adoption = True
             pet.moved_to_adoption_date = timezone.now()
             pet.adoption_status = 'Available for Adoption'
             pet.owner_consent_for_adoption = True
             pet.save()
+            
+            # Notify the uploader
+            Notification.objects.create(
+                user=request.user,
+                title='Pet Moved to Adoption',
+                message=f'"{pet.name}" has been moved to adoption listing. Thank you for your consent!',
+                notification_type='system',
+                related_pet=pet
+            )
             
             # If in shelter, notify shelter
             if pet.current_location_type == 'shelter':
@@ -214,21 +249,40 @@ def check_15_day_adoption(request, pet_id):
                     pass
             
             return Response({
-                'message': 'Pet moved to adoption listing',
-                'pet': pet.id
+                'message': 'Pet moved to adoption listing successfully',
+                'pet': pet.id,
+                'status': 'Available for Adoption'
             })
         
         else:
+            # Just checking status - return info that decision is needed
             return Response({
-                'message': 'Pet has been in care for 15+ days',
+                'message': 'Pet has been in care for 15+ days. Please make a decision.',
                 'days': days,
-                'requires_decision': True
+                'requires_decision': True,
+                'pet_id': pet.id
             })
     
-    return Response({
-        'days': days,
-        'requires_decision': False
-    })
+    elif pet.moved_to_adoption:
+        return Response({
+            'message': 'Pet has already been moved to adoption',
+            'days': days,
+            'requires_decision': False,
+            'moved_to_adoption': True
+        })
+    elif pet.is_reunited:
+        return Response({
+            'message': 'Pet has been reunited with owner',
+            'days': days,
+            'requires_decision': False,
+            'is_reunited': True
+        })
+    else:
+        return Response({
+            'days': days,
+            'requires_decision': False,
+            'message': f'Pet has been in care for {days} days. {15 - days} days remaining before decision is required.'
+        })
 
 
 @api_view(['GET'])

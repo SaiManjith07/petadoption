@@ -45,27 +45,9 @@ class PetListView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         try:
-            # Automatically move found pets to adoption after 15 days (before filtering)
-            from django.utils import timezone
-            from datetime import timedelta
-            
-            cutoff_date = timezone.now() - timedelta(days=15)
-            found_pets_to_move = Pet.objects.filter(
-                adoption_status='Found',
-                found_date__isnull=False,
-                found_date__lte=cutoff_date,
-                moved_to_adoption=False,
-                is_reunited=False
-            )
-            
-            for pet in found_pets_to_move:
-                days = pet.calculate_days_in_care()
-                if days >= 15:
-                    pet.moved_to_adoption = True
-                    pet.moved_to_adoption_date = timezone.now()
-                    pet.adoption_status = 'Available for Adoption'
-                    pet.owner_consent_for_adoption = True
-                    pet.save()
+            # Check for found pets that need consent after 15 days (but don't auto-move)
+            # The system will notify the uploader and wait for their consent
+            # Only move to adoption when consent is explicitly given via API endpoint
             
             queryset = Pet.objects.select_related('category', 'owner', 'posted_by').prefetch_related('images')
             
@@ -310,11 +292,21 @@ class LostPetListView(generics.ListCreateAPIView):
         
         # Save with required fields
         try:
-            serializer.save(
+            pet_instance = serializer.save(
                 posted_by=self.request.user, 
                 adoption_status='Pending', 
                 is_verified=False
             )
+            
+            # Double-check that the status was set correctly (in case serializer overrides it)
+            if pet_instance.adoption_status != 'Pending':
+                print(f"[WARNING] Pet {pet_instance.id} status was {pet_instance.adoption_status}, forcing to 'Pending'")
+                pet_instance.adoption_status = 'Pending'
+                pet_instance.is_verified = False
+                pet_instance.save(update_fields=['adoption_status', 'is_verified'])
+            
+            # Debug logging
+            print(f"[DEBUG] Created lost pet ID {pet_instance.id}: status={pet_instance.adoption_status}, is_verified={pet_instance.is_verified}, found_date={pet_instance.found_date}")
         except Exception as e:
             import traceback
             error_msg = f"Error saving pet in LostPetListView.perform_create: {e}"
@@ -335,28 +327,9 @@ class FoundPetListView(generics.ListCreateAPIView):
         return [AllowAny()]
     
     def get_queryset(self):
-        # Automatically move found pets to adoption after 15 days
-        from django.utils import timezone
-        from datetime import timedelta
-        
-        cutoff_date = timezone.now() - timedelta(days=15)
-        found_pets_to_move = Pet.objects.filter(
-            adoption_status='Found',
-            found_date__isnull=False,
-            found_date__lte=cutoff_date,
-            moved_to_adoption=False,
-            is_reunited=False
-        )
-        
-        for pet in found_pets_to_move:
-            days = pet.calculate_days_in_care()
-            if days >= 15:
-                pet.moved_to_adoption = True
-                pet.moved_to_adoption_date = timezone.now()
-                pet.adoption_status = 'Available for Adoption'
-                pet.owner_consent_for_adoption = True
-                pet.save()
-        
+        # Don't automatically move found pets to adoption
+        # They will be moved only when uploader gives consent after 15 days
+        # Check happens via check_15_day_adoption endpoint or when pet detail is viewed
         return Pet.objects.filter(adoption_status='Found').select_related('category', 'owner', 'posted_by').prefetch_related('images')
     
     def get_serializer_context(self):
@@ -596,7 +569,7 @@ class FoundPetListView(generics.ListCreateAPIView):
             # IMPORTANT: Always set adoption_status to 'Pending' for found pets
             # This ensures they go through admin approval before becoming 'Found'
             # After 15 days, they will automatically move to 'Available for Adoption'
-            serializer.save(
+            pet_instance = serializer.save(
                 posted_by=self.request.user, 
                 adoption_status='Pending',  # Must be Pending, not Found or Available for Adoption
                 is_verified=False,
@@ -604,6 +577,16 @@ class FoundPetListView(generics.ListCreateAPIView):
                 moved_to_adoption=False,  # Ensure this is False initially
                 is_reunited=False  # Ensure this is False initially
             )
+            
+            # Double-check that the status was set correctly (in case serializer overrides it)
+            if pet_instance.adoption_status != 'Pending':
+                print(f"[WARNING] Pet {pet_instance.id} status was {pet_instance.adoption_status}, forcing to 'Pending'")
+                pet_instance.adoption_status = 'Pending'
+                pet_instance.is_verified = False
+                pet_instance.save(update_fields=['adoption_status', 'is_verified'])
+            
+            # Debug logging
+            print(f"[DEBUG] Created found pet ID {pet_instance.id}: status={pet_instance.adoption_status}, is_verified={pet_instance.is_verified}, found_date={pet_instance.found_date}")
         except Exception as e:
             import traceback
             print(f"Error in FoundPetListView.perform_create: {e}")
@@ -717,30 +700,35 @@ class PetDetailView(generics.RetrieveUpdateDestroyAPIView):
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
         
-        # Check if this is a found pet that should be moved to adoption after 15 days
+        # Check if this is a found pet that needs consent after 15 days
+        # Don't auto-move, just check and notify if needed
         if (instance.adoption_status == 'Found' and 
             instance.found_date and 
             not instance.moved_to_adoption and 
             not instance.is_reunited):
             from django.utils import timezone
             days = instance.calculate_days_in_care()
-            if days >= 15:
-                instance.moved_to_adoption = True
-                instance.moved_to_adoption_date = timezone.now()
-                instance.adoption_status = 'Available for Adoption'
-                instance.owner_consent_for_adoption = True
-                instance.save()
-                
-                # Notify the person who found the pet
+            if days >= 15 and not instance.consent_notification_sent:
+                # Notify the uploader that 15 days have passed and consent is needed
                 if instance.posted_by:
                     from notifications.models import Notification
-                    Notification.objects.create(
+                    # Check if notification already exists (to avoid duplicates)
+                    existing_notification = Notification.objects.filter(
                         user=instance.posted_by,
-                        title='Pet Moved to Adoption',
-                        message=f'"{instance.name}" has been automatically moved to adoption listing after 15 days in care.',
-                        notification_type='system',
-                        related_pet=instance
-                    )
+                        related_pet=instance,
+                        notification_type='consent_required',
+                        is_read=False
+                    ).first()
+                    
+                    if not existing_notification:
+                        Notification.objects.create(
+                            user=instance.posted_by,
+                            title='Action Required: Pet Adoption Decision',
+                            message=f'"{instance.name}" has been in care for {days} days. Please visit the pet page to decide: Keep the pet or move to adoption listing.',
+                            notification_type='consent_required',
+                            link_target=f'/pets/{instance.id}',
+                            related_pet=instance
+                        )
         
         # Increment view count
         instance.views_count += 1

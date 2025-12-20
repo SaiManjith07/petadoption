@@ -245,8 +245,14 @@ def pending_reports(request):
         
         # Debug logging
         print(f"[DEBUG] Found pets query - report_type={report_type}, count={queryset.count()}")
+        print(f"[DEBUG] Query filters: is_verified=False, found_date__isnull=False, status in ['Pending', 'Found']")
         for pet in queryset[:5]:  # Log first 5
-            print(f"  - Pet ID {pet.id}: name='{pet.name}', found_date={pet.found_date}, status={pet.adoption_status}")
+            print(f"  - Pet ID {pet.id}: name='{pet.name}', found_date={pet.found_date}, status={pet.adoption_status}, is_verified={pet.is_verified}")
+        
+        # Also log total pending pets for debugging
+        all_pending = Pet.objects.filter(adoption_status='Pending', is_verified=False).count()
+        all_found_pending = Pet.objects.filter(adoption_status='Pending', is_verified=False, found_date__isnull=False).count()
+        print(f"[DEBUG] Total pending pets: {all_pending}, Found pending pets: {all_found_pending}")
     elif report_type == 'lost':
         # Include: Pending pets without found_date (lost pets waiting approval) OR Lost pets that aren't verified
         # Lost pets are created with adoption_status='Pending' but no found_date
@@ -263,8 +269,14 @@ def pending_reports(request):
         
         # Debug logging
         print(f"[DEBUG] Lost pets query - report_type={report_type}, count={queryset.count()}")
+        print(f"[DEBUG] Query filters: is_verified=False, found_date__isnull=True, status in ['Pending', 'Lost']")
         for pet in queryset[:5]:  # Log first 5
-            print(f"  - Pet ID {pet.id}: name='{pet.name}', found_date={pet.found_date}, status={pet.adoption_status}")
+            print(f"  - Pet ID {pet.id}: name='{pet.name}', found_date={pet.found_date}, status={pet.adoption_status}, is_verified={pet.is_verified}")
+        
+        # Also log total pending pets for debugging
+        all_pending = Pet.objects.filter(adoption_status='Pending', is_verified=False).count()
+        all_lost_pending = Pet.objects.filter(adoption_status='Pending', is_verified=False, found_date__isnull=True).count()
+        print(f"[DEBUG] Total pending pets: {all_pending}, Lost pending pets: {all_lost_pending}")
     else:
         # Get all unverified pets (Pending, Found, or Lost)
         queryset = Pet.objects.filter(
