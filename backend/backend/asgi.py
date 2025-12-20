@@ -8,17 +8,21 @@ https://docs.djangoproject.com/en/4.2/howto/deployment/asgi/
 """
 
 import os
+
+# Set Django settings module BEFORE importing any Django code
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend.settings')
+
 from django.core.asgi import get_asgi_application
 from channels.routing import ProtocolTypeRouter, URLRouter
 from channels.auth import AuthMiddlewareStack
 from channels.security.websocket import AllowedHostsOriginValidator
-import chats.routing
-
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend.settings')
 
 # Initialize Django ASGI application early to ensure the AppRegistry
 # is populated before importing code that may import ORM models.
 django_asgi_app = get_asgi_application()
+
+# Import routing AFTER Django is configured
+import chats.routing
 
 application = ProtocolTypeRouter({
     "http": django_asgi_app,
