@@ -156,8 +156,10 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 # Backend URL for constructing absolute URLs (for image URLs, etc.)
-# In development, this should match your Django server URL
-BACKEND_URL = 'http://127.0.0.1:8000'  # Change this in production to your actual backend domain
+# Get from environment variable or use default
+BACKEND_URL = os.getenv('BACKEND_URL', os.getenv('RENDER_EXTERNAL_URL', 'http://127.0.0.1:8000'))
+# Remove trailing slash if present
+BACKEND_URL = BACKEND_URL.rstrip('/')
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
