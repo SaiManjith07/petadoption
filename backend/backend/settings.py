@@ -27,6 +27,20 @@ ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,0.0.0.0').split(
 # Remove empty strings from the list
 ALLOWED_HOSTS = [host.strip() for host in ALLOWED_HOSTS if host.strip()]
 
+# Add Render.com domain automatically if on Render
+RENDER_EXTERNAL_HOSTNAME = os.getenv('RENDER_EXTERNAL_HOSTNAME')
+if RENDER_EXTERNAL_HOSTNAME:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+    # Also add without port if it includes one
+    if ':' in RENDER_EXTERNAL_HOSTNAME:
+        ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME.split(':')[0])
+
+# If on Render but RENDER_EXTERNAL_HOSTNAME not set, allow any .onrender.com domain
+# This is a fallback - ideally set RENDER_EXTERNAL_HOSTNAME in Render dashboard
+if os.getenv('RENDER') and not any('.onrender.com' in host for host in ALLOWED_HOSTS):
+    # We'll handle this in middleware since Django doesn't support wildcards
+    pass
+
 # Application definition
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -54,6 +68,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'corsheaders.middleware.CorsMiddleware',
+    'backend.middleware.RenderHostMiddleware',  # Allow .onrender.com domains
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
