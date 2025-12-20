@@ -80,8 +80,28 @@ class MessageSerializer(serializers.ModelSerializer):
                             else:
                                 image_url = str(image_value)
                             request = self.context.get('request')
+                            
+                            # Always prefer BACKEND_URL from settings for consistency
+                            from django.conf import settings
+                            base_url = getattr(settings, 'BACKEND_URL', None)
+                            
+                            # If BACKEND_URL is set, use it (production)
+                            if base_url and base_url != 'http://127.0.0.1:8000':
+                                if not image_url.startswith('/'):
+                                    image_url = '/' + image_url
+                                if base_url.endswith('/'):
+                                    base_url = base_url.rstrip('/')
+                                return f"{base_url}{image_url}"
+                            
+                            # Fallback to request.build_absolute_uri if available
                             if request:
                                 return request.build_absolute_uri(image_url)
+                            
+                            # If already a full URL, return as is
+                            if image_url.startswith('http://') or image_url.startswith('https://'):
+                                return image_url
+                            
+                            # Last resort: return relative URL (will be fixed by frontend)
                             return image_url
                         except (AttributeError, Exception) as url_error:
                             print(f"Error getting image URL: {url_error}")
