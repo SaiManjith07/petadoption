@@ -69,41 +69,54 @@ class PetSerializer(serializers.ModelSerializer):
             # First, try the uploaded image field
             if obj.image:
                 try:
+                    # Safely get the image URL
                     if hasattr(obj.image, 'url'):
-                        image_url = obj.image.url
+                        try:
+                            image_url = obj.image.url
+                        except (ValueError, AttributeError, Exception) as url_error:
+                            # If we can't get the URL, skip this image
+                            print(f"Error accessing image.url: {url_error}")
+                            # Try to continue with image_url field below
+                            image_url = None
                         
-                        # Always prefer BACKEND_URL from settings for consistency
-                        base_url = getattr(settings, 'BACKEND_URL', None)
-                        
-                        # If BACKEND_URL is set, use it (production)
-                        if base_url and base_url != 'http://127.0.0.1:8000':
-                            # Ensure path starts with /
+                        if image_url:
+                            # Always prefer BACKEND_URL from settings for consistency
+                            base_url = getattr(settings, 'BACKEND_URL', None)
+                            
+                            # If BACKEND_URL is set, use it (production)
+                            if base_url and base_url != 'http://127.0.0.1:8000':
+                                # Ensure path starts with /
+                                if not image_url.startswith('/'):
+                                    image_url = '/' + image_url
+                                # Remove trailing slash from base_url if present
+                                if base_url.endswith('/'):
+                                    base_url = base_url.rstrip('/')
+                                return f"{base_url}{image_url}"
+                            
+                            # Fallback to request.build_absolute_uri if available (development)
+                            if request:
+                                try:
+                                    full_url = request.build_absolute_uri(image_url)
+                                    return full_url
+                                except Exception as build_error:
+                                    print(f"Error building absolute URI: {build_error}")
+                                    # Continue to next fallback
+                            
+                            # If already a full URL, return as is
+                            if image_url.startswith('http://') or image_url.startswith('https://'):
+                                return image_url
+                            
+                            # Last resort: construct URL from default
                             if not image_url.startswith('/'):
                                 image_url = '/' + image_url
-                            # Remove trailing slash from base_url if present
-                            if base_url.endswith('/'):
-                                base_url = base_url.rstrip('/')
-                            return f"{base_url}{image_url}"
-                        
-                        # Fallback to request.build_absolute_uri if available (development)
-                        if request:
-                            full_url = request.build_absolute_uri(image_url)
-                            return full_url
-                        
-                        # If already a full URL, return as is
-                        if image_url.startswith('http://') or image_url.startswith('https://'):
-                            return image_url
-                        
-                        # Last resort: construct URL from default
-                        if not image_url.startswith('/'):
-                            image_url = '/' + image_url
-                        default_base = 'http://127.0.0.1:8000'
-                        return f"{default_base}{image_url}"
-                except (ValueError, AttributeError) as e:
+                            default_base = 'http://127.0.0.1:8000'
+                            return f"{default_base}{image_url}"
+                except Exception as e:
                     import traceback
                     print(f"Error getting image URL: {e}")
                     if getattr(settings, 'DEBUG', False):
                         print(traceback.format_exc())
+                    # Don't raise, just continue to try image_url field
                     pass
             
             # If no uploaded image, try the image_url field (external URL)
