@@ -941,8 +941,13 @@ def all_pets(request):
 @api_view(['GET'])
 @permission_classes([IsAdminUser])
 def all_lost(request):
-    """Get all lost pets."""
-    queryset = Pet.objects.filter(adoption_status='Lost')
+    """Get all lost pets (including pending ones for admin)."""
+    # Admin should see all lost pets including pending ones
+    # Include both 'Lost' status and 'Pending' status without found_date
+    queryset = Pet.objects.filter(
+        Q(adoption_status='Lost') | 
+        Q(adoption_status='Pending', found_date__isnull=True)
+    ).select_related('category', 'owner', 'posted_by').prefetch_related('images').order_by('-created_at')
     from pets.serializers import PetListSerializer
     serializer = PetListSerializer(queryset, many=True, context={'request': request})
     return Response({'data': serializer.data})
@@ -951,8 +956,13 @@ def all_lost(request):
 @api_view(['GET'])
 @permission_classes([IsAdminUser])
 def all_found(request):
-    """Get all found pets."""
-    queryset = Pet.objects.filter(adoption_status='Found')
+    """Get all found pets (including pending ones for admin)."""
+    # Admin should see all found pets including pending ones
+    # Include both 'Found' status and 'Pending' status with found_date
+    queryset = Pet.objects.filter(
+        Q(adoption_status='Found') | 
+        Q(adoption_status='Pending', found_date__isnull=False)
+    ).select_related('category', 'owner', 'posted_by').prefetch_related('images').order_by('-created_at')
     from pets.serializers import PetListSerializer
     serializer = PetListSerializer(queryset, many=True, context={'request': request})
     return Response({'data': serializer.data})

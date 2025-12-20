@@ -45,11 +45,18 @@ class PetListView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         try:
-            # Check for found pets that need consent after 15 days (but don't auto-move)
-            # The system will notify the uploader and wait for their consent
-            # Only move to adoption when consent is explicitly given via API endpoint
-            
             queryset = Pet.objects.select_related('category', 'owner', 'posted_by').prefetch_related('images')
+            
+            # CRITICAL: Normal users should only see verified pets (approved by admin)
+            # Admins can see all pets including pending ones
+            is_admin = self.request.user.is_authenticated and self.request.user.is_staff
+            if not is_admin:
+                # For normal users: Only show verified pets (is_verified=True)
+                # This ensures pending pets are hidden until admin approves
+                queryset = queryset.filter(is_verified=True)
+                print(f"[DEBUG] PetListView: Filtering for normal user - only showing verified pets")
+            else:
+                print(f"[DEBUG] PetListView: Admin view - showing all pets including pending")
             
             # Filter by status
             status_filter = self.request.query_params.get('status')
@@ -104,7 +111,20 @@ class LostPetListView(generics.ListCreateAPIView):
     
     def get_queryset(self):
         try:
-            return Pet.objects.filter(adoption_status='Lost').select_related('category', 'owner', 'posted_by').prefetch_related('images')
+            # CRITICAL: Normal users should only see verified lost pets (approved by admin)
+            # Admins can see all lost pets including pending ones
+            is_admin = self.request.user.is_authenticated and self.request.user.is_staff
+            queryset = Pet.objects.filter(adoption_status='Lost').select_related('category', 'owner', 'posted_by').prefetch_related('images')
+            
+            if not is_admin:
+                # For normal users: Only show verified lost pets (is_verified=True)
+                # Pending lost pets (status='Pending' without found_date) are hidden until admin approves
+                queryset = queryset.filter(is_verified=True)
+                print(f"[DEBUG] LostPetListView: Filtering for normal user - only showing verified lost pets")
+            else:
+                print(f"[DEBUG] LostPetListView: Admin view - showing all lost pets including pending")
+            
+            return queryset
         except Exception as e:
             import traceback
             print(f"Error in LostPetListView.get_queryset: {e}")
@@ -327,10 +347,20 @@ class FoundPetListView(generics.ListCreateAPIView):
         return [AllowAny()]
     
     def get_queryset(self):
-        # Don't automatically move found pets to adoption
-        # They will be moved only when uploader gives consent after 15 days
-        # Check happens via check_15_day_adoption endpoint or when pet detail is viewed
-        return Pet.objects.filter(adoption_status='Found').select_related('category', 'owner', 'posted_by').prefetch_related('images')
+        # CRITICAL: Normal users should only see verified found pets (approved by admin)
+        # Admins can see all found pets including pending ones
+        is_admin = self.request.user.is_authenticated and self.request.user.is_staff
+        queryset = Pet.objects.filter(adoption_status='Found').select_related('category', 'owner', 'posted_by').prefetch_related('images')
+        
+        if not is_admin:
+            # For normal users: Only show verified found pets (is_verified=True)
+            # Pending found pets (status='Pending' with found_date) are hidden until admin approves
+            queryset = queryset.filter(is_verified=True)
+            print(f"[DEBUG] FoundPetListView: Filtering for normal user - only showing verified found pets")
+        else:
+            print(f"[DEBUG] FoundPetListView: Admin view - showing all found pets including pending")
+        
+        return queryset
     
     def get_serializer_context(self):
         context = super().get_serializer_context()
@@ -700,6 +730,19 @@ class PetDetailView(generics.RetrieveUpdateDestroyAPIView):
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
         
+        # CRITICAL: Normal users should NOT be able to view unverified pets (pending approval)
+        # Only admins and the user who posted it can see unverified pets
+        is_admin = request.user.is_authenticated and request.user.is_staff
+        is_uploader = request.user.is_authenticated and (
+            instance.posted_by == request.user or 
+            (instance.posted_by and instance.posted_by.id == request.user.id)
+        )
+        
+        if not instance.is_verified and not is_admin and not is_uploader:
+            # Normal users trying to access unverified pet - return 404
+            from rest_framework.exceptions import NotFound
+            raise NotFound("Pet not found or pending approval")
+        
         # Check if this is a found pet that needs consent after 15 days
         # Don't auto-move, just check and notify if needed
         if (instance.adoption_status == 'Found' and 
@@ -708,7 +751,7 @@ class PetDetailView(generics.RetrieveUpdateDestroyAPIView):
             not instance.is_reunited):
             from django.utils import timezone
             days = instance.calculate_days_in_care()
-            if days >= 15 and not instance.consent_notification_sent:
+            if days >= 15:
                 # Notify the uploader that 15 days have passed and consent is needed
                 if instance.posted_by:
                     from notifications.models import Notification
