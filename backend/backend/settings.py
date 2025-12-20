@@ -203,6 +203,10 @@ SIMPLE_JWT = {
 }
 
 # CORS Settings
+# Get allowed origins from environment variable or use defaults
+CORS_ORIGINS_ENV = os.getenv('CORS_ALLOWED_ORIGINS', '')
+
+# Base allowed origins (local development)
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://localhost:5173",
@@ -211,6 +215,24 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:5173",
     "http://127.0.0.1:8080",
 ]
+
+# Add production frontend URLs from environment variable
+if CORS_ORIGINS_ENV:
+    # Split by comma and add each origin
+    additional_origins = [origin.strip() for origin in CORS_ORIGINS_ENV.split(',') if origin.strip()]
+    CORS_ALLOWED_ORIGINS.extend(additional_origins)
+
+# Add common production frontend URLs
+production_origins = [
+    "https://petadoption-amber.vercel.app",  # Vercel frontend
+    "https://petadoption-frontend.onrender.com",  # Render frontend (if deployed)
+]
+
+# Only add production origins if not in DEBUG mode or if explicitly allowed
+if not DEBUG or os.getenv('ALLOW_PRODUCTION_ORIGINS', '').lower() == 'true':
+    for origin in production_origins:
+        if origin not in CORS_ALLOWED_ORIGINS:
+            CORS_ALLOWED_ORIGINS.append(origin)
 
 # In development, allow all localhost origins (more flexible)
 if DEBUG:
