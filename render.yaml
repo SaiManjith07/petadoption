@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: petadoption-backend
+    env: python
+    buildCommand: pip install -r requirements.txt && cd backend && python manage.py migrate && python manage.py collectstatic --noinput
+    startCommand: cd backend && daphne -b 0.0.0.0 -p $PORT backend.asgi:application
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: DJANGO_SETTINGS_MODULE
+        value: backend.settings
+      - key: DEBUG
+        value: False
+      - key: ALLOWED_HOSTS
+        generateValue: true
+    healthCheckPath: /api/
+
