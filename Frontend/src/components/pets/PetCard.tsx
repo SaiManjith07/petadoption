@@ -194,7 +194,7 @@ export const PetCard = ({ pet, onActionClick, actionLabel, currentUserId, showVi
             />
           ) : (
             <div className="h-full w-full flex flex-col items-center justify-center bg-gradient-to-br from-green-100 to-emerald-100">
-              <ImageIcon className="h-16 w-16 text-green-400 mb-2" />
+              <ImageIcon className="h-16 w-16 text-[#2BB6AF] mb-2" />
               <p className="text-sm font-medium text-gray-500">No Image Available</p>
             </div>
           )}
@@ -202,8 +202,8 @@ export const PetCard = ({ pet, onActionClick, actionLabel, currentUserId, showVi
             <Badge 
               className={`${
                 isFound 
-                  ? 'bg-green-600 text-white border-green-700' 
-                  : 'bg-orange-600 text-white border-orange-700'
+                  ? 'bg-[#2BB6AF] text-white border-[#239a94]' 
+                  : 'bg-[#2BB6AF] text-white border-[#239a94]'
               } font-semibold shadow-md border-2 px-2.5 py-1 text-xs`}
             >
               {statusLabel}
@@ -211,7 +211,7 @@ export const PetCard = ({ pet, onActionClick, actionLabel, currentUserId, showVi
           </div>
           {isUploadedByUser && (
             <div className="absolute top-3 left-3 z-10">
-              <Badge className="bg-blue-600 text-white border-blue-700 font-semibold shadow-md border-2 px-2.5 py-1 text-xs">
+              <Badge className="bg-[#2BB6AF] text-white border-[#239a94] font-semibold shadow-md border-2 px-2.5 py-1 text-xs">
                 Your Post
               </Badge>
             </div>

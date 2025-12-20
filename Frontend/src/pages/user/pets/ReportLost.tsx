@@ -328,9 +328,9 @@ export default function ReportLost() {
             <form onSubmit={handleSubmit(onSubmit)}>
               <CardContent className="space-y-8 px-6 sm:px-8 lg:px-12 py-8">
               
-              <Alert className="bg-orange-50 border-2 border-orange-200 rounded-xl">
-                <AlertCircle className="h-5 w-5 text-orange-600" />
-                <AlertDescription className="text-orange-900 font-semibold">
+              <Alert className="bg-[#E8F8EE] border-2 border-[#2BB6AF]/30 rounded-xl">
+                <AlertCircle className="h-5 w-5 text-[#2BB6AF]" />
+                <AlertDescription className="text-[#239a94] font-semibold">
                   As you fill in the details, we'll automatically search for matching found pets in real-time
                 </AlertDescription>
               </Alert>

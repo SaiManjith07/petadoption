@@ -257,7 +257,7 @@ export const TopNav = () => {
                       <div className="hidden lg:flex flex-col items-start">
                         <span className="text-sm font-semibold text-gray-900">{user?.name}</span>
                         {isAdmin && (
-                          <Badge className="text-xs bg-gradient-to-r from-purple-100 to-indigo-100 text-purple-700 border-purple-200 px-1.5 py-0 mt-0.5">
+                          <Badge className="text-xs bg-[#E8F8EE] text-[#2BB6AF] border-[#2BB6AF]/30 px-1.5 py-0 mt-0.5">
                             Admin
                           </Badge>
                         )}
@@ -379,7 +379,7 @@ export const TopNav = () => {
               {isAdmin && (
                 <Link
                   to="/admin"
-                  className="flex items-center gap-3 rounded-xl px-4 py-3 text-base font-semibold text-gray-700 hover:bg-gradient-to-r hover:from-purple-100 hover:to-indigo-100 hover:text-purple-700 transition-all"
+                  className="flex items-center gap-3 rounded-xl px-4 py-3 text-base font-semibold text-gray-700 hover:bg-gradient-to-r hover:from-[#2BB6AF]/10 hover:to-[#2BB6AF]/5 hover:text-[#2BB6AF] transition-all"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   <ShieldCheck className="h-5 w-5" />

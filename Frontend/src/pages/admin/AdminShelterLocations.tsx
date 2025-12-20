@@ -509,7 +509,7 @@ export default function AdminShelterLocations() {
                     <CardHeader>
                       <div className="flex items-start justify-between">
                         <div className="flex items-center gap-3">
-                          <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center">
+                          <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-[#2BB6AF] to-[#239a94] flex items-center justify-center">
                             <Building2 className="h-6 w-6 text-white" />
                           </div>
                           <div>
@@ -527,7 +527,7 @@ export default function AdminShelterLocations() {
                           }
                           className={
                             (shelter.status === 'pending' || !shelter.is_verified) ? 'bg-yellow-100 text-yellow-700 border-yellow-300' :
-                            (shelter.status === 'approved' || shelter.is_verified) ? 'bg-green-100 text-green-700 border-green-300' :
+                            (shelter.status === 'approved' || shelter.is_verified) ? 'bg-[#E8F8EE] text-[#2BB6AF] border-[#2BB6AF]/30' :
                             'bg-red-100 text-red-700 border-red-300'
                           }
                         >
@@ -580,7 +580,7 @@ export default function AdminShelterLocations() {
                         {(shelter.status === 'pending' || !shelter.is_verified) && (
                           <Button
                             size="sm"
-                            className="bg-green-600 hover:bg-green-700 flex-1"
+                            className="bg-[#2BB6AF] hover:bg-[#239a94] flex-1"
                             onClick={() => handleApproveShelter(shelter)}
                           >
                             <CheckCircle className="h-4 w-4 mr-2" />

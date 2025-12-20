@@ -70,14 +70,14 @@ export const PetGallery = ({
     green: {
       accent: 'from-green-500 to-emerald-600',
       border: 'border-green-500',
-      text: 'text-green-600',
-      bg: 'bg-green-50',
+      text: 'text-[#2BB6AF]',
+      bg: 'bg-[#E8F8EE]',
     },
     orange: {
       accent: 'from-orange-500 to-amber-600',
       border: 'border-orange-500',
-      text: 'text-orange-600',
-      bg: 'bg-orange-50',
+      text: 'text-[#2BB6AF]',
+      bg: 'bg-[#E8F8EE]',
     },
     blue: {
       accent: 'from-blue-500 to-indigo-600',

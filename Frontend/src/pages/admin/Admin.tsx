@@ -620,8 +620,8 @@ export default function Admin() {
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-3">
-                      <div className="h-10 w-10 rounded-xl bg-orange-50 flex items-center justify-center">
-                        <AlertCircle className="h-5 w-5 text-orange-500" />
+                      <div className="h-10 w-10 rounded-xl bg-[#E8F8EE] flex items-center justify-center">
+                        <AlertCircle className="h-5 w-5 text-[#2BB6AF]" />
                     </div>
                       <span className="text-sm font-semibold text-gray-600">Pending Reports</span>
                     </div>
@@ -633,7 +633,7 @@ export default function Admin() {
                     </div>
                   </div>
                   <Link to="/admin/found-pets">
-                    <Button variant="ghost" size="icon" className="text-gray-400 hover:text-orange-500 hover:bg-orange-50 rounded-xl">
+                    <Button variant="ghost" size="icon" className="text-gray-400 hover:text-[#2BB6AF] hover:bg-[#E8F8EE] rounded-xl">
                       <ArrowRight className="h-5 w-5" />
                     </Button>
                   </Link>
@@ -670,8 +670,8 @@ export default function Admin() {
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-3">
-                      <div className="h-10 w-10 rounded-xl bg-purple-50 flex items-center justify-center">
-                        <Users className="h-5 w-5 text-purple-500" />
+                      <div className="h-10 w-10 rounded-xl bg-[#E8F8EE] flex items-center justify-center">
+                        <Users className="h-5 w-5 text-[#2BB6AF]" />
                     </div>
                       <span className="text-sm font-semibold text-gray-600">Total Users</span>
                     </div>
@@ -683,7 +683,7 @@ export default function Admin() {
                     </div>
                   </div>
                   <Link to="/admin/users">
-                    <Button variant="ghost" size="icon" className="text-gray-400 hover:text-purple-500 hover:bg-purple-50 rounded-xl">
+                    <Button variant="ghost" size="icon" className="text-gray-400 hover:text-[#2BB6AF] hover:bg-[#E8F8EE] rounded-xl">
                       <ArrowRight className="h-5 w-5" />
                     </Button>
                   </Link>
@@ -1035,7 +1035,7 @@ export default function Admin() {
                                   <CardHeader>
                                     <div className="flex items-start justify-between">
                                       <div className="flex items-center gap-3">
-                                        <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center">
+                                        <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-[#2BB6AF] to-[#239a94] flex items-center justify-center">
                                           <Building2 className="h-6 w-6 text-white" />
                                         </div>
                                         <div>

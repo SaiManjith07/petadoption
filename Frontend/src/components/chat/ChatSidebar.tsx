@@ -253,13 +253,13 @@ export function ChatSidebar({ onSelectChat, onSelectRequest }: {
                         <span className="font-semibold text-sm">
                           {chat.other_participant?.name || 'Chat'}
                           {chat.other_participant?.is_staff || chat.other_participant?.is_superuser ? (
-                            <span className="text-xs text-blue-600 ml-1">(admin)</span>
+                            <span className="text-xs text-[#2BB6AF] ml-1">(admin)</span>
                           ) : chat.other_participant ? (
                             <span className="text-xs text-gray-500 ml-1">(user)</span>
                           ) : null}
                         </span>
                         {chat.unread_count > 0 && (
-                          <Badge className="bg-blue-600 text-white text-xs">
+                          <Badge className="bg-[#2BB6AF] text-white text-xs">
                             {chat.unread_count}
                           </Badge>
                         )}

@@ -441,7 +441,7 @@ export default function AdminFeedingPoints() {
                           variant={point.is_active ? 'default' : 'destructive'}
                           className={
                             point.is_active 
-                              ? 'bg-green-100 text-green-700' 
+                              ? 'bg-[#E8F8EE] text-[#2BB6AF]' 
                               : 'bg-yellow-100 text-yellow-700'
                           }
                         >
@@ -484,7 +484,7 @@ export default function AdminFeedingPoints() {
                           <>
                             <Button
                               size="sm"
-                              className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                              className="flex-1 bg-[#2BB6AF] hover:bg-[#239a94] text-white"
                               onClick={() => handleApproveFeedingPoint(point.id || point._id)}
                             >
                               <CheckCircle className="h-4 w-4 mr-2" />

@@ -152,7 +152,7 @@ export function ChatWindow({ roomId, otherUser, isOnline = false }: ChatWindowPr
               <div className="flex items-center gap-2 mt-1">
                 <div
                   className={`h-2 w-2 rounded-full ${
-                    isOnline ? 'bg-green-500' : 'bg-gray-400'
+                    isOnline ? 'bg-[#2BB6AF]' : 'bg-gray-400'
                   }`}
                 />
                 <span className="text-xs text-gray-500">
@@ -199,7 +199,7 @@ export function ChatWindow({ roomId, otherUser, isOnline = false }: ChatWindowPr
                       <p className="text-xs font-semibold mb-1 opacity-80">
                         {message.sender.name}
                         {message.sender.is_staff || message.sender.is_superuser ? (
-                          <span className="text-blue-600 ml-1">(admin)</span>
+                          <span className="text-[#2BB6AF] ml-1">(admin)</span>
                         ) : (
                           <span className="text-gray-500 ml-1">(user)</span>
                         )}
@@ -210,7 +210,7 @@ export function ChatWindow({ roomId, otherUser, isOnline = false }: ChatWindowPr
                     </p>
                     <p
                       className={`text-xs mt-1 ${
-                        isOwn ? 'text-green-100' : 'text-gray-500'
+                        isOwn ? 'text-[#2BB6AF]/20' : 'text-gray-500'
                       }`}
                     >
                       {format(new Date(message.timestamp), 'h:mm a')}
