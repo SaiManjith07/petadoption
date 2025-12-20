@@ -87,7 +87,7 @@ export default function AdminRequests() {
     if (!selectedRequest || !actionType) return;
 
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+      const API_URL = import.meta.env.VITE_API_URL || 'https://petadoption-v2q3.onrender.com/api';
       let url = '';
       let method = 'POST';
 

@@ -161,7 +161,7 @@ export default function Profile() {
 
   const loadAdditionalData = async () => {
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+      const API_URL = import.meta.env.VITE_API_URL || 'https://petadoption-v2q3.onrender.com/api';
       const token = localStorage.getItem('accessToken');
 
       if (!token) {
@@ -318,7 +318,7 @@ export default function Profile() {
 
     try {
       setChangingPassword(true);
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+      const API_URL = import.meta.env.VITE_API_URL || 'https://petadoption-v2q3.onrender.com/api';
       const token = localStorage.getItem('accessToken');
       
       if (!token) {

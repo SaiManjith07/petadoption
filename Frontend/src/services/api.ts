@@ -1,12 +1,12 @@
 // Mock API service for development
 // Replace with actual backend URLs when ready
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
-const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8000/ws';
+const API_URL = import.meta.env.VITE_API_URL || 'https://petadoption-v2q3.onrender.com/api';
+const WS_URL = import.meta.env.VITE_WS_URL || 'wss://petadoption-v2q3.onrender.com/ws';
 
 // Get base URL for image serving (without /api)
 const getBaseUrl = () => {
-  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+  const apiUrl = import.meta.env.VITE_API_URL || 'https://petadoption-v2q3.onrender.com/api';
   // Remove /api from the end if present
   return apiUrl.replace(/\/api\/?$/, '');
 };

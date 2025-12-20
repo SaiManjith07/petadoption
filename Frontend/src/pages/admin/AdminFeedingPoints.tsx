@@ -55,7 +55,7 @@ export default function AdminFeedingPoints() {
     try {
       setLoading(true);
       // Admin should see all feeding points, not just active ones
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+      const API_URL = import.meta.env.VITE_API_URL || 'https://petadoption-v2q3.onrender.com/api';
       const accessToken = localStorage.getItem('accessToken');
       const response = await fetch(`${API_URL}/feeding-points/`, {
         headers: {
@@ -157,7 +157,7 @@ export default function AdminFeedingPoints() {
 
     try {
       setSubmitting(true);
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+      const API_URL = import.meta.env.VITE_API_URL || 'https://petadoption-v2q3.onrender.com/api';
       const accessToken = localStorage.getItem('accessToken');
       const pointId = editingPoint.id || editingPoint._id;
 
@@ -214,7 +214,7 @@ export default function AdminFeedingPoints() {
     }
 
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+      const API_URL = import.meta.env.VITE_API_URL || 'https://petadoption-v2q3.onrender.com/api';
       const accessToken = localStorage.getItem('accessToken');
 
       const response = await fetch(`${API_URL}/feeding-points/${pointId}/delete/`, {
@@ -260,7 +260,7 @@ export default function AdminFeedingPoints() {
 
   const handleApproveFeedingPoint = async (pointId: string | number) => {
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+      const API_URL = import.meta.env.VITE_API_URL || 'https://petadoption-v2q3.onrender.com/api';
       const accessToken = localStorage.getItem('accessToken');
 
       const response = await fetch(`${API_URL}/feeding-points/${pointId}/update/`, {

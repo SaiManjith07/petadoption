@@ -99,7 +99,7 @@ export default function AdminChatReadOnly() {
     if (imageUrl) return imageUrl;
     if (image) {
       if (image.startsWith('http')) return image;
-      return `${import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'}${image}`;
+      return `${import.meta.env.VITE_API_URL || 'https://petadoption-v2q3.onrender.com/api'}${image}`;
     }
     return null;
   };

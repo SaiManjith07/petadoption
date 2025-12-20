@@ -61,7 +61,7 @@ export function useChatSSE({
     try {
       // Build SSE URL with token and last message ID
       // Note: EventSource doesn't support custom headers, so we pass token as query param
-      const baseUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+      const baseUrl = import.meta.env.VITE_API_URL || 'https://petadoption-v2q3.onrender.com/api';
       const encodedToken = encodeURIComponent(token);
       const url = `${baseUrl}/api/chats/rooms/${roomId}/stream/?token=${encodedToken}&last_id=${lastMessageId || 0}`;
       

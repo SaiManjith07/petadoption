@@ -270,7 +270,7 @@ export default function Admin() {
   const loadShelterRegistrations = async () => {
     try {
       setShelterRegistrationsLoading(true);
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+      const API_URL = import.meta.env.VITE_API_URL || 'https://petadoption-v2q3.onrender.com/api';
       const accessToken = localStorage.getItem('accessToken');
       const response = await fetch(`${API_URL}/shelter-registrations/all`, {
         headers: {
@@ -300,7 +300,7 @@ export default function Admin() {
   const loadRoleRequests = async () => {
     try {
       setRoleRequestsLoading(true);
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+      const API_URL = import.meta.env.VITE_API_URL || 'https://petadoption-v2q3.onrender.com/api';
       const accessToken = localStorage.getItem('accessToken');
       const response = await fetch(`${API_URL}/role-requests/all/`, {
         headers: {
@@ -353,7 +353,7 @@ export default function Admin() {
 
   const handleShelterAction = async (shelterId: string, action: 'approve' | 'reject', notes?: string) => {
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+      const API_URL = import.meta.env.VITE_API_URL || 'https://petadoption-v2q3.onrender.com/api';
       const response = await fetch(`${API_URL}/shelter-registrations/${shelterId}/${action}`, {
         method: 'POST',
         headers: {
@@ -384,7 +384,7 @@ export default function Admin() {
 
   const handleRoleRequestAction = async (requestId: string | number, action: 'approve' | 'reject', notes?: string) => {
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+      const API_URL = import.meta.env.VITE_API_URL || 'https://petadoption-v2q3.onrender.com/api';
       const response = await fetch(`${API_URL}/role-requests/${requestId}/${action}/`, {
         method: 'POST',
         headers: {

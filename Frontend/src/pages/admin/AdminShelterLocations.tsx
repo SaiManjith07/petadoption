@@ -96,7 +96,7 @@ export default function AdminShelterLocations() {
 
     try {
       setSubmitting(true);
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+      const API_URL = import.meta.env.VITE_API_URL || 'https://petadoption-v2q3.onrender.com/api';
       const accessToken = localStorage.getItem('accessToken');
 
       const shelterData = {
@@ -257,7 +257,7 @@ export default function AdminShelterLocations() {
 
     try {
       setSubmitting(true);
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+      const API_URL = import.meta.env.VITE_API_URL || 'https://petadoption-v2q3.onrender.com/api';
       const accessToken = localStorage.getItem('accessToken');
       const shelterId = approvingShelter.id || approvingShelter._id;
 
@@ -318,7 +318,7 @@ export default function AdminShelterLocations() {
     }
 
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+      const API_URL = import.meta.env.VITE_API_URL || 'https://petadoption-v2q3.onrender.com/api';
       const accessToken = localStorage.getItem('accessToken');
 
       const response = await fetch(`${API_URL}/shelter-registrations/${shelterId}/`, {
