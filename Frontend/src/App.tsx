@@ -244,6 +244,16 @@ const AppContent = () => {
               </UserProtectedRoute>
             } 
           />
+          <Route 
+            path="/chats/:roomId" 
+            element={
+              <UserProtectedRoute>
+              <UserPageWrapper>
+                <Chat />
+              </UserPageWrapper>
+              </UserProtectedRoute>
+            } 
+          />
           {/* Community Features - User Protected */}
           <Route 
             path="/shelter-capacity" 
