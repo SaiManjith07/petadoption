@@ -36,7 +36,8 @@ export const petsApi = {
       : { headers: { 'Content-Type': 'application/json' } };
     
     // Use specific endpoint for lost/found reports
-    const endpoint = reportType === 'lost' ? '/pets/lost/' : reportType === 'found' ? '/pets/found/' : '/pets/';
+    // Backend routes: /api/lost/ and /api/found/ (not /api/pets/lost/)
+    const endpoint = reportType === 'lost' ? '/lost/' : reportType === 'found' ? '/found/' : '/pets/';
     
     const response = await apiClient.post<Pet>(endpoint, petData, config);
     return response.data;
