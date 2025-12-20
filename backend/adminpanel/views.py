@@ -961,16 +961,28 @@ def approve_pet(request, pet_id):
     pet.is_verified = True
     original_status = pet.adoption_status
     if pet.adoption_status == 'Pending':
-        # Auto-set status based on type parameter or pet name/description
-        report_type = request.data.get('type', '').lower()
-        # Check if name starts with "Found" or "Lost"
-        if 'found' in report_type or (pet.name and 'found' in pet.name.lower()):
+        # Determine status based on found_date field (most reliable)
+        # Found pets have found_date set, lost pets don't
+        if pet.found_date is not None:
+            # This is a found pet - set status to 'Found'
+            # After 15 days, it will automatically move to 'Available for Adoption'
             pet.adoption_status = 'Found'
-        elif 'lost' in report_type or (pet.name and 'lost' in pet.name.lower()):
-            pet.adoption_status = 'Lost'
         else:
-            # Default to 'Available for Adoption' if no type specified
-            pet.adoption_status = 'Available for Adoption'
+            # This is a lost pet - set status to 'Lost'
+            pet.adoption_status = 'Lost'
+        
+        # Fallback: If found_date check doesn't work, use type parameter or pet name
+        # (This should rarely be needed, but kept as backup)
+        if pet.adoption_status == 'Pending':
+            report_type = request.data.get('type', '').lower()
+            # Check if name starts with "Found" or "Lost"
+            if 'found' in report_type or (pet.name and 'found' in pet.name.lower()):
+                pet.adoption_status = 'Found'
+            elif 'lost' in report_type or (pet.name and 'lost' in pet.name.lower()):
+                pet.adoption_status = 'Lost'
+            else:
+                # Last resort: Default to 'Lost' if we can't determine (safer than Adoption)
+                pet.adoption_status = 'Lost'
     
     # Log action
     AdminLog.objects.create(
