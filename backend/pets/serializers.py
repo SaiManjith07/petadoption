@@ -143,41 +143,59 @@ class PetSerializer(serializers.ModelSerializer):
         
         # Add images from PetImage model
         if hasattr(obj, 'images'):
-            for img in obj.images.all():
-                if img.image:
-                    try:
-                        if hasattr(img.image, 'url'):
-                            image_url = img.image.url
-                            
-                            # Always prefer BACKEND_URL from settings for consistency
-                            base_url = getattr(settings, 'BACKEND_URL', None)
-                            
-                            # If BACKEND_URL is set, use it (production)
-                            if base_url and base_url != 'http://127.0.0.1:8000':
-                                if not image_url.startswith('/'):
-                                    image_url = '/' + image_url
-                                if base_url.endswith('/'):
-                                    base_url = base_url.rstrip('/')
-                                photos.append(f"{base_url}{image_url}")
-                            # Fallback to request.build_absolute_uri if available
-                            elif request:
-                                full_url = request.build_absolute_uri(image_url)
-                                photos.append(full_url)
-                            # If already a full URL, return as is
-                            elif image_url.startswith('http://') or image_url.startswith('https://'):
-                                photos.append(image_url)
-                            # Last resort: construct from default
-                            else:
-                                if not image_url.startswith('/'):
-                                    image_url = '/' + image_url
-                                default_base = 'http://127.0.0.1:8000'
-                                photos.append(f"{default_base}{image_url}")
-                    except (ValueError, AttributeError) as e:
-                        import traceback
-                        print(f"Error getting PetImage URL: {e}")
-                        if getattr(settings, 'DEBUG', False):
-                            print(traceback.format_exc())
-                        pass
+            try:
+                for img in obj.images.all():
+                    if img.image:
+                        try:
+                            if hasattr(img.image, 'url'):
+                                try:
+                                    image_url = img.image.url
+                                except (ValueError, AttributeError, Exception) as url_error:
+                                    print(f"Error accessing PetImage.url: {url_error}")
+                                    continue  # Skip this image
+                                
+                                if image_url:
+                                    # Always prefer BACKEND_URL from settings for consistency
+                                    base_url = getattr(settings, 'BACKEND_URL', None)
+                                    
+                                    # If BACKEND_URL is set, use it (production)
+                                    if base_url and base_url != 'http://127.0.0.1:8000':
+                                        if not image_url.startswith('/'):
+                                            image_url = '/' + image_url
+                                        if base_url.endswith('/'):
+                                            base_url = base_url.rstrip('/')
+                                        photos.append(f"{base_url}{image_url}")
+                                    # Fallback to request.build_absolute_uri if available
+                                    elif request:
+                                        try:
+                                            full_url = request.build_absolute_uri(image_url)
+                                            photos.append(full_url)
+                                        except Exception as build_error:
+                                            print(f"Error building absolute URI for PetImage: {build_error}")
+                                            # Continue to next fallback
+                                            if image_url.startswith('http://') or image_url.startswith('https://'):
+                                                photos.append(image_url)
+                                    # If already a full URL, return as is
+                                    elif image_url.startswith('http://') or image_url.startswith('https://'):
+                                        photos.append(image_url)
+                                    # Last resort: construct from default
+                                    else:
+                                        if not image_url.startswith('/'):
+                                            image_url = '/' + image_url
+                                        default_base = 'http://127.0.0.1:8000'
+                                        photos.append(f"{default_base}{image_url}")
+                        except Exception as e:
+                            import traceback
+                            print(f"Error processing PetImage: {e}")
+                            if getattr(settings, 'DEBUG', False):
+                                print(traceback.format_exc())
+                            continue  # Skip this image and continue with next
+            except Exception as e:
+                import traceback
+                print(f"Error iterating PetImages: {e}")
+                if getattr(settings, 'DEBUG', False):
+                    print(traceback.format_exc())
+                # Don't raise, just return what we have so far
                 # Also check if PetImage has image_url field
                 if hasattr(img, 'image_url') and img.image_url:
                     photos.append(img.image_url)
