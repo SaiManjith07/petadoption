@@ -592,11 +592,17 @@ class FoundPetListView(generics.ListCreateAPIView):
             # If still not provided, set it to now for found pets
             if not found_date:
                 found_date = timezone.now()
+            
+            # IMPORTANT: Always set adoption_status to 'Pending' for found pets
+            # This ensures they go through admin approval before becoming 'Found'
+            # After 15 days, they will automatically move to 'Available for Adoption'
             serializer.save(
                 posted_by=self.request.user, 
-                adoption_status='Pending', 
+                adoption_status='Pending',  # Must be Pending, not Found or Available for Adoption
                 is_verified=False,
-                found_date=found_date
+                found_date=found_date,
+                moved_to_adoption=False,  # Ensure this is False initially
+                is_reunited=False  # Ensure this is False initially
             )
         except Exception as e:
             import traceback

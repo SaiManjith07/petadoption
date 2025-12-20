@@ -59,7 +59,7 @@ class PetSerializer(serializers.ModelSerializer):
             'moved_to_adoption', 'moved_to_adoption_date', 'owner_consent_for_adoption',
             'is_reunited', 'reunited_with_owner', 'reunited_at'
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at', 'views_count', 'owner', 'posted_by']
+        read_only_fields = ['id', 'created_at', 'updated_at', 'views_count', 'owner', 'posted_by', 'adoption_status']
 
     def get_image_url(self, obj):
         """Get full URL for the main pet image."""
