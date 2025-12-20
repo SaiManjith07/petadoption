@@ -514,8 +514,32 @@ class FoundPetListView(generics.ListCreateAPIView):
             
             try:
                 self.perform_create(serializer)
-                headers = self.get_success_headers(serializer.data)
-                return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+                # Get the created instance
+                instance = serializer.instance
+                # Re-serialize with request context to ensure proper URL generation
+                try:
+                    response_serializer = self.get_serializer(instance, context={'request': request})
+                    response_data = response_serializer.data
+                    headers = self.get_success_headers(response_data)
+                    return Response(response_data, status=status.HTTP_201_CREATED, headers=headers)
+                except Exception as serialize_error:
+                    import traceback
+                    error_trace = traceback.format_exc()
+                    print(f"Error serializing created pet response: {serialize_error}")
+                    print(error_trace)
+                    # Fallback: return basic data without full serialization
+                    basic_data = {
+                        'id': instance.id if instance else None,
+                        'name': instance.name if instance else None,
+                        'adoption_status': instance.adoption_status if instance else 'Found',
+                        'message': 'Pet created successfully, but some data could not be serialized'
+                    }
+                    if instance:
+                        basic_data['created_at'] = instance.created_at.isoformat() if hasattr(instance, 'created_at') and instance.created_at else None
+                    return Response(
+                        basic_data,
+                        status=status.HTTP_201_CREATED
+                    )
             except Exception as save_error:
                 import traceback
                 error_trace = traceback.format_exc()
