@@ -142,7 +142,7 @@ export function UserSidebar({ isOpen = true, onClose }: UserSidebarProps) {
                 >
                   {/* Active indicator bar */}
                   {isActive && (
-                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-[#2BB6AF] rounded-r-full" />
+                    <div className="absolute left-0 top-2.5 w-1 h-9 bg-[#2BB6AF] rounded-r-full" />
                   )}
                   <Icon className={cn('h-5 w-5', isActive && 'text-[#2BB6AF]')} strokeWidth={2} />
                   <div className="flex-1 min-w-0">

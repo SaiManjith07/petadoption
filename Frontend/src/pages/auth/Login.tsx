@@ -68,7 +68,7 @@ export default function Login() {
   return (
     <div className="min-h-screen flex items-center bg-white">
       {/* Left Panel - Welcome Section */}
-      <div className="hidden lg:flex lg:w-[48%] text-white p-12 flex flex-col justify-between relative overflow-hidden rounded-r-[6rem] h-[90vh] my-auto shadow-2xl shadow-green-500/60">
+      <div className="hidden lg:flex lg:w-[48%] text-white p-12 flex flex-col justify-between relative overflow-hidden rounded-r-[6rem] h-[90vh] my-auto shadow-2xl shadow-[#2BB6AF]/60">
         {/* Background Image */}
         <div className="absolute inset-0">
           <img
@@ -76,11 +76,11 @@ export default function Login() {
             alt="Pet illustration background"
             className="w-full h-full object-contain blur-sm"
           />
-          <div className="absolute inset-0 bg-gradient-to-br from-[#2BB6AF]/50 via-[#239a94]/50 to-[#1a7a75]/50"></div>
+          <div className="absolute inset-0 bg-gradient-to-br from-[#2BB6AF]/80 via-[#239a94]/80 to-[#1a7a75]/80"></div>
         </div>
         <div className="relative z-10 flex flex-col justify-center flex-1">
           {/* PetReunite Branding */}
-          <div className="mb-12">
+          <div className="mb-8">
             <Logo 
               size="xl" 
               showText={true} 
@@ -93,38 +93,37 @@ export default function Login() {
 
           {/* Concise Content */}
           <div className="mb-8">
-            <h2 className="text-3xl font-bold mb-4 leading-tight text-[#2BB6AF] drop-shadow-lg">Welcome Back!</h2>
-            <p className="text-white text-lg leading-relaxed mb-6 drop-shadow-md">
+            <h2 className="text-3xl font-bold mb-4 leading-tight text-white drop-shadow-lg">Welcome</h2>
+            <p className="text-white text-lg leading-relaxed mb-6 drop-shadow-lg font-medium">
               Login to continue helping pets find their way home through our trusted platform.
             </p>
             
             {/* Key Features - Concise */}
             <div className="space-y-3">
               <div className="flex items-center gap-3">
-                <CheckCircle2 className="h-5 w-5 text-[#2BB6AF] flex-shrink-0 drop-shadow-md" />
-                <p className="text-white text-sm drop-shadow-md">Report lost & found pets with verified NGO support</p>
+                <CheckCircle2 className="h-5 w-5 text-white flex-shrink-0 drop-shadow-lg" />
+                <p className="text-white text-sm drop-shadow-lg font-medium">Report lost & found pets with verified NGO support</p>
               </div>
               <div className="flex items-center gap-3">
-                <ShieldCheck className="h-5 w-5 text-[#2BB6AF] flex-shrink-0 drop-shadow-md" />
-                <p className="text-white text-sm drop-shadow-md">Join community volunteers and shelters</p>
+                <ShieldCheck className="h-5 w-5 text-white flex-shrink-0 drop-shadow-lg" />
+                <p className="text-white text-sm drop-shadow-lg font-medium">Join community volunteers and shelters</p>
               </div>
               <div className="flex items-center gap-3">
-                <Heart className="h-5 w-5 text-[#2BB6AF] flex-shrink-0 drop-shadow-md" />
-                <p className="text-white text-sm drop-shadow-md">Adopt rescued animals through verified network</p>
+                <Heart className="h-5 w-5 text-white flex-shrink-0 drop-shadow-lg" />
+                <p className="text-white text-sm drop-shadow-lg font-medium">Adopt rescued animals through verified network</p>
               </div>
             </div>
           </div>
 
           {/* Register Prompt */}
           <div className="mt-auto pt-8">
-            <p className="text-white mb-4 text-base drop-shadow-md">Don't have an account? Register to get started.</p>
-            <Button
-              asChild
-              variant="outline"
-              className="bg-white text-[#2BB6AF] hover:bg-white/95 border-2 border-white font-semibold px-8 py-6 text-base rounded-2xl shadow-lg hover:shadow-xl transition-all w-fit"
+            <p className="text-white mb-4 text-base drop-shadow-md font-medium">Don't have an account?</p>
+            <Link 
+              to="/auth/register"
+              className="inline-block px-6 py-3 bg-white/10 hover:bg-white/20 border-2 border-white text-white font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl backdrop-blur-sm"
             >
-              <Link to="/auth/register">Create Account</Link>
-            </Button>
+              Register now
+            </Link>
           </div>
         </div>
       </div>
@@ -141,7 +140,7 @@ export default function Login() {
                 alt="Pet illustration background"
                 className="w-full h-full object-contain"
               />
-              <div className="absolute inset-0 bg-gradient-to-br from-[#2BB6AF]/50 via-[#239a94]/50 to-[#1a7a75]/50"></div>
+              <div className="absolute inset-0 bg-gradient-to-br from-[#2BB6AF]/80 via-[#239a94]/80 to-[#1a7a75]/80"></div>
             </div>
             <div className="relative z-10">
               <Logo 
@@ -152,23 +151,22 @@ export default function Login() {
                 variant="white"
                 className="mb-6 group"
               />
-              <h2 className="text-2xl font-bold mb-3 text-[#2BB6AF] drop-shadow-lg">Welcome Back!</h2>
-              <p className="text-white mb-4 text-sm drop-shadow-md">
+              <h2 className="text-2xl font-bold mb-3 text-white drop-shadow-lg">Welcome</h2>
+              <p className="text-white mb-4 text-sm drop-shadow-lg font-medium">
                 Login to continue helping pets find their way home.
               </p>
-              <p className="text-white mb-4 text-sm drop-shadow-md">Don't have an account? Register to get started.</p>
-              <Button
-                asChild
-                variant="outline"
-                className="bg-white text-[#2BB6AF] hover:bg-white/95 border-2 border-white font-semibold px-6 py-3 rounded-xl"
+              <p className="text-white/90 mb-2 text-xs drop-shadow-md">Don't have an account?</p>
+              <Link 
+                to="/auth/register"
+                className="text-white/90 text-xs underline hover:text-white transition-colors"
               >
-                <Link to="/auth/register">Create Account</Link>
-              </Button>
+                Register here
+              </Link>
             </div>
           </div>
 
           {/* Login Form Card */}
-          <div className="w-full max-w-[450px] mx-auto bg-white p-6 md:p-[40px] rounded-xl shadow-2xl shadow-[#2BB6AF]/30">
+          <div className="w-full max-w-[450px] mx-auto bg-white p-6 md:p-[40px] rounded-xl shadow-2xl shadow-[#2BB6AF]/40 border border-gray-100">
             <div className="mb-8">
               <h2 className="text-4xl font-bold text-gray-900 mb-2">Login</h2>
               <p className="text-gray-600 text-base">Enter your credentials to access your account</p>

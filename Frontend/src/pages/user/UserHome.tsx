@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
-  Heart, Search as SearchIcon, PawPrint, Search, Activity, Eye, Calendar, CheckCircle, MapPin, AlertCircle, Home
+  Heart, Search as SearchIcon, PawPrint, Search, Activity, Eye, Calendar, CheckCircle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -126,29 +126,6 @@ export default function UserHome() {
   };
 
 
-  const quickActions = [
-    {
-      title: 'Report Found Pet',
-      description: 'Found a pet? Help reunite it with its family',
-      icon: MapPin,
-      href: '/pets/report-found',
-      color: 'bg-emerald-100 text-emerald-600',
-    },
-    {
-      title: 'Report Lost Pet',
-      description: 'Lost your pet? Get instant matches',
-      icon: AlertCircle,
-      href: '/pets/report-lost',
-      color: 'bg-orange-100 text-orange-600',
-    },
-    {
-      title: 'Adopt a Pet',
-      description: 'Find your perfect companion',
-      icon: Home,
-      href: '/pets/adoptable',
-      color: 'bg-pink-100 text-pink-600',
-    },
-  ];
 
   return (
     <div className="min-h-screen bg-white">
@@ -176,26 +153,6 @@ export default function UserHome() {
       {/* Welcome Section */}
       <div className="bg-white py-8 md:py-12 px-6 md:px-10 lg:px-8">
         <div className="max-w-7xl mx-auto">
-
-          {/* Quick Actions */}
-          <div className="mb-8">
-            <h2 className="mb-4 text-xl font-semibold text-gray-900">Quick Actions</h2>
-            <div className="grid gap-6 sm:grid-cols-3">
-              {quickActions.map((action) => (
-                <Link key={action.title} to={action.href}>
-                  <Card className="transition-all hover:shadow-md hover:border-primary/20 cursor-pointer h-full">
-                    <CardHeader>
-                      <div className={`mb-2 flex h-12 w-12 items-center justify-center rounded-lg ${action.color}`}>
-                        <action.icon className="h-6 w-6" />
-            </div>
-                      <CardTitle className="text-lg text-gray-900">{action.title}</CardTitle>
-                      <CardDescription className="text-gray-600">{action.description}</CardDescription>
-                    </CardHeader>
-                  </Card>
-                </Link>
-              ))}
-            </div>
-          </div>
         </div>
             </div>
 

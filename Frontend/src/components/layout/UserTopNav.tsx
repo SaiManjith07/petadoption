@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Bell, User, LogOut, Menu, X, UserPlus } from 'lucide-react';
+import { Bell, User, LogOut, Menu, X, UserPlus, MapPin, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -29,6 +29,27 @@ export function UserTopNav({ onMenuToggle, sidebarOpen, onRefresh }: UserTopNavP
   const [notifications, setNotifications] = useState<NotificationModel[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
 
+  const quickActions = [
+    {
+      title: 'Report Found Pet',
+      description: 'Found a pet? Help reunite it with its family',
+      icon: MapPin,
+      href: '/pets/report-found',
+    },
+    {
+      title: 'Report Lost Pet',
+      description: 'Lost your pet? Get instant matches',
+      icon: AlertCircle,
+      href: '/pets/report-lost',
+    },
+    {
+      title: 'Become Volunteer',
+      description: 'Join us as a volunteer',
+      icon: UserPlus,
+      href: '/become-volunteer',
+    },
+  ];
+
   // Load notifications
   useEffect(() => {
     const loadNotifications = async () => {
@@ -55,7 +76,7 @@ export function UserTopNav({ onMenuToggle, sidebarOpen, onRefresh }: UserTopNavP
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-gray-200/50 bg-white/90 backdrop-blur-sm shadow-sm">
-      <div className="flex h-14 items-center justify-between px-4 lg:px-6">
+      <div className="flex h-14 items-center justify-between px-4 lg:px-4">
         {/* Mobile Menu Toggle */}
         <Button
           variant="ghost"
@@ -65,6 +86,22 @@ export function UserTopNav({ onMenuToggle, sidebarOpen, onRefresh }: UserTopNavP
         >
           {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </Button>
+
+        {/* Middle: Quick Actions */}
+        <div className="flex items-center gap-1 md:gap-2 flex-1 justify-center">
+          {quickActions.map((action) => (
+            <Button
+              key={action.title}
+              variant="ghost"
+              className="rounded-lg hover:bg-gray-100 h-9 px-2 md:px-3 text-xs md:text-sm"
+              onClick={() => navigate(action.href)}
+              title={action.title}
+            >
+              <action.icon className="h-4 w-4 md:mr-2" />
+              <span className="hidden md:inline">{action.title}</span>
+            </Button>
+          ))}
+        </div>
 
         {/* Right: Actions */}
         <div className="flex items-center gap-2 ml-auto">
