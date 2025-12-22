@@ -218,7 +218,7 @@ export default function UserHome() {
                     size="sm"
                     onClick={loadPets}
                     disabled={loading}
-                    className="gap-2 rounded-lg border-[#E5E7EB] hover:bg-[#E0F2F1] hover:text-[#2DD4BF] transition-all duration-200 hover:scale-105"
+                    className="gap-2 rounded-lg border-[hsl(var(--border))] hover:bg-[hsl(var(--primary))]/10 hover:text-[hsl(var(--primary))] transition-all duration-200 hover:scale-105"
                   >
           {loading ? (
                       <>
@@ -240,7 +240,7 @@ export default function UserHome() {
                       setTypeFilter('all');
                       setStatusFilter('all');
                     }}
-                    className="rounded-lg border-[#E5E7EB] hover:bg-[#E0F2F1] hover:text-[#2DD4BF] transition-all duration-200 hover:scale-105"
+                    className="rounded-lg border-[hsl(var(--border))] hover:bg-[hsl(var(--primary))]/10 hover:text-[hsl(var(--primary))] transition-all duration-200 hover:scale-105"
                   >
                     Clear
               </Button>
@@ -343,23 +343,23 @@ export default function UserHome() {
                                 <div className="flex-1">
                                   <div className="space-y-2 sm:space-y-2.5 mb-4 sm:mb-5">
                                     <div className="flex items-center gap-2 sm:gap-2.5 text-sm sm:text-base text-gray-700">
-                                      <PawPrint className="h-4 w-4 sm:h-5 sm:w-5 text-[#2DD4BF] flex-shrink-0" />
+                                      <PawPrint className="h-4 w-4 sm:h-5 sm:w-5 text-[hsl(var(--primary))] flex-shrink-0" />
                                       <span className="font-semibold">Type:</span>
                                       <span className="capitalize truncate font-medium">{getPetType(p)}</span>
                                     </div>
                                     <div className="flex items-center gap-2 sm:gap-2.5 text-sm sm:text-base text-gray-700">
-                                      <PawPrint className="h-4 w-4 sm:h-5 sm:w-5 text-[#2DD4BF] flex-shrink-0" />
+                                      <PawPrint className="h-4 w-4 sm:h-5 sm:w-5 text-[hsl(var(--primary))] flex-shrink-0" />
                                       <span className="font-semibold">Breed:</span>
                                       <span className="truncate font-medium">{p.breed || 'Unknown'}</span>
                                     </div>
                                     <div className="flex items-center gap-2 sm:gap-2.5 text-sm sm:text-base text-gray-700">
-                                      <Search className="h-4 w-4 sm:h-5 sm:w-5 text-[#2DD4BF] flex-shrink-0" />
+                                      <Search className="h-4 w-4 sm:h-5 sm:w-5 text-[hsl(var(--primary))] flex-shrink-0" />
                                       <span className="font-semibold">Location:</span>
                                       <span className="line-clamp-1 truncate font-medium">{p.location || 'N/A'}</span>
                                     </div>
                                     {createdDate && (
                                       <div className="flex items-center gap-2 sm:gap-2.5 text-sm sm:text-base text-gray-700">
-                                        <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-[#2DD4BF] flex-shrink-0" />
+                                        <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-[hsl(var(--primary))] flex-shrink-0" />
                                         <span className="font-semibold">Reported:</span>
                                         <span className="truncate font-medium">{format(new Date(createdDate), 'MMM dd, yyyy')}</span>
                                       </div>
@@ -371,7 +371,7 @@ export default function UserHome() {
                                 <div className="flex gap-2 mt-auto pt-2">
                         <Button
                                     variant="default"
-                                    className="flex-1 bg-[#2DD4BF] hover:bg-[#14B8A6] text-white text-sm sm:text-base py-3 rounded-lg transition-all duration-200 hover:scale-105 font-semibold"
+                                    className="flex-1 bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary-dark))] text-white text-sm sm:text-base py-3 rounded-lg transition-all duration-200 hover:scale-105 font-semibold"
                                     onClick={() => {
                                       navigate(`/pets/${petId}`);
                                     }}

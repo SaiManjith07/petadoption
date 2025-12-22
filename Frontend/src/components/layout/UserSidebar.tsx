@@ -95,7 +95,7 @@ export function UserSidebar({ isOpen = true, onClose }: UserSidebarProps) {
       {/* Sidebar - Modern floating design with 260px width */}
       <aside
         className={cn(
-          'fixed left-0 top-[70px] z-[999] h-[calc(100vh-70px)] w-[260px] bg-[#F8FAFB] border-r border-[#E5E7EB]',
+          'fixed left-0 top-[70px] z-[999] h-[calc(100vh-70px)] w-[260px] bg-[hsl(var(--background))] border-r border-[hsl(var(--border))]',
           'transition-all duration-300 ease-in-out',
           'lg:translate-x-0',
           isOpen ? 'translate-x-0' : '-translate-x-full'
@@ -126,8 +126,8 @@ export function UserSidebar({ isOpen = true, onClose }: UserSidebarProps) {
                   className={cn(
                     'group flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 relative cursor-pointer',
                     isActive
-                      ? 'bg-[#2DD4BF] text-white shadow-sm'
-                      : 'text-[#1F2937] hover:bg-[#E0F2F1] hover:text-[#2DD4BF]'
+                      ? 'bg-[hsl(var(--primary))] text-white shadow-sm'
+                      : 'text-[hsl(var(--foreground))] hover:bg-[hsl(var(--primary))]/10 hover:text-[hsl(var(--primary))]'
                   )}
                   style={!isActive ? { transform: 'scale(1)' } : {}}
                   onMouseEnter={(e) => {
@@ -180,17 +180,17 @@ export function UserSidebar({ isOpen = true, onClose }: UserSidebarProps) {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="font-semibold text-[#111827]">Admin Panel</div>
-                  <div className="text-xs text-[#6B7280]">Manage system</div>
+                  <div className="text-xs text-[hsl(var(--text-muted))]">Manage system</div>
                 </div>
               </Link>
             </div>
           )}
 
           {/* User Info Footer */}
-          <div className="border-t border-[#E5E7EB] p-4 bg-[#F8FAFB]">
+          <div className="border-t border-[hsl(var(--border))] p-4 bg-[hsl(var(--background-secondary))]">
             <Link
               to="/profile"
-              className="flex items-center gap-3 rounded-lg p-3 hover:bg-white transition-all duration-300 group shadow-sm border border-[#E5E7EB]"
+              className="flex items-center gap-3 rounded-lg p-3 hover:bg-white transition-all duration-300 group shadow-sm border border-[hsl(var(--border))]"
               onClick={() => {
                 if (window.innerWidth < 1024 && onClose) {
                   onClose();
@@ -204,20 +204,20 @@ export function UserSidebar({ isOpen = true, onClose }: UserSidebarProps) {
               }}
             >
               <div className="relative">
-                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-[#2DD4BF] to-[#14B8A6] text-white font-bold text-base shadow-md group-hover:scale-105 transition-transform duration-300">
+                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-[hsl(var(--primary))] to-[hsl(var(--primary-dark))] text-white font-bold text-base shadow-md group-hover:scale-105 transition-transform duration-300">
                   {user?.name?.charAt(0)?.toUpperCase() || 'U'}
                 </div>
                 <div className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-[#10B981] border-2 border-white"></div>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-[#1F2937] truncate">
+                <p className="text-sm font-semibold text-[hsl(var(--foreground))] truncate">
                   {user?.name || 'User'}
                 </p>
-                <p className="text-xs text-[#6B7280] truncate">
+                <p className="text-xs text-[hsl(var(--text-muted))] truncate">
                   {user?.email || 'user@example.com'}
                 </p>
                 {user?.role && user.role !== 'user' && (
-                  <Badge className="mt-1.5 text-xs bg-[#2DD4BF]/10 text-[#2DD4BF] border-[#2DD4BF]/20 capitalize rounded-full px-2 py-0.5">
+                  <Badge className="mt-1.5 text-xs bg-[hsl(var(--primary))]/10 text-[hsl(var(--primary))] border-[hsl(var(--primary))]/20 capitalize rounded-full px-2 py-0.5">
                     {user.role}
                   </Badge>
                 )}

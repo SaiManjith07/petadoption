@@ -281,7 +281,7 @@ export default function ChatList() {
                             Pet ID: {chat.petId || chat.pet_id ? (
                               <button
                                 onClick={() => navigate(`/pets/${chat.petId || chat.pet_id}`)}
-                                className="text-[#2BB6AF] font-medium hover:underline cursor-pointer ml-1"
+                                className="text-[hsl(var(--primary))] font-medium hover:underline cursor-pointer ml-1"
                                 title="View pet details"
                               >
                                 {chat.petId || chat.pet_id}

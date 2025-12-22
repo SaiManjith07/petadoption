@@ -25,10 +25,10 @@ All colors MUST be HSL.
   :root {
     /* PetReunite Platform Redesign - New Design System */
     /* Primary Colors - Teal (Landing Page Logo Color) */
-    --primary: 173 80% 40%; /* Teal #14b8a6 */
+    --primary: 173 60% 45%; /* Teal #2BB6AF - Landing page primary */
     --primary-foreground: 0 0% 100%;
-    --primary-light: 173 85% 45%; /* Lighter teal */
-    --primary-dark: 188 85% 37%; /* #0891b2 */
+    --primary-light: 173 65% 50%; /* Lighter teal #2DD4BF */
+    --primary-dark: 173 55% 40%; /* Darker teal #239a94 */
     
     --secondary: 258 90% 66%; /* Purple #8B5CF6 */
     --secondary-foreground: 0 0% 100%;

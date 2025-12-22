@@ -113,12 +113,12 @@ export function AdminTopNav({ onMenuToggle, sidebarOpen, onRefresh, isRefreshing
           {/* Live System Indicator */}
           <div className="hidden lg:flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#D1FAE5] to-[#A7F3D0] rounded-xl border border-[#10B981]/20 shadow-sm">
             <div className="relative">
-              <Circle className="h-2.5 w-2.5 text-[#10B981] fill-[#10B981]" />
+              <Circle className="h-2.5 w-2.5 text-[hsl(var(--success))] fill-[hsl(var(--success))]" />
               <div className="absolute inset-0 animate-ping">
                 <Circle className="h-2.5 w-2.5 text-[#10B981] fill-[#10B981] opacity-75" />
               </div>
             </div>
-            <span className="text-xs font-semibold text-[#065F46]">Live System</span>
+            <span className="text-xs font-semibold text-[hsl(var(--success))]">Live System</span>
           </div>
 
           {/* Refresh Button */}

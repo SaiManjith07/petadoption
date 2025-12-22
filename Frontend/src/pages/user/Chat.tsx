@@ -331,7 +331,7 @@ export default function Chat() {
                       <CardTitle className="flex items-center gap-2">
                         {otherUser?.name || 'Chat'}
                         {isOnline ? (
-                          <Wifi className="h-4 w-4 text-[#2BB6AF]" />
+                          <Wifi className="h-4 w-4 text-[hsl(var(--primary))]" />
                         ) : (
                           <WifiOff className="h-4 w-4 text-gray-400" />
                         )}
@@ -341,7 +341,7 @@ export default function Chat() {
                         {(room?.pet_id || room?.petId) && (
                           <button
                             onClick={() => navigate(`/pets/${room.pet_id || room.petId}`)}
-                            className="text-[#2BB6AF] font-medium hover:underline cursor-pointer"
+                            className="text-[hsl(var(--primary))] font-medium hover:underline cursor-pointer"
                             title="View pet details"
                           >
                             • Pet ID: {room.pet_id || room.petId}
@@ -378,7 +378,7 @@ export default function Chat() {
                           <span className="text-sm font-medium">
                             {message.sender.name}
                             {message.sender.is_staff || message.sender.is_superuser ? (
-                              <span className="text-xs text-[#2BB6AF] ml-1">(admin)</span>
+                              <span className="text-xs text-[hsl(var(--primary))] ml-1">(admin)</span>
                             ) : (
                               <span className="text-xs text-gray-500 ml-1">(user)</span>
                             )}
@@ -523,7 +523,7 @@ export default function Chat() {
                       return (
                         <div key={participant.id} className="flex items-center gap-3">
                           <Avatar>
-                            <AvatarFallback className={isParticipantAdmin ? 'bg-[#E8F8EE] text-[#2BB6AF]' : 'bg-primary/10 text-primary'}>
+                            <AvatarFallback className={isParticipantAdmin ? 'bg-[hsl(var(--primary))]/10 text-[hsl(var(--primary))]' : 'bg-primary/10 text-primary'}>
                               {participant.name?.charAt(0) || participant.email?.charAt(0) || <User className="h-4 w-4" />}
                             </AvatarFallback>
                           </Avatar>
@@ -531,12 +531,12 @@ export default function Chat() {
                             <p className="text-sm font-medium">
                               {participant.name || participant.email || 'Unknown'}
                               {isParticipantAdmin ? (
-                                <span className="text-xs text-[#2BB6AF] ml-1">(admin)</span>
+                                <span className="text-xs text-[hsl(var(--primary))] ml-1">(admin)</span>
                               ) : (
                                 <span className="text-xs text-gray-500 ml-1">(user)</span>
                               )}
                               {isCurrentUser && (
-                                <span className="text-xs text-[#2BB6AF] ml-1">(you)</span>
+                                <span className="text-xs text-[hsl(var(--primary))] ml-1">(you)</span>
                               )}
                             </p>
                             <p className="text-xs text-muted-foreground truncate">
@@ -561,7 +561,7 @@ export default function Chat() {
                           <p className="text-sm font-medium">
                             {otherUser.name || otherUser.email || 'Unknown'}
                             {otherUser.is_staff || otherUser.is_superuser ? (
-                              <span className="text-xs text-[#2BB6AF] ml-1">(admin)</span>
+                              <span className="text-xs text-[hsl(var(--primary))] ml-1">(admin)</span>
                             ) : (
                               <span className="text-xs text-gray-500 ml-1">(user)</span>
                             )}
@@ -577,7 +577,7 @@ export default function Chat() {
                       {user && (
                         <div className="flex items-center gap-3">
                           <Avatar>
-                            <AvatarFallback className="bg-[#E8F8EE] text-[#2BB6AF]">
+                            <AvatarFallback className="bg-[hsl(var(--primary))]/10 text-[hsl(var(--primary))]">
                               {user.name?.charAt(0) || user.email?.charAt(0) || <User className="h-4 w-4" />}
                             </AvatarFallback>
                           </Avatar>
@@ -585,7 +585,7 @@ export default function Chat() {
                             <p className="text-sm font-medium">
                               {user.name || user.email || 'You'}
                               {isAdmin ? (
-                                <span className="text-xs text-[#2BB6AF] ml-1">(admin)</span>
+                                <span className="text-xs text-[hsl(var(--primary))] ml-1">(admin)</span>
                               ) : (
                                 <span className="text-xs text-gray-500 ml-1">(user)</span>
                               )}
@@ -639,7 +639,7 @@ export default function Chat() {
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium">
                               Admin
-                              <span className="text-xs text-[#2BB6AF] ml-1">(admin)</span>
+                              <span className="text-xs text-[hsl(var(--primary))] ml-1">(admin)</span>
                             </p>
                             <p className="text-xs text-muted-foreground truncate">Moderator</p>
                           </div>

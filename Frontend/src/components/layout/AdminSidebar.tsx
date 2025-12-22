@@ -253,10 +253,10 @@ export const AdminSidebar = ({ isOpen = true, onClose }: AdminSidebarProps) => {
                 className={cn(
                   'group flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 relative',
                   active
-                    ? 'bg-gradient-to-r from-[#14b8a6]/10 to-[#0891b2]/10 text-[#14b8a6] shadow-sm'
+                    ? 'bg-gradient-to-r from-[hsl(var(--primary))]/10 to-[hsl(var(--primary-dark))]/10 text-[hsl(var(--primary))] shadow-sm'
                     : hasPending
-                    ? 'text-[#374151] hover:bg-[#FEF3C7] hover:text-[#F59E0B] bg-[#FEF3C7]/50'
-                    : 'text-[#374151] hover:bg-[#F9FAFB] hover:text-[#14b8a6]'
+                    ? 'text-[hsl(var(--foreground))] hover:bg-[hsl(var(--warning))]/10 hover:text-[hsl(var(--warning))] bg-[hsl(var(--warning))]/5'
+                    : 'text-[hsl(var(--foreground))] hover:bg-[hsl(var(--background-secondary))] hover:text-[hsl(var(--primary))]'
                 )}
               >
                 {/* Active indicator bar */}
@@ -265,20 +265,20 @@ export const AdminSidebar = ({ isOpen = true, onClose }: AdminSidebarProps) => {
                 )}
                 {/* Pending indicator bar */}
                 {hasPending && !active && (
-                  <div className="absolute left-0 top-3 w-1 h-8 bg-[#F59E0B] rounded-r-full" />
+                  <div className="absolute left-0 top-3 w-1 h-8 bg-[hsl(var(--warning))] rounded-r-full" />
                 )}
-                <Icon className={cn('h-5 w-5 flex-shrink-0', active ? 'text-[#14b8a6]' : hasPending && !active ? 'text-[#F59E0B]' : 'text-[#6B7280] group-hover:text-[#14b8a6]')} strokeWidth={2} />
-                <span className={cn('font-semibold text-sm flex-1', active ? 'text-[#14b8a6]' : hasPending && !active ? 'text-[#92400E]' : 'text-[#111827]')}>{item.title}</span>
+                <Icon className={cn('h-5 w-5 flex-shrink-0', active ? 'text-[hsl(var(--primary))]' : hasPending && !active ? 'text-[hsl(var(--warning))]' : 'text-[hsl(var(--text-muted))] group-hover:text-[hsl(var(--primary))]')} strokeWidth={2} />
+                <span className={cn('font-semibold text-sm flex-1', active ? 'text-[hsl(var(--primary))]' : hasPending && !active ? 'text-[hsl(var(--warning))]' : 'text-[hsl(var(--foreground))]')}>{item.title}</span>
                 {hasPending && (
                   <Badge 
                     variant="destructive" 
-                    className="bg-[#F59E0B] hover:bg-[#D97706] text-white text-xs px-2 py-0.5 min-w-[20px] flex items-center justify-center rounded-full"
+                    className="bg-[hsl(var(--warning))] hover:bg-[hsl(var(--warning))]/90 text-white text-xs px-2 py-0.5 min-w-[20px] flex items-center justify-center rounded-full"
                   >
                     {pendingCount > 99 ? '99+' : pendingCount}
                   </Badge>
                 )}
                 {active && !hasPending && (
-                  <ArrowRight className="h-4 w-4 text-[#14b8a6] flex-shrink-0" />
+                  <ArrowRight className="h-4 w-4 text-[hsl(var(--primary))] flex-shrink-0" />
                 )}
               </Link>
             );
@@ -292,8 +292,8 @@ export const AdminSidebar = ({ isOpen = true, onClose }: AdminSidebarProps) => {
               <User className="h-5 w-5 text-white" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-[#111827] truncate">{user?.name || 'Admin'}</p>
-              <p className="text-xs text-[#6B7280] truncate">{user?.email || 'admin@petreunite.com'}</p>
+              <p className="text-sm font-semibold text-[hsl(var(--foreground))] truncate">{user?.name || 'Admin'}</p>
+              <p className="text-xs text-[hsl(var(--text-muted))] truncate">{user?.email || 'admin@petreunite.com'}</p>
             </div>
           </div>
         </div>
