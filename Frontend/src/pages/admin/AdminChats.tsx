@@ -939,50 +939,50 @@ export default function AdminChats() {
                     </p>
                   </div>
                 )}
+                </div>
+                {selectedRequest.message && (
+                  <div>
+                    <p className="text-sm font-medium text-gray-600 mb-2">Request Message</p>
+                    <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                      <p className="text-sm text-gray-700 whitespace-pre-wrap">{selectedRequest.message}</p>
+                    </div>
+                  </div>
+                )}
+                {selectedRequest.admin_notes && (
+                  <div>
+                    <p className="text-sm font-medium text-gray-600 mb-2">Admin Notes</p>
+                    <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                      <p className="text-sm text-gray-700 whitespace-pre-wrap">{selectedRequest.admin_notes}</p>
+                    </div>
+                  </div>
+                )}
+                {selectedRequest.status === 'pending' && (
+                  <div className="flex gap-2 pt-4 border-t">
+                    <Button
+                      onClick={() => {
+                        handleRespondToRequest(selectedRequest.id || selectedRequest._id, true);
+                        setRequestDialogOpen(false);
+                      }}
+                      className="flex-1 bg-green-600 hover:bg-green-700"
+                    >
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Approve & Forward to Owner
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      onClick={() => {
+                        handleRespondToRequest(selectedRequest.id || selectedRequest._id, false);
+                        setRequestDialogOpen(false);
+                      }}
+                      className="flex-1"
+                    >
+                      <XCircle className="h-4 w-4 mr-2" />
+                      Reject
+                    </Button>
+                  </div>
+                )}
               </div>
-              {selectedRequest.message && (
-                <div>
-                  <p className="text-sm font-medium text-gray-600 mb-2">Request Message</p>
-                  <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                    <p className="text-sm text-gray-700 whitespace-pre-wrap">{selectedRequest.message}</p>
-                  </div>
-                </div>
-              )}
-              {selectedRequest.admin_notes && (
-                <div>
-                  <p className="text-sm font-medium text-gray-600 mb-2">Admin Notes</p>
-                  <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-                    <p className="text-sm text-gray-700 whitespace-pre-wrap">{selectedRequest.admin_notes}</p>
-                  </div>
-                </div>
-              )}
-              {selectedRequest.status === 'pending' && (
-                <div className="flex gap-2 pt-4 border-t">
-                  <Button
-                    onClick={() => {
-                      handleRespondToRequest(selectedRequest.id || selectedRequest._id, true);
-                      setRequestDialogOpen(false);
-                    }}
-                    className="flex-1 bg-green-600 hover:bg-green-700"
-                  >
-                    <CheckCircle className="h-4 w-4 mr-2" />
-                    Approve & Forward to Owner
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    onClick={() => {
-                      handleRespondToRequest(selectedRequest.id || selectedRequest._id, false);
-                      setRequestDialogOpen(false);
-                    }}
-                    className="flex-1"
-                  >
-                    <XCircle className="h-4 w-4 mr-2" />
-                    Reject
-                  </Button>
-                </div>
-              )}
-            </div>
-          )}
+            )}
         </DialogContent>
         </Dialog>
 
