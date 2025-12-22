@@ -129,65 +129,61 @@ export default function UserHome() {
 
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Hero Section with Image */}
-      <div className="relative w-full h-40 sm:h-48 md:h-64 lg:h-72 overflow-hidden bg-gradient-to-br from-blue-50 to-green-50 rounded-xl sm:rounded-2xl mx-4 sm:mx-6 lg:mx-8 mt-4 sm:mt-6 lg:mt-8">
-        <img
-          src="https://media.istockphoto.com/id/1417882544/photo/large-group-of-cats-and-dogs-looking-at-the-camera-on-blue-background.jpg?s=612x612&w=0&k=20&c=kGKANSIFdNfhBJMipyuaKU4BcVE1oELWev9lF2ickE0="
-          alt="Cats and dogs"
-          className="w-full h-full object-cover rounded-xl sm:rounded-2xl"
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/30 to-black/50 flex items-center justify-center">
-          <div className="w-full px-4 sm:px-6 md:px-10 lg:px-8">
-            <div className="max-w-7xl mx-auto text-center">
-              <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-bold text-white mb-1 sm:mb-2 drop-shadow-lg px-2">
-                Welcome back, {user?.name || 'User'}!
-              </h1>
-              <p className="text-sm sm:text-base md:text-lg lg:text-xl text-white/90 drop-shadow-md px-2">
-                Here's what's happening with your pet reports
-              </p>
+    <div className="min-h-screen bg-[#F5F7FA]">
+      {/* Hero Section with Image - Fixed Container */}
+      <div className="w-full max-w-full mb-6">
+        <div className="relative w-full h-[300px] overflow-hidden bg-gradient-to-br from-blue-50 to-green-50 rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
+          <img
+            src="https://media.istockphoto.com/id/1417882544/photo/large-group-of-cats-and-dogs-looking-at-the-camera-on-blue-background.jpg?s=612x612&w=0&k=20&c=kGKANSIFdNfhBJMipyuaKU4BcVE1oELWev9lF2ickE0="
+            alt="Cats and dogs"
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/30 to-black/50 flex items-center justify-center">
+            <div className="w-full px-4 sm:px-6 md:px-10 lg:px-8">
+              <div className="max-w-7xl mx-auto text-center">
+                <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-bold text-white mb-1 sm:mb-2 drop-shadow-lg px-2">
+                  Welcome back, {user?.name || 'User'}!
+                </h1>
+                <p className="text-sm sm:text-base md:text-lg lg:text-xl text-white/90 drop-shadow-md px-2">
+                  Here's what's happening with your pet reports
+                </p>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Welcome Section */}
-      <div className="bg-white py-8 md:py-12 px-6 md:px-10 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-        </div>
-            </div>
-
       {/* Main Content Area - Scrollable */}
-      <main className="flex-1 overflow-y-auto bg-white">
-        <div className="p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6 lg:space-y-8">
+      <main className="flex-1 overflow-y-auto">
+        <div className="space-y-6">
           <section id="pets" className="scroll-mt-8">
-            <Card className="bg-white rounded-xl sm:rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-gray-100">
-            <CardHeader className="border-b border-gray-100 pb-3 sm:pb-4 px-4 sm:px-6">
+            <Card className="bg-white rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-[#E5E7EB]">
+            <CardHeader className="border-b border-[#E5E7EB] pb-4 px-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle className="text-xl sm:text-2xl font-bold text-gray-900">All Pets</CardTitle>
-                  <CardDescription className="text-xs sm:text-sm text-gray-500 mt-1">
+                  <CardTitle className="text-2xl font-bold text-[#1F2937]">All Pets</CardTitle>
+                  <CardDescription className="text-sm text-[#6B7280] mt-1">
                     View all pets in the database (Lost, Found, Adopted)
                   </CardDescription>
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="pt-4 sm:pt-6 space-y-4 px-4 sm:px-6">
+            <CardContent className="pt-6 space-y-4 px-6">
               {/* Search and Filter */}
-              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-4">
+              <div className="flex flex-col sm:flex-row gap-4 mb-4">
                 <div className="flex-1">
                   <Input
                     placeholder="Search by breed, species, location, or status..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full"
+                    className="w-full rounded-lg border-[#E5E7EB] focus:ring-2 focus:ring-[#2DD4BF]"
                   />
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <select
                     value={typeFilter}
                     onChange={(e) => setTypeFilter(e.target.value)}
-                    className="px-2 sm:px-3 py-2 border rounded-md text-xs sm:text-sm focus:ring-2 focus:ring-green-500 flex-1 sm:flex-none min-w-[100px]"
+                    className="px-3 py-2 border border-[#E5E7EB] rounded-lg text-sm focus:ring-2 focus:ring-[#2DD4BF] flex-1 sm:flex-none min-w-[100px] bg-white"
                   >
                     <option value="all">All Animals</option>
                     <option value="dog">Dog</option>
@@ -207,7 +203,7 @@ export default function UserHome() {
                   <select
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value)}
-                    className="px-2 sm:px-3 py-2 border rounded-md text-xs sm:text-sm focus:ring-2 focus:ring-green-500 flex-1 sm:flex-none min-w-[100px]"
+                    className="px-3 py-2 border border-[#E5E7EB] rounded-lg text-sm focus:ring-2 focus:ring-[#2DD4BF] flex-1 sm:flex-none min-w-[100px] bg-white"
                   >
                     <option value="all">All Status</option>
                     <option value="Found">Found</option>
@@ -222,11 +218,11 @@ export default function UserHome() {
                     size="sm"
                     onClick={loadPets}
                     disabled={loading}
-                    className="gap-2"
+                    className="gap-2 rounded-lg border-[#E5E7EB] hover:bg-[#E0F2F1] hover:text-[#2DD4BF] transition-all duration-200 hover:scale-105"
                   >
           {loading ? (
                       <>
-                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600"></div>
+                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#E5E7EB] border-t-[#2DD4BF]"></div>
                         Loading...
                       </>
                     ) : (
@@ -244,6 +240,7 @@ export default function UserHome() {
                       setTypeFilter('all');
                       setStatusFilter('all');
                     }}
+                    className="rounded-lg border-[#E5E7EB] hover:bg-[#E0F2F1] hover:text-[#2DD4BF] transition-all duration-200 hover:scale-105"
                   >
                     Clear
               </Button>
@@ -278,22 +275,22 @@ export default function UserHome() {
 
                 return (
                   <>
-                    <div className="mb-4 text-sm text-gray-600">
+                    <div className="mb-4 text-sm text-[#6B7280]">
                       {availablePets.length > 0 ? (
-                        <>Showing <span className="font-semibold">{filtered.length}</span> of <span className="font-semibold">{availablePets.length}</span> pets</>
+                        <>Showing <span className="font-semibold text-[#1F2937]">{filtered.length}</span> of <span className="font-semibold text-[#1F2937]">{availablePets.length}</span> pets</>
                       ) : (
                         <>No pets found. Click "Refresh" to load all pets.</>
                       )}
                     </div>
                     {filtered.length === 0 ? (
-                      <div className="text-center py-12 bg-gray-50 rounded-lg">
-                        <PawPrint className="h-16 w-16 mx-auto text-gray-400 mb-4" />
-                        <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                      <div className="text-center py-12 bg-[#F8FAFB] rounded-xl border border-[#E5E7EB]">
+                        <PawPrint className="h-16 w-16 mx-auto text-[#6B7280] mb-4" />
+                        <h3 className="text-lg font-semibold text-[#1F2937] mb-2">
                           {searchTerm || typeFilter !== 'all' || statusFilter !== 'all' 
                             ? 'No pets match your search' 
                             : 'No pets found'}
                         </h3>
-                        <p className="text-gray-600">
+                        <p className="text-[#6B7280]">
                           {searchTerm || typeFilter !== 'all' || statusFilter !== 'all' 
                             ? 'Try adjusting your search or filters' 
                             : 'Click "Refresh" to load all pets.'}
@@ -308,7 +305,7 @@ export default function UserHome() {
                           const imageUrl = petImage ? (petImage.startsWith('http') ? petImage : getImageUrl(petImage)) : 'https://via.placeholder.com/300x200?text=No+Image';
                           
                           return (
-                            <Card key={petId} className="bg-white rounded-lg sm:rounded-xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-gray-100 hover:shadow-[0_8px_24px_rgba(0,0,0,0.1)] transition-all duration-300 overflow-hidden flex flex-col">
+                            <Card key={petId} className="bg-white rounded-xl shadow-[0_1px_4px_rgba(0,0,0,0.1)] border border-[#E5E7EB] hover:shadow-[0_4px_12px_rgba(0,0,0,0.15)] transition-all duration-300 overflow-hidden flex flex-col pet-card hover:-translate-y-1">
                               {/* Pet Image */}
                               <div className="relative h-40 sm:h-48 w-full overflow-hidden bg-gray-100">
                                 <img
@@ -373,14 +370,13 @@ export default function UserHome() {
                                 <div className="flex gap-2 mt-auto">
                         <Button
                                     variant="default"
-                                    className="flex-1 bg-[#2BB6AF] hover:bg-[#239a94] text-white text-xs sm:text-sm py-2 sm:py-2.5"
+                                    className="flex-1 bg-[#2DD4BF] hover:bg-[#14B8A6] text-white text-sm py-2.5 rounded-lg transition-all duration-200 hover:scale-105"
                                     onClick={() => {
                                       navigate(`/pets/${petId}`);
                                     }}
                                   >
-                                    <Eye className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                                    <span className="hidden sm:inline">View More</span>
-                                    <span className="sm:hidden">View</span>
+                                    <Eye className="h-4 w-4 mr-2" />
+                                    <span>View More</span>
                         </Button>
                       </div>
                     </CardContent>

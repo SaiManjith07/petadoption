@@ -76,8 +76,8 @@ export function UserTopNav({ onMenuToggle, sidebarOpen, onRefresh }: UserTopNavP
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-[1000] w-full h-16 border-b border-[#E5E7EB] bg-white/95 backdrop-blur-xl shadow-sm">
-      <div className="flex h-16 items-center justify-between px-6 w-full max-w-[1400px] mx-auto">
+    <header className="fixed top-0 left-0 right-0 z-[1000] w-full h-[70px] border-b border-[#E5E7EB] bg-white/95 backdrop-blur-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
+      <div className="flex h-[70px] items-center justify-between px-6 w-full max-w-[1400px] mx-auto">
         {/* Logo and Website Name */}
         <div className="flex items-center gap-3 flex-shrink-0">
           <Logo 
@@ -94,10 +94,10 @@ export function UserTopNav({ onMenuToggle, sidebarOpen, onRefresh }: UserTopNavP
             <Button
               key={action.title}
               variant="ghost"
-              className="rounded-xl hover:bg-[#F3F4F6] h-9 px-4 text-sm font-medium text-[#374151] transition-all"
+              className="rounded-lg hover:bg-[#E0F2F1] h-10 px-4 text-sm font-medium text-[#1F2937] transition-all duration-200 hover:scale-105 hover:text-[#2DD4BF]"
               onClick={() => navigate(action.href)}
             >
-              <action.icon className="h-4 w-4 mr-2 text-[#06B6D4]" />
+              <action.icon className="h-4 w-4 mr-2 text-[#2DD4BF]" />
               <span>{action.title}</span>
             </Button>
           ))}
@@ -109,16 +109,16 @@ export function UserTopNav({ onMenuToggle, sidebarOpen, onRefresh }: UserTopNavP
           <Button
             variant="ghost"
             size="icon"
-            className="lg:hidden rounded-xl hover:bg-[#F3F4F6] h-10 w-10 transition-all"
+            className="lg:hidden rounded-lg hover:bg-[#E0F2F1] h-10 w-10 transition-all duration-200 hover:scale-105"
             onClick={onMenuToggle}
           >
-            {sidebarOpen ? <X className="h-5 w-5 text-[#374151]" /> : <Menu className="h-5 w-5 text-[#374151]" />}
+            {sidebarOpen ? <X className="h-5 w-5 text-[#1F2937]" /> : <Menu className="h-5 w-5 text-[#1F2937]" />}
           </Button>
           {/* Notifications */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="relative rounded-xl hover:bg-[#F3F4F6] h-10 w-10 transition-all">
-                <Bell className="h-5 w-5 text-[#374151]" />
+              <Button variant="ghost" size="icon" className="relative rounded-lg hover:bg-[#E0F2F1] h-10 w-10 transition-all duration-200 hover:scale-105">
+                <Bell className="h-5 w-5 text-[#1F2937]" />
                 {unreadCount > 0 && (
                   <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 bg-[#EF4444] text-white text-xs rounded-full">
                     {unreadCount > 9 ? '9+' : unreadCount}
@@ -176,9 +176,9 @@ export function UserTopNav({ onMenuToggle, sidebarOpen, onRefresh }: UserTopNavP
           {/* User Profile */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="flex items-center gap-2 h-10 px-2 rounded-xl hover:bg-[#F3F4F6] transition-all">
+              <Button variant="ghost" className="flex items-center gap-2 h-10 px-2 rounded-lg hover:bg-[#E0F2F1] transition-all duration-200 hover:scale-105">
                 <Avatar className="h-9 w-9 border-2 border-[#E5E7EB]">
-                  <AvatarFallback className="bg-gradient-to-br from-[#06B6D4] to-[#3B82F6] text-white font-semibold text-sm">
+                  <AvatarFallback className="bg-gradient-to-br from-[#2DD4BF] to-[#14B8A6] text-white font-semibold text-sm">
                     {user?.name?.charAt(0).toUpperCase() || 'U'}
                   </AvatarFallback>
                 </Avatar>

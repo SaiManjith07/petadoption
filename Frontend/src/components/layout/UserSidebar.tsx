@@ -92,11 +92,10 @@ export function UserSidebar({ isOpen = true, onClose }: UserSidebarProps) {
         />
       )}
 
-      {/* Sidebar - Modern floating design with 280px width */}
+      {/* Sidebar - Modern floating design with 260px width */}
       <aside
         className={cn(
-          'fixed left-0 top-16 z-[999] h-[calc(100vh-4rem)] w-[280px] bg-white border-r border-[#E5E7EB] rounded-r-2xl',
-          'shadow-[0_4px_20px_rgba(0,0,0,0.08),0_0_0_1px_rgba(0,0,0,0.04)]',
+          'fixed left-0 top-[70px] z-[999] h-[calc(100vh-70px)] w-[260px] bg-[#F8FAFB] border-r border-[#E5E7EB]',
           'transition-all duration-300 ease-in-out',
           'lg:translate-x-0',
           isOpen ? 'translate-x-0' : '-translate-x-full'
@@ -125,28 +124,39 @@ export function UserSidebar({ isOpen = true, onClose }: UserSidebarProps) {
                     }
                   }}
                   className={cn(
-                    'group flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 relative',
+                    'group flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 relative cursor-pointer',
                     isActive
-                      ? 'bg-gradient-to-r from-[#14b8a6]/10 to-[#0891b2]/10 text-[#14b8a6] shadow-sm'
-                      : 'text-[#374151] hover:bg-[#F9FAFB] hover:text-[#14b8a6]'
+                      ? 'bg-[#2DD4BF] text-white shadow-sm'
+                      : 'text-[#1F2937] hover:bg-[#E0F2F1] hover:text-[#2DD4BF]'
                   )}
+                  style={!isActive ? { transform: 'scale(1)' } : {}}
+                  onMouseEnter={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.transform = 'scale(1.02)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.transform = 'scale(1)';
+                    }
+                  }}
                 >
                   {/* Active indicator bar */}
                   {isActive && (
-                    <div className="absolute left-0 top-3 w-1 h-8 bg-gradient-to-b from-[#14b8a6] to-[#0891b2] rounded-r-full shadow-sm" />
+                    <div className="absolute left-0 top-3 w-1 h-8 bg-[#14B8A6] rounded-r-full" />
                   )}
-                  <Icon className={cn('h-5 w-5 flex-shrink-0', isActive ? 'text-[#14b8a6]' : 'text-[#6B7280] group-hover:text-[#14b8a6]')} strokeWidth={2} />
+                  <Icon className={cn('h-5 w-5 flex-shrink-0', isActive ? 'text-white' : 'text-[#6B7280] group-hover:text-[#2DD4BF]')} strokeWidth={2} />
                   <div className="flex-1 min-w-0">
-                    <div className={cn('font-semibold text-sm', isActive ? 'text-[#14b8a6]' : 'text-[#111827]')}>{item.title}</div>
+                    <div className={cn('font-semibold text-sm', isActive ? 'text-white' : 'text-[#1F2937]')}>{item.title}</div>
                     <div className={cn(
                       'text-xs truncate mt-0.5',
-                      isActive ? 'text-[#14b8a6]/70' : 'text-[#6B7280]'
+                      isActive ? 'text-white/90' : 'text-[#6B7280]'
                     )}>
                       {item.description}
                     </div>
                   </div>
                   {isActive && (
-                    <ArrowRight className="h-4 w-4 text-[#14b8a6] flex-shrink-0" />
+                    <ArrowRight className="h-4 w-4 text-white flex-shrink-0" />
                   )}
                 </Link>
               );
@@ -177,31 +187,37 @@ export function UserSidebar({ isOpen = true, onClose }: UserSidebarProps) {
           )}
 
           {/* User Info Footer */}
-          <div className="border-t border-[#E5E7EB] p-4 bg-[#F9FAFB]">
+          <div className="border-t border-[#E5E7EB] p-4 bg-[#F8FAFB]">
             <Link
               to="/profile"
-              className="flex items-center gap-3 rounded-xl p-3 hover:bg-white transition-all group shadow-sm border border-[#E5E7EB]"
+              className="flex items-center gap-3 rounded-lg p-3 hover:bg-white transition-all duration-300 group shadow-sm border border-[#E5E7EB]"
               onClick={() => {
                 if (window.innerWidth < 1024 && onClose) {
                   onClose();
                 }
               }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'scale(1.02)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'scale(1)';
+              }}
             >
               <div className="relative">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#14b8a6] to-[#0891b2] text-white font-bold text-base shadow-md group-hover:scale-105 transition-transform">
+                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-[#2DD4BF] to-[#14B8A6] text-white font-bold text-base shadow-md group-hover:scale-105 transition-transform duration-300">
                   {user?.name?.charAt(0)?.toUpperCase() || 'U'}
                 </div>
                 <div className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-[#10B981] border-2 border-white"></div>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-[#111827] truncate">
+                <p className="text-sm font-semibold text-[#1F2937] truncate">
                   {user?.name || 'User'}
                 </p>
                 <p className="text-xs text-[#6B7280] truncate">
                   {user?.email || 'user@example.com'}
                 </p>
                 {user?.role && user.role !== 'user' && (
-                  <Badge className="mt-1.5 text-xs bg-[#14b8a6]/10 text-[#14b8a6] border-[#14b8a6]/20 capitalize rounded-full px-2 py-0.5">
+                  <Badge className="mt-1.5 text-xs bg-[#2DD4BF]/10 text-[#2DD4BF] border-[#2DD4BF]/20 capitalize rounded-full px-2 py-0.5">
                     {user.role}
                   </Badge>
                 )}
