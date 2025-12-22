@@ -145,12 +145,12 @@ export function UserSidebar({ isOpen = true, onClose }: UserSidebarProps) {
                   {isActive && (
                     <div className="absolute left-0 top-3 w-1 h-8 bg-[#14B8A6] rounded-r-full" />
                   )}
-                  <Icon className={cn('h-5 w-5 flex-shrink-0', isActive ? 'text-white' : 'text-[#6B7280] group-hover:text-[#2DD4BF]')} strokeWidth={2} />
+                  <Icon className={cn('h-5 w-5 flex-shrink-0', isActive ? 'text-white' : 'text-[hsl(var(--text-muted))] group-hover:text-[hsl(var(--primary))]')} strokeWidth={2} />
                   <div className="flex-1 min-w-0">
-                    <div className={cn('font-semibold text-sm', isActive ? 'text-white' : 'text-[#1F2937]')}>{item.title}</div>
+                    <div className={cn('font-semibold text-sm', isActive ? 'text-white' : 'text-[hsl(var(--foreground))]')}>{item.title}</div>
                     <div className={cn(
                       'text-xs truncate mt-0.5',
-                      isActive ? 'text-white/90' : 'text-[#6B7280]'
+                      isActive ? 'text-white/90' : 'text-[hsl(var(--text-muted))]'
                     )}>
                       {item.description}
                     </div>
