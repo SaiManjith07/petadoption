@@ -362,12 +362,42 @@ def send_message_by_room_id(request, room_id):
             status=status.HTTP_400_BAD_REQUEST
         )
 
+    # Upload image to Cloudinary if provided
+    cloudinary_url = None
+    cloudinary_public_id = None
+    if image:
+        try:
+            from pets.cloudinary_utils import upload_image_to_cloudinary
+            print(f"[Chat] Uploading image to Cloudinary for chat message in room {room_id}")
+            result = upload_image_to_cloudinary(
+                image_file=image,
+                folder='petadoption/chat_images',
+                public_id=None,  # Let Cloudinary generate unique ID
+                overwrite=False
+            )
+            
+            if result.get('success'):
+                cloudinary_url = result.get('url')
+                cloudinary_public_id = result.get('public_id')
+                print(f"[Chat] ✓✓✓ Successfully uploaded to Cloudinary: {cloudinary_url}")
+            else:
+                print(f"[Chat] ✗✗✗ Failed to upload image to Cloudinary: {result.get('error')}")
+                # Continue without Cloudinary URL - will use local storage as fallback
+        except Exception as e:
+            import traceback
+            print(f"[Chat] ✗✗✗ Exception uploading image to Cloudinary: {e}")
+            print(traceback.format_exc())
+            # Continue without Cloudinary URL - will use local storage as fallback
+
+    # Create message - store Cloudinary URL if available, otherwise use local image
     message = Message.objects.create(
         room=room,
         sender=request.user,
         content=content,
         message_type=message_type,
-        image=image if image else None
+        image=image if image and not cloudinary_url else None,  # Only store locally if Cloudinary upload failed
+        cloudinary_url=cloudinary_url,
+        cloudinary_public_id=cloudinary_public_id
     )
 
     # Update room's updated_at

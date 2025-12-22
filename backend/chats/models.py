@@ -73,6 +73,8 @@ class Message(models.Model):
     content = models.TextField(blank=True)  # Can be empty for image-only messages
     message_type = models.CharField(max_length=10, choices=MESSAGE_TYPE_CHOICES, default='text')
     image = models.ImageField(upload_to='chat_images/', null=True, blank=True)
+    cloudinary_url = models.URLField(blank=True, null=True, help_text="Cloudinary URL for the chat image")
+    cloudinary_public_id = models.CharField(max_length=255, blank=True, null=True, help_text="Cloudinary public_id for the chat image")
     is_deleted = models.BooleanField(default=False)  # For soft delete (WhatsApp style)
     deleted_at = models.DateTimeField(null=True, blank=True)
     read_status = models.BooleanField(default=False)
@@ -93,17 +95,35 @@ class Message(models.Model):
         self.save(update_fields=['read_status'])
     
     def delete_image(self):
-        """Soft delete image (WhatsApp style)."""
+        """Soft delete image (WhatsApp style). Also deletes from Cloudinary if present."""
         from django.utils import timezone
         self.is_deleted = True
         self.deleted_at = timezone.now()
-        # Optionally delete the actual file
+        
+        # Delete from Cloudinary if cloudinary_public_id exists
+        if self.cloudinary_public_id:
+            try:
+                from pets.cloudinary_utils import delete_image_from_cloudinary
+                result = delete_image_from_cloudinary(self.cloudinary_public_id)
+                if result.get('success'):
+                    print(f"[Chat] ✓✓✓ Successfully deleted image from Cloudinary: {self.cloudinary_public_id}")
+                else:
+                    print(f"[Chat] ✗✗✗ Failed to delete image from Cloudinary: {result.get('error')}")
+            except Exception as e:
+                print(f"[Chat] ✗✗✗ Exception deleting image from Cloudinary: {e}")
+        
+        # Optionally delete the local file
         if self.image:
             try:
                 self.image.delete(save=False)
             except Exception:
                 pass
-        self.save(update_fields=['is_deleted', 'deleted_at'])
+        
+        # Clear Cloudinary fields
+        self.cloudinary_url = None
+        self.cloudinary_public_id = None
+        
+        self.save(update_fields=['is_deleted', 'deleted_at', 'cloudinary_url', 'cloudinary_public_id'])
 
 
 class ChatRequest(models.Model):
