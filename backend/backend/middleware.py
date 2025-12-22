@@ -49,15 +49,35 @@ class CORSExceptionMiddleware:
         except Exception as e:
             # Catch any exception and ensure CORS headers are added
             from django.http import HttpResponseServerError
+            from django.conf import settings
             import traceback
+            import json
             
             # Log the exception for debugging
-            print(f"[CORSExceptionMiddleware] Exception caught: {str(e)}")
-            print(f"[CORSExceptionMiddleware] Traceback: {traceback.format_exc()}")
+            error_trace = traceback.format_exc()
+            print(f"[CORSExceptionMiddleware] Exception caught in __call__")
+            print(f"[CORSExceptionMiddleware] Path: {request.path}")
+            print(f"[CORSExceptionMiddleware] Method: {request.method}")
+            print(f"[CORSExceptionMiddleware] Exception: {str(e)}")
+            print(f"[CORSExceptionMiddleware] Type: {type(e).__name__}")
+            print(f"[CORSExceptionMiddleware] Traceback: {error_trace}")
             
             # Create error response with CORS headers
+            error_data = {
+                "error": "Internal server error",
+                "message": "An error occurred processing your request"
+            }
+            
+            # Include more details in DEBUG mode
+            if getattr(settings, 'DEBUG', False):
+                error_data['exception'] = str(e)
+                error_data['exception_type'] = type(e).__name__
+                error_data['path'] = request.path
+                error_data['method'] = request.method
+                error_data['traceback'] = error_trace
+            
             response = HttpResponseServerError(
-                content=f'{{"error": "Internal server error", "message": "An error occurred processing your request"}}',
+                content=json.dumps(error_data),
                 content_type='application/json'
             )
             response = self._add_cors_headers(response, request)
@@ -69,15 +89,36 @@ class CORSExceptionMiddleware:
         This is called by Django when an exception occurs during view processing.
         """
         from django.http import HttpResponseServerError
+        from django.conf import settings
         import traceback
+        import json
         
         # Log the exception for debugging
-        print(f"[CORSExceptionMiddleware] process_exception called: {str(exception)}")
-        print(f"[CORSExceptionMiddleware] Traceback: {traceback.format_exc()}")
+        error_trace = traceback.format_exc()
+        print(f"[CORSExceptionMiddleware] process_exception called")
+        print(f"[CORSExceptionMiddleware] Path: {request.path}")
+        print(f"[CORSExceptionMiddleware] Method: {request.method}")
+        print(f"[CORSExceptionMiddleware] Exception: {str(exception)}")
+        print(f"[CORSExceptionMiddleware] Type: {type(exception).__name__}")
+        print(f"[CORSExceptionMiddleware] Traceback: {error_trace}")
+        
+        # Create error response data
+        error_data = {
+            "error": "Internal server error",
+            "message": "An error occurred processing your request"
+        }
+        
+        # Include more details in DEBUG mode
+        if getattr(settings, 'DEBUG', False):
+            error_data['exception'] = str(exception)
+            error_data['exception_type'] = type(exception).__name__
+            error_data['path'] = request.path
+            error_data['method'] = request.method
+            error_data['traceback'] = error_trace
         
         # Create a JSON error response
         response = HttpResponseServerError(
-            content=f'{{"error": "Internal server error", "message": "An error occurred processing your request"}}',
+            content=json.dumps(error_data),
             content_type='application/json'
         )
         # Add CORS headers to the error response

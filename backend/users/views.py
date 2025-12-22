@@ -37,10 +37,47 @@ def login(request):
     """User login endpoint."""
     import traceback
     from django.conf import settings
+    from django.db import connection
     
     try:
-        email = request.data.get('email')
-        password = request.data.get('password')
+        # Log request info for debugging
+        print(f"[LOGIN] Request received - Method: {request.method}, Path: {request.path}")
+        print(f"[LOGIN] Content-Type: {request.content_type}")
+        print(f"[LOGIN] Has data: {hasattr(request, 'data')}")
+        
+        # Test database connection first
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT 1")
+        except Exception as db_error:
+            print(f"[LOGIN ERROR] Database connection failed: {str(db_error)}")
+            return Response(
+                {
+                    'message': 'Database connection error',
+                    'error': str(db_error) if settings.DEBUG else 'Service temporarily unavailable'
+                },
+                status=status.HTTP_503_SERVICE_UNAVAILABLE
+            )
+        
+        # Safely get request data
+        try:
+            if hasattr(request, 'data'):
+                email = request.data.get('email')
+                password = request.data.get('password')
+            else:
+                # Fallback to POST data if request.data is not available
+                email = request.POST.get('email') or request.GET.get('email')
+                password = request.POST.get('password') or request.GET.get('password')
+        except Exception as data_error:
+            print(f"[LOGIN ERROR] Error accessing request data: {str(data_error)}")
+            print(f"[LOGIN ERROR] Data error traceback: {traceback.format_exc()}")
+            return Response(
+                {
+                    'message': 'Invalid request data',
+                    'error': str(data_error) if settings.DEBUG else 'Failed to parse request'
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         if not email or not password:
             return Response(
@@ -49,7 +86,18 @@ def login(request):
             )
 
         # Use email as username for authentication
-        user = authenticate(request, username=email, password=password)
+        try:
+            user = authenticate(request, username=email, password=password)
+        except Exception as auth_error:
+            print(f"[LOGIN ERROR] Authentication error: {str(auth_error)}")
+            print(f"[LOGIN ERROR] Auth traceback: {traceback.format_exc()}")
+            return Response(
+                {
+                    'message': 'Authentication error',
+                    'error': str(auth_error) if settings.DEBUG else 'Authentication failed'
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
         
         if user is None:
             # Try to find if user exists to provide better error message
@@ -62,6 +110,9 @@ def login(request):
                     )
             except User.DoesNotExist:
                 pass
+            except Exception as user_lookup_error:
+                print(f"[LOGIN ERROR] User lookup error: {str(user_lookup_error)}")
+                print(f"[LOGIN ERROR] User lookup traceback: {traceback.format_exc()}")
             
             return Response(
                 {'message': 'Invalid credentials'},
@@ -74,8 +125,33 @@ def login(request):
                 status=status.HTTP_401_UNAUTHORIZED
             )
 
-        refresh = RefreshToken.for_user(user)
-        user_serializer = UserSerializer(user)
+        # Generate tokens
+        try:
+            refresh = RefreshToken.for_user(user)
+        except Exception as token_error:
+            print(f"[LOGIN ERROR] Token generation error: {str(token_error)}")
+            print(f"[LOGIN ERROR] Token traceback: {traceback.format_exc()}")
+            return Response(
+                {
+                    'message': 'Token generation error',
+                    'error': str(token_error) if settings.DEBUG else 'Failed to generate authentication token'
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        
+        # Serialize user
+        try:
+            user_serializer = UserSerializer(user)
+        except Exception as serializer_error:
+            print(f"[LOGIN ERROR] User serialization error: {str(serializer_error)}")
+            print(f"[LOGIN ERROR] Serializer traceback: {traceback.format_exc()}")
+            return Response(
+                {
+                    'message': 'User serialization error',
+                    'error': str(serializer_error) if settings.DEBUG else 'Failed to serialize user data'
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
         
         return Response({
             'token': str(refresh.access_token),
@@ -86,13 +162,15 @@ def login(request):
     except Exception as e:
         # Log the full error for debugging
         error_trace = traceback.format_exc()
-        print(f"[LOGIN ERROR] Exception: {str(e)}")
+        print(f"[LOGIN ERROR] Unexpected exception: {str(e)}")
+        print(f"[LOGIN ERROR] Type: {type(e).__name__}")
         print(f"[LOGIN ERROR] Traceback: {error_trace}")
         
         # Return a safe error response
         error_response = {
             'message': 'An error occurred during login',
-            'error': str(e) if settings.DEBUG else 'Internal server error'
+            'error': str(e) if settings.DEBUG else 'Internal server error',
+            'error_type': type(e).__name__ if settings.DEBUG else None
         }
         
         if settings.DEBUG:
