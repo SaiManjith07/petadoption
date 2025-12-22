@@ -133,25 +133,25 @@ export default function UserHome() {
       {/* Hero Section with Image - Fixed Container */}
       <div className="w-full max-w-full mb-6">
         <div className="relative w-full h-[300px] overflow-hidden bg-gradient-to-br from-blue-50 to-green-50 rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
-          <img
-            src="https://media.istockphoto.com/id/1417882544/photo/large-group-of-cats-and-dogs-looking-at-the-camera-on-blue-background.jpg?s=612x612&w=0&k=20&c=kGKANSIFdNfhBJMipyuaKU4BcVE1oELWev9lF2ickE0="
-            alt="Cats and dogs"
+        <img
+          src="https://media.istockphoto.com/id/1417882544/photo/large-group-of-cats-and-dogs-looking-at-the-camera-on-blue-background.jpg?s=612x612&w=0&k=20&c=kGKANSIFdNfhBJMipyuaKU4BcVE1oELWev9lF2ickE0="
+          alt="Cats and dogs"
             className="w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/30 to-black/50 flex items-center justify-center">
-            <div className="w-full px-4 sm:px-6 md:px-10 lg:px-8">
-              <div className="max-w-7xl mx-auto text-center">
-                <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-bold text-white mb-1 sm:mb-2 drop-shadow-lg px-2">
-                  Welcome back, {user?.name || 'User'}!
-                </h1>
-                <p className="text-sm sm:text-base md:text-lg lg:text-xl text-white/90 drop-shadow-md px-2">
-                  Here's what's happening with your pet reports
-                </p>
-              </div>
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/30 to-black/50 flex items-center justify-center">
+          <div className="w-full px-4 sm:px-6 md:px-10 lg:px-8">
+            <div className="max-w-7xl mx-auto text-center">
+              <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-bold text-white mb-1 sm:mb-2 drop-shadow-lg px-2">
+                Welcome back, {user?.name || 'User'}!
+              </h1>
+              <p className="text-sm sm:text-base md:text-lg lg:text-xl text-white/90 drop-shadow-md px-2">
+                Here's what's happening with your pet reports
+              </p>
             </div>
           </div>
         </div>
-      </div>
+        </div>
+            </div>
 
       {/* Main Content Area - Scrollable */}
       <main className="flex-1 overflow-y-auto">

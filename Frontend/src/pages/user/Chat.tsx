@@ -40,6 +40,10 @@ interface ChatRoom {
   room_id?: string;
   participants?: any[];
   other_participant?: any;
+  pet_id?: number;
+  petId?: number;
+  type?: string;
+  chat_request?: any;
 }
 
 export default function Chat() {
@@ -127,6 +131,10 @@ export default function Chat() {
       }
       
       setRoom(roomData);
+      
+      // Log room data for debugging
+      console.log('Room data:', roomData);
+      console.log('Pet ID from room:', roomData.pet_id || roomData.petId);
       
       // Get other participant
       if (roomData.other_participant) {
@@ -328,8 +336,17 @@ export default function Chat() {
                           <WifiOff className="h-4 w-4 text-gray-400" />
                         )}
                       </CardTitle>
-                      <CardDescription>
-                        {isConnected ? 'Connected' : 'Connecting...'} • Room: {roomId}
+                      <CardDescription className="flex items-center gap-2 flex-wrap">
+                        <span>{isConnected ? 'Connected' : 'Connecting...'} • Room: {roomId}</span>
+                        {(room?.pet_id || room?.petId) && (
+                          <button
+                            onClick={() => navigate(`/pets/${room.pet_id || room.petId}`)}
+                            className="text-[#2BB6AF] font-medium hover:underline cursor-pointer"
+                            title="View pet details"
+                          >
+                            • Pet ID: {room.pet_id || room.petId}
+                          </button>
+                        )}
                       </CardDescription>
                     </div>
                   </div>

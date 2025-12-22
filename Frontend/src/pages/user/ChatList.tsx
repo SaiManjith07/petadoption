@@ -278,7 +278,17 @@ export default function ChatList() {
                             </Badge>
                           </div>
                           <p className="text-sm text-gray-600 mb-3">
-                            Pet ID: {chat.petId || chat.pet_id || 'N/A'}
+                            Pet ID: {chat.petId || chat.pet_id ? (
+                              <button
+                                onClick={() => navigate(`/pets/${chat.petId || chat.pet_id}`)}
+                                className="text-[#2BB6AF] font-medium hover:underline cursor-pointer ml-1"
+                                title="View pet details"
+                              >
+                                {chat.petId || chat.pet_id}
+                              </button>
+                            ) : (
+                              <span className="text-gray-400">N/A</span>
+                            )}
                           </p>
                           {chat.messages && chat.messages.length > 0 && (
                             <p className="text-sm text-gray-500 line-clamp-2">
