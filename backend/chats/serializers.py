@@ -23,6 +23,10 @@ class MessageSerializer(serializers.ModelSerializer):
             'is_deleted', 'deleted_at', 'read_status', 'created_at'
         ]
         read_only_fields = ['id', 'created_at', 'deleted_at']
+        extra_kwargs = {
+            'cloudinary_url': {'required': False, 'allow_null': True},
+            'cloudinary_public_id': {'required': False, 'allow_null': True},
+        }
     
     def get_image(self, obj):
         """Get image field safely."""
@@ -72,8 +76,15 @@ class MessageSerializer(serializers.ModelSerializer):
                 return None
             
             # Priority 1: Use Cloudinary URL (primary storage method)
-            if hasattr(obj, 'cloudinary_url') and obj.cloudinary_url:
-                return obj.cloudinary_url
+            # Safely check if cloudinary_url exists (column might not exist if migration not run)
+            try:
+                if hasattr(obj, 'cloudinary_url'):
+                    cloudinary_url = getattr(obj, 'cloudinary_url', None)
+                    if cloudinary_url:
+                        return cloudinary_url
+            except Exception:
+                # Column doesn't exist yet, skip Cloudinary URL
+                pass
             
             # Fallback: Use local image URL if Cloudinary not available
             if hasattr(obj, 'image'):

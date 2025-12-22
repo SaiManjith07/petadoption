@@ -115,16 +115,22 @@ def stream_messages(request, room_id):
             while True:
                 try:
                     # Check for new messages
+                    # Only select fields that exist to avoid database errors
                     new_messages = Message.objects.filter(
                         room=room,
                         id__gt=last_sent_id
                     ).select_related('sender').order_by('created_at')[:10]
                     
                     for message in new_messages:
-                        # Pass request context to serializer so image URLs are properly generated
-                        serializer = MessageSerializer(message, context={'request': request})
-                        yield f"data: {json.dumps({'type': 'message', 'data': serializer.data})}\n\n"
-                        last_sent_id = message.id
+                        try:
+                            # Pass request context to serializer so image URLs are properly generated
+                            serializer = MessageSerializer(message, context={'request': request})
+                            yield f"data: {json.dumps({'type': 'message', 'data': serializer.data})}\n\n"
+                            last_sent_id = message.id
+                        except Exception as msg_error:
+                            # If serialization fails (e.g., missing column), skip this message
+                            print(f"[SSE] Error serializing message {message.id}: {msg_error}")
+                            continue
                     
                     # Send heartbeat to keep connection alive
                     current_time = time.time()
