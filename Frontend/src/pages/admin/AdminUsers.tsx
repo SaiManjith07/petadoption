@@ -481,66 +481,66 @@ export default function AdminUsers() {
         {/* View User Dialog */}
         <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>User Details</DialogTitle>
-            <DialogDescription>Complete information about the user</DialogDescription>
-          </DialogHeader>
-          {selectedUser && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Name</Label>
-                  <p className="text-sm font-medium">{selectedUser.name || 'N/A'}</p>
+            <DialogHeader>
+              <DialogTitle>User Details</DialogTitle>
+              <DialogDescription>Complete information about the user</DialogDescription>
+            </DialogHeader>
+            {selectedUser && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Name</Label>
+                    <p className="text-sm font-medium">{selectedUser.name || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <Label>Email</Label>
+                    <p className="text-sm font-medium">{selectedUser.email || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <Label>Phone</Label>
+                    <p className="text-sm font-medium">{selectedUser.phone || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <Label>Role</Label>
+                    <Badge variant={selectedUser.role === 'admin' ? 'default' : 'secondary'}>
+                      {selectedUser.role || 'user'}
+                    </Badge>
+                  </div>
+                  <div>
+                    <Label>Status</Label>
+                    <Badge
+                      variant={selectedUser.is_active !== false ? 'default' : 'destructive'}
+                    >
+                      {selectedUser.is_active !== false ? 'Active' : 'Inactive'}
+                    </Badge>
+                  </div>
+                  <div>
+                    <Label>Joined</Label>
+                    <p className="text-sm font-medium">
+                      {selectedUser.createdAt
+                        ? format(new Date(selectedUser.createdAt), 'MMM dd, yyyy HH:mm')
+                        : 'N/A'}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <Label>Email</Label>
-                  <p className="text-sm font-medium">{selectedUser.email || 'N/A'}</p>
-                </div>
-                <div>
-                  <Label>Phone</Label>
-                  <p className="text-sm font-medium">{selectedUser.phone || 'N/A'}</p>
-                </div>
-                <div>
-                  <Label>Role</Label>
-                  <Badge variant={selectedUser.role === 'admin' ? 'default' : 'secondary'}>
-                    {selectedUser.role || 'user'}
-                  </Badge>
-                </div>
-                <div>
-                  <Label>Status</Label>
-                  <Badge
-                    variant={selectedUser.is_active !== false ? 'default' : 'destructive'}
-                  >
-                    {selectedUser.is_active !== false ? 'Active' : 'Inactive'}
-                  </Badge>
-                </div>
-                <div>
-                  <Label>Joined</Label>
-                  <p className="text-sm font-medium">
-                    {selectedUser.createdAt
-                      ? format(new Date(selectedUser.createdAt), 'MMM dd, yyyy HH:mm')
-                      : 'N/A'}
-                  </p>
-                </div>
+                {selectedUser.bio && (
+                  <div>
+                    <Label>Bio</Label>
+                    <p className="text-sm text-gray-600">{selectedUser.bio}</p>
+                  </div>
+                )}
+                {selectedUser.address && (
+                  <div>
+                    <Label>Address</Label>
+                    <p className="text-sm text-gray-600">
+                      {selectedUser.address.full_address || 
+                       `${selectedUser.address.city || ''}, ${selectedUser.address.state || ''} ${selectedUser.address.pincode || ''}`}
+                    </p>
+                  </div>
+                )}
               </div>
-              {selectedUser.bio && (
-                <div>
-                  <Label>Bio</Label>
-                  <p className="text-sm text-gray-600">{selectedUser.bio}</p>
-                </div>
-              )}
-              {selectedUser.address && (
-                <div>
-                  <Label>Address</Label>
-                  <p className="text-sm text-gray-600">
-                    {selectedUser.address.full_address || 
-                     `${selectedUser.address.city || ''}, ${selectedUser.address.state || ''} ${selectedUser.address.pincode || ''}`}
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
-        </DialogContent>
+            )}
+          </DialogContent>
         </Dialog>
 
         {/* Edit User Dialog */}
@@ -550,47 +550,47 @@ export default function AdminUsers() {
               <DialogTitle>Edit User</DialogTitle>
               <DialogDescription>Update user role and status</DialogDescription>
             </DialogHeader>
-          {selectedUser && (
-            <div className="space-y-4">
-              <div>
-                <Label>Name</Label>
-                <p className="text-sm font-medium">{selectedUser.name}</p>
+            {selectedUser && (
+              <div className="space-y-4">
+                <div>
+                  <Label>Name</Label>
+                  <p className="text-sm font-medium">{selectedUser.name}</p>
+                </div>
+                <div>
+                  <Label>Email</Label>
+                  <p className="text-sm font-medium">{selectedUser.email}</p>
+                </div>
+                <div>
+                  <Label htmlFor="role">Role</Label>
+                  <select
+                    id="role"
+                    value={editForm.role}
+                    onChange={(e) => setEditForm({ ...editForm, role: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-md"
+                  >
+                    <option value="user">User</option>
+                    <option value="rescuer">Rescuer</option>
+                    {selectedUser.role === 'admin' && <option value="admin">Admin</option>}
+                  </select>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="is_active"
+                    checked={editForm.is_active}
+                    onChange={(e) => setEditForm({ ...editForm, is_active: e.target.checked })}
+                    className="rounded"
+                  />
+                  <Label htmlFor="is_active">Active</Label>
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleSaveEdit}>Save Changes</Button>
+                </div>
               </div>
-              <div>
-                <Label>Email</Label>
-                <p className="text-sm font-medium">{selectedUser.email}</p>
-              </div>
-              <div>
-                <Label htmlFor="role">Role</Label>
-                <select
-                  id="role"
-                  value={editForm.role}
-                  onChange={(e) => setEditForm({ ...editForm, role: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-md"
-                >
-                  <option value="user">User</option>
-                  <option value="rescuer">Rescuer</option>
-                  {selectedUser.role === 'admin' && <option value="admin">Admin</option>}
-                </select>
-              </div>
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="is_active"
-                  checked={editForm.is_active}
-                  onChange={(e) => setEditForm({ ...editForm, is_active: e.target.checked })}
-                  className="rounded"
-                />
-                <Label htmlFor="is_active">Active</Label>
-              </div>
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={handleSaveEdit}>Save Changes</Button>
-              </div>
-            </div>
-          )}
+            )}
         </DialogContent>
         </Dialog>
       </div>
