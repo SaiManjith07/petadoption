@@ -261,7 +261,7 @@ export const AdminSidebar = ({ isOpen = true, onClose }: AdminSidebarProps) => {
               >
                 {/* Active indicator bar */}
                 {active && (
-                  <div className="absolute left-0 top-3 w-1 h-8 bg-gradient-to-b from-[#14b8a6] to-[#0891b2] rounded-r-full shadow-sm" />
+                  <div className="absolute left-0 top-3 w-1 h-8 bg-gradient-to-b from-[hsl(var(--primary))] to-[hsl(var(--primary-dark))] rounded-r-full shadow-sm" />
                 )}
                 {/* Pending indicator bar */}
                 {hasPending && !active && (
@@ -288,7 +288,7 @@ export const AdminSidebar = ({ isOpen = true, onClose }: AdminSidebarProps) => {
         {/* Admin Info Section - Bottom */}
         <div className="p-4 border-t border-[#E5E7EB] bg-[#F9FAFB]">
           <div className="flex items-center gap-3 px-3 py-3 rounded-xl bg-white border border-[#E5E7EB] shadow-sm">
-            <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-[#14b8a6] to-[#0891b2] flex items-center justify-center border-2 border-white shadow-md">
+            <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-[hsl(var(--primary))] to-[hsl(var(--primary-dark))] flex items-center justify-center border-2 border-white shadow-md">
               <User className="h-5 w-5 text-white" />
             </div>
             <div className="flex-1 min-w-0">
