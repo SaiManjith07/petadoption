@@ -307,11 +307,12 @@ export default function UserHome() {
                           return (
                             <Card key={petId} className="bg-white rounded-xl shadow-[0_1px_4px_rgba(0,0,0,0.1)] border border-[#E5E7EB] hover:shadow-[0_4px_12px_rgba(0,0,0,0.15)] transition-all duration-300 overflow-hidden flex flex-col pet-card hover:-translate-y-1 min-h-[400px]">
                               {/* Pet Image */}
-                              <div className="relative h-56 sm:h-64 md:h-72 w-full overflow-hidden bg-gray-100">
+                              <div className="relative w-full h-[250px] overflow-hidden bg-gray-100 flex items-center justify-center">
                                 <img
                                   src={imageUrl}
                                   alt={p.name || 'Pet'}
-                                  className="w-full h-full object-cover"
+                                  className="w-full h-full object-contain object-center"
+                                  style={{ maxWidth: '100%', maxHeight: '100%' }}
                                 />
                                 <div className="absolute top-3 right-3">
                                   <Badge variant={
