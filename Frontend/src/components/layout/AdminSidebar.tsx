@@ -16,6 +16,7 @@ import {
   UtensilsCrossed,
   MapPin,
   Stethoscope,
+  Cloud,
 } from 'lucide-react';
 import { Logo } from '@/components/ui/Logo';
 import { cn } from '@/lib/utils';
@@ -104,6 +105,12 @@ const menuItems = [
     title: 'Medical Registration',
     icon: Stethoscope,
     path: '/admin/medical-records',
+    pendingKey: null,
+  },
+  {
+    title: 'Cloudinary Test',
+    icon: Cloud,
+    path: '/admin/cloudinary-test',
     pendingKey: null,
   },
 ];

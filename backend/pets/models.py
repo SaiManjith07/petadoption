@@ -67,6 +67,8 @@ class Pet(models.Model):
     # Images
     image = models.ImageField(upload_to='pets/', blank=True, null=True)
     image_url = models.URLField(blank=True, null=True)  # For external images
+    cloudinary_url = models.URLField(blank=True, null=True, help_text="Cloudinary URL for the main image")
+    cloudinary_public_id = models.CharField(max_length=255, blank=True, null=True, help_text="Cloudinary public_id for the main image")
     
     # Ownership
     owner = models.ForeignKey(
@@ -144,6 +146,8 @@ class PetImage(models.Model):
     """Additional images for pets."""
     pet = models.ForeignKey(Pet, on_delete=models.CASCADE, related_name='images')
     image = models.ImageField(upload_to='pets/gallery/')
+    cloudinary_url = models.URLField(blank=True, null=True, help_text="Cloudinary URL for this image")
+    cloudinary_public_id = models.CharField(max_length=255, blank=True, null=True, help_text="Cloudinary public_id for this image")
     caption = models.CharField(max_length=255, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 

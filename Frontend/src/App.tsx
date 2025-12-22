@@ -64,6 +64,7 @@ import AdminAllPets from "./pages/admin/AdminAllPets";
 import AdminRoleRequests from "./pages/admin/AdminRoleRequests";
 import AdminMedicalRecords from "./pages/admin/AdminMedicalRecords";
 import AdminNotifications from "./pages/admin/AdminNotifications";
+import CloudinaryTest from "./pages/admin/CloudinaryTest";
 
 const queryClient = new QueryClient();
 
@@ -485,6 +486,16 @@ const AppContent = () => {
             element={
               <AdminProtectedRoute>
                 <AdminNotifications />
+              </AdminProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin/cloudinary-test" 
+            element={
+              <AdminProtectedRoute>
+                <AdminLayout>
+                  <CloudinaryTest />
+                </AdminLayout>
               </AdminProtectedRoute>
             } 
           />

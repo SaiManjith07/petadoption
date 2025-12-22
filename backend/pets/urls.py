@@ -1,6 +1,7 @@
 from django.urls import path
 from . import views
 from . import views_workflow
+from . import test_cloudinary_views
 
 urlpatterns = [
     # Categories
@@ -37,5 +38,10 @@ urlpatterns = [
     path('medical-records/', views.MedicalRecordListView.as_view(), name='medical-record-list'),
     path('medical-records/<int:pk>/', views.MedicalRecordDetailView.as_view(), name='medical-record-detail'),
     path('<int:pet_id>/medical-records/', views.get_pet_medical_records, name='pet-medical-records'),
+    
+    # Cloudinary Test Endpoints (for testing only)
+    path('test/cloudinary/upload/', test_cloudinary_views.test_cloudinary_upload, name='test-cloudinary-upload'),
+    path('test/cloudinary/config/', test_cloudinary_views.test_cloudinary_config, name='test-cloudinary-config'),
+    path('test/cloudinary/pets/', test_cloudinary_views.test_pets_with_cloudinary, name='test-pets-cloudinary'),
 ]
 

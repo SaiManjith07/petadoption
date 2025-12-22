@@ -16,8 +16,9 @@ const validateUrl = (url: string | undefined, defaultUrl: string): string => {
     url = 'h' + url;
   }
   
-  // Ensure it starts with http:// or https://
-  if (!url.startsWith('http://') && !url.startsWith('https://')) {
+  // Ensure it starts with http://, https://, ws://, or wss://
+  if (!url.startsWith('http://') && !url.startsWith('https://') && 
+      !url.startsWith('ws://') && !url.startsWith('wss://')) {
     console.warn(`Invalid URL format: ${url}, using default`);
     return defaultUrl;
   }
@@ -26,12 +27,38 @@ const validateUrl = (url: string | undefined, defaultUrl: string): string => {
 };
 
 // API Base URL - Update this when deploying to a new environment
+// Defaults to localhost in development, Render in production
+const isDevelopment = import.meta.env.DEV || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+const defaultApiUrl = isDevelopment ? 'http://localhost:8000/api' : 'https://petadoption-v2q3.onrender.com/api';
 const envApiUrl = import.meta.env.VITE_API_URL;
-export const API_BASE_URL = validateUrl(envApiUrl, 'https://petadoption-v2q3.onrender.com/api');
+
+// If on localhost but env var points to Render, use localhost instead
+let finalApiUrl = envApiUrl;
+if (isDevelopment && envApiUrl && envApiUrl.includes('render.com')) {
+  console.log('[API Config] Overriding Render URL with localhost for local development');
+  finalApiUrl = defaultApiUrl;
+}
+
+export const API_BASE_URL = validateUrl(finalApiUrl, defaultApiUrl);
+
+// Debug logging
+if (isDevelopment) {
+  console.log('[API Config] Development mode detected, using:', API_BASE_URL);
+}
 
 // WebSocket URL - Update this when deploying to a new environment
+// Defaults to localhost in development, Render in production
+const defaultWsUrl = isDevelopment ? 'ws://localhost:8000/ws' : 'wss://petadoption-v2q3.onrender.com/ws';
 const envWsUrl = import.meta.env.VITE_WS_URL;
-export const WS_BASE_URL = validateUrl(envWsUrl, 'wss://petadoption-v2q3.onrender.com/ws');
+
+// If on localhost but env var points to Render, use localhost instead
+let finalWsUrl = envWsUrl;
+if (isDevelopment && envWsUrl && envWsUrl.includes('render.com')) {
+  console.log('[API Config] Overriding Render WebSocket URL with localhost for local development');
+  finalWsUrl = defaultWsUrl;
+}
+
+export const WS_BASE_URL = validateUrl(finalWsUrl, defaultWsUrl);
 
 // Get base URL without /api suffix (for image serving, etc.)
 export const getBaseUrl = (): string => {

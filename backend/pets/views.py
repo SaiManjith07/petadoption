@@ -5,11 +5,12 @@ from rest_framework.response import Response
 from django.db.models import Q
 from django.conf import settings
 from django_filters.rest_framework import DjangoFilterBackend
-from .models import Pet, Category, AdoptionApplication, MedicalRecord
+from .models import Pet, Category, AdoptionApplication, MedicalRecord, PetImage
 from .serializers import (
     PetSerializer, PetListSerializer, CategorySerializer,
     AdoptionApplicationSerializer, MedicalRecordSerializer
 )
+from .cloudinary_utils import upload_image_to_cloudinary
 
 
 class CategoryListView(generics.ListAPIView):
@@ -96,7 +97,56 @@ class PetListView(generics.ListCreateAPIView):
             )
 
     def perform_create(self, serializer):
-        serializer.save(posted_by=self.request.user)
+        # IMPORTANT: Get image from request.FILES BEFORE saving
+        # We will NOT save the image locally - only upload to Cloudinary
+        image_file = None
+        
+        # Get image from request.FILES (before serializer processes it)
+        if hasattr(self.request, 'FILES') and 'image' in self.request.FILES:
+            image_file = self.request.FILES['image']
+            print(f"[Cloudinary] Found image in request.FILES before save")
+        # Fallback: validated_data
+        elif 'image' in serializer.validated_data and serializer.validated_data.get('image'):
+            image_file = serializer.validated_data['image']
+            print(f"[Cloudinary] Found image in validated_data before save")
+        
+        # Remove image from validated_data so it doesn't get saved locally
+        if 'image' in serializer.validated_data:
+            del serializer.validated_data['image']
+        
+        # Save the pet WITHOUT the image field (we'll only store Cloudinary URL)
+        pet = serializer.save(posted_by=self.request.user)
+        
+        # Upload to Cloudinary (ONLY storage method - no local storage)
+        if image_file:
+            try:
+                print(f"[Cloudinary] Uploading image to Cloudinary for pet {pet.id} (no local storage)")
+                result = upload_image_to_cloudinary(
+                    image_file,
+                    folder='petadoption/pets',
+                    public_id=f'petadoption/pets/pet_{pet.id}_main',
+                    overwrite=False
+                )
+                
+                if result.get('success'):
+                    # Only save Cloudinary URL - no local image file
+                    pet.cloudinary_url = result['url']
+                    pet.cloudinary_public_id = result['public_id']
+                    pet.save(update_fields=['cloudinary_url', 'cloudinary_public_id'])
+                    print(f"[Cloudinary] ✓✓✓ Successfully uploaded to Cloudinary and saved URL for pet {pet.id}")
+                    print(f"[Cloudinary] URL: {result['url']}")
+                    print(f"[Cloudinary] Public ID: {result['public_id']}")
+                else:
+                    print(f"[Cloudinary] ✗✗✗ Failed to upload image to Cloudinary for pet {pet.id}: {result.get('error')}")
+                    raise Exception(f"Cloudinary upload failed: {result.get('error')}")
+            except Exception as e:
+                import traceback
+                print(f"[Cloudinary] ✗✗✗ Exception uploading image to Cloudinary for pet {pet.id}: {e}")
+                print(traceback.format_exc())
+                # Re-raise to prevent pet creation without image
+                raise
+        else:
+            print(f"[Cloudinary] ⚠️ No image provided for pet {pet.id} - pet created without image")
 
 
 class LostPetListView(generics.ListCreateAPIView):
@@ -310,7 +360,24 @@ class LostPetListView(generics.ListCreateAPIView):
             from rest_framework.exceptions import AuthenticationFailed
             raise AuthenticationFailed('User must be authenticated to create a pet report')
         
-        # Save with required fields
+        # IMPORTANT: Get image from request.FILES BEFORE saving
+        # We will NOT save the image locally - only upload to Cloudinary
+        image_file = None
+        
+        # Get image from request.FILES (before serializer processes it)
+        if hasattr(self.request, 'FILES') and 'image' in self.request.FILES:
+            image_file = self.request.FILES['image']
+            print(f"[Cloudinary] Found image in request.FILES before save for lost pet")
+        # Fallback: validated_data
+        elif 'image' in serializer.validated_data and serializer.validated_data.get('image'):
+            image_file = serializer.validated_data['image']
+            print(f"[Cloudinary] Found image in validated_data before save for lost pet")
+        
+        # Remove image from validated_data so it doesn't get saved locally
+        if 'image' in serializer.validated_data:
+            del serializer.validated_data['image']
+        
+        # Save with required fields (WITHOUT image field)
         try:
             pet_instance = serializer.save(
                 posted_by=self.request.user, 
@@ -327,6 +394,37 @@ class LostPetListView(generics.ListCreateAPIView):
             
             # Debug logging
             print(f"[DEBUG] Created lost pet ID {pet_instance.id}: status={pet_instance.adoption_status}, is_verified={pet_instance.is_verified}, found_date={pet_instance.found_date}")
+            
+            # Upload to Cloudinary (ONLY storage method - no local storage)
+            if image_file:
+                try:
+                    print(f"[Cloudinary] Uploading image to Cloudinary for lost pet {pet_instance.id} (no local storage)")
+                    result = upload_image_to_cloudinary(
+                        image_file,
+                        folder='petadoption/pets',
+                        public_id=f'petadoption/pets/pet_{pet_instance.id}_main',
+                        overwrite=False
+                    )
+                    
+                    if result.get('success'):
+                        # Only save Cloudinary URL - no local image file
+                        pet_instance.cloudinary_url = result['url']
+                        pet_instance.cloudinary_public_id = result['public_id']
+                        pet_instance.save(update_fields=['cloudinary_url', 'cloudinary_public_id'])
+                        print(f"[Cloudinary] ✓✓✓ Successfully uploaded to Cloudinary and saved URL for lost pet {pet_instance.id}")
+                        print(f"[Cloudinary] URL: {result['url']}")
+                        print(f"[Cloudinary] Public ID: {result['public_id']}")
+                    else:
+                        print(f"[Cloudinary] ✗✗✗ Failed to upload image to Cloudinary for lost pet {pet_instance.id}: {result.get('error')}")
+                        raise Exception(f"Cloudinary upload failed: {result.get('error')}")
+                except Exception as e:
+                    import traceback
+                    print(f"[Cloudinary] ✗✗✗ Exception uploading image to Cloudinary for lost pet {pet_instance.id}: {e}")
+                    print(traceback.format_exc())
+                    # Re-raise to prevent pet creation without image
+                    raise
+            else:
+                print(f"[Cloudinary] ⚠️ No image provided for lost pet {pet_instance.id} - pet created without image")
         except Exception as e:
             import traceback
             error_msg = f"Error saving pet in LostPetListView.perform_create: {e}"
@@ -503,8 +601,21 @@ class FoundPetListView(generics.ListCreateAPIView):
                         print(f"Warning: Invalid {coord_field} value '{data.get(coord_field)}': {e}")
                         data.pop(coord_field, None)  # Remove invalid coordinate
             
+            # Check for files in request.FILES (for image uploads)
+            if hasattr(request, 'FILES') and request.FILES:
+                print(f"[Cloudinary] Found files in request.FILES: {list(request.FILES.keys())}")
+                for key, file_obj in request.FILES.items():
+                    print(f"[Cloudinary]   - {key}: {file_obj.name if hasattr(file_obj, 'name') else 'unknown'}, size: {file_obj.size if hasattr(file_obj, 'size') else 'unknown'}")
+                # Merge FILES into data for multipart/form-data
+                # DRF automatically handles request.FILES, but we need to ensure it's in the request
+                # The serializer will get files from request.FILES automatically
+            else:
+                print(f"[Cloudinary] No files found in request.FILES")
+            
+            # Create serializer - DRF automatically handles request.FILES from the request context
             serializer = self.get_serializer(data=data)
             if not serializer.is_valid():
+                print(f"[Cloudinary] Serializer validation failed: {serializer.errors}")
                 # Return validation errors with details
                 return Response(
                     {
@@ -515,6 +626,7 @@ class FoundPetListView(generics.ListCreateAPIView):
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
+            print(f"[Cloudinary] Serializer is valid, calling perform_create...")
             try:
                 self.perform_create(serializer)
                 # Get the created instance
@@ -577,6 +689,25 @@ class FoundPetListView(generics.ListCreateAPIView):
             )
     
     def perform_create(self, serializer):
+        print(f"[Cloudinary] ===== perform_create called for FoundPetListView =====")
+        
+        # IMPORTANT: Get image from request.FILES BEFORE saving
+        # We will NOT save the image locally - only upload to Cloudinary
+        image_file = None
+        
+        # Get image from request.FILES (before serializer processes it)
+        if hasattr(self.request, 'FILES') and 'image' in self.request.FILES:
+            image_file = self.request.FILES['image']
+            print(f"[Cloudinary] ✓ Found image in request.FILES before save for found pet")
+        # Fallback: validated_data
+        elif 'image' in serializer.validated_data and serializer.validated_data.get('image'):
+            image_file = serializer.validated_data['image']
+            print(f"[Cloudinary] ✓ Found image in validated_data before save for found pet")
+        
+        # Remove image from validated_data so it doesn't get saved locally
+        if 'image' in serializer.validated_data:
+            del serializer.validated_data['image']
+        
         # Set status to 'Pending' for admin approval
         # For found pets, set found_date to distinguish from lost pets
         from django.utils import timezone
@@ -617,6 +748,37 @@ class FoundPetListView(generics.ListCreateAPIView):
             
             # Debug logging
             print(f"[DEBUG] Created found pet ID {pet_instance.id}: status={pet_instance.adoption_status}, is_verified={pet_instance.is_verified}, found_date={pet_instance.found_date}")
+            
+            # Upload to Cloudinary (ONLY storage method - no local storage)
+            if image_file:
+                try:
+                    print(f"[Cloudinary] Uploading image to Cloudinary for found pet {pet_instance.id} (no local storage)")
+                    result = upload_image_to_cloudinary(
+                        image_file,
+                        folder='petadoption/pets',
+                        public_id=f'petadoption/pets/pet_{pet_instance.id}_main',
+                        overwrite=False
+                    )
+                    
+                    if result.get('success'):
+                        # Only save Cloudinary URL - no local image file
+                        pet_instance.cloudinary_url = result['url']
+                        pet_instance.cloudinary_public_id = result['public_id']
+                        pet_instance.save(update_fields=['cloudinary_url', 'cloudinary_public_id'])
+                        print(f"[Cloudinary] ✓✓✓ Successfully uploaded to Cloudinary and saved URL for found pet {pet_instance.id}")
+                        print(f"[Cloudinary] URL: {result['url']}")
+                        print(f"[Cloudinary] Public ID: {result['public_id']}")
+                    else:
+                        print(f"[Cloudinary] ✗✗✗ Failed to upload image to Cloudinary for found pet {pet_instance.id}: {result.get('error')}")
+                        raise Exception(f"Cloudinary upload failed: {result.get('error')}")
+                except Exception as e:
+                    import traceback
+                    print(f"[Cloudinary] ✗✗✗ Exception uploading image to Cloudinary for found pet {pet_instance.id}: {e}")
+                    print(traceback.format_exc())
+                    # Re-raise to prevent pet creation without image
+                    raise
+            else:
+                print(f"[Cloudinary] ⚠️ No image provided for found pet {pet_instance.id} - pet created without image")
         except Exception as e:
             import traceback
             print(f"Error in FoundPetListView.perform_create: {e}")

@@ -155,6 +155,12 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
+# Cloudinary Configuration
+CLOUDINARY_CLOUD_NAME = os.getenv('CLOUDINARY_CLOUD_NAME', 'drp2hx5d6')
+CLOUDINARY_API_KEY = os.getenv('CLOUDINARY_API_KEY', '392655696679497')
+CLOUDINARY_API_SECRET = os.getenv('CLOUDINARY_API_SECRET', 'gytzkjH084pi1cXoKBc98PbelUU')
+CLOUDINARY_URL = os.getenv('CLOUDINARY_URL', 'cloudinary://392655696679497:gytzkjH084pi1cXoKBc98PbelUU@drp2hx5d6')
+
 # Backend URL for constructing absolute URLs (for image URLs, etc.)
 # Get from environment variable or use default
 BACKEND_URL = os.getenv('BACKEND_URL', os.getenv('RENDER_EXTERNAL_URL', 'http://127.0.0.1:8000'))

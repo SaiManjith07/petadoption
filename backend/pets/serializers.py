@@ -19,19 +19,15 @@ class PetImageSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = PetImage
-        fields = ['id', 'image', 'image_url', 'caption', 'created_at']
+        fields = ['id', 'image', 'image_url', 'cloudinary_url', 'cloudinary_public_id', 'caption', 'created_at']
         read_only_fields = ['id', 'created_at']
     
     def get_image_url(self, obj):
+        """Get image URL - ONLY from Cloudinary."""
         try:
-            if obj.image:
-                request = self.context.get('request')
-                if request:
-                    try:
-                        if hasattr(obj.image, 'url'):
-                            return request.build_absolute_uri(obj.image.url)
-                    except (ValueError, AttributeError):
-                        return None
+            # ONLY use Cloudinary URL - no local storage
+            if obj.cloudinary_url:
+                return obj.cloudinary_url
             return None
         except Exception:
             return None
@@ -53,7 +49,7 @@ class PetSerializer(serializers.ModelSerializer):
             'id', 'name', 'breed', 'age', 'gender', 'size', 'weight', 'description',
             'category', 'category_id', 'adoption_status', 'location', 'pincode',
             'last_seen', 'tag_registration_number', 'location_map_url', 'location_latitude', 'location_longitude',
-            'image', 'image_url', 'owner', 'posted_by', 'images', 'photos',
+            'image', 'image_url', 'cloudinary_url', 'cloudinary_public_id', 'owner', 'posted_by', 'images', 'photos',
             'created_at', 'updated_at', 'is_verified', 'is_featured', 'views_count',
             'current_location_type', 'current_location_id', 'found_date', 'days_in_care',
             'moved_to_adoption', 'moved_to_adoption_date', 'owner_consent_for_adoption',
@@ -62,143 +58,39 @@ class PetSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_at', 'updated_at', 'views_count', 'owner', 'posted_by', 'adoption_status', 'is_verified']
 
     def get_image_url(self, obj):
-        """Get full URL for the main pet image."""
+        """Get full URL for the main pet image - ONLY from Cloudinary."""
         try:
-            request = self.context.get('request')
+            # ONLY use Cloudinary URL - no local storage
+            if obj.cloudinary_url:
+                return obj.cloudinary_url
             
-            # First, try the uploaded image field
-            if obj.image:
-                try:
-                    # Safely get the image URL
-                    if hasattr(obj.image, 'url'):
-                        try:
-                            image_url = obj.image.url
-                        except (ValueError, AttributeError, Exception) as url_error:
-                            # If we can't get the URL, skip this image
-                            print(f"Error accessing image.url: {url_error}")
-                            # Try to continue with image_url field below
-                            image_url = None
-                        
-                        if image_url:
-                            # Always prefer BACKEND_URL from settings for consistency
-                            base_url = getattr(settings, 'BACKEND_URL', None)
-                            
-                            # If BACKEND_URL is set, use it (production)
-                            if base_url and base_url != 'http://127.0.0.1:8000':
-                                # Ensure path starts with /
-                                if not image_url.startswith('/'):
-                                    image_url = '/' + image_url
-                                # Remove trailing slash from base_url if present
-                                if base_url.endswith('/'):
-                                    base_url = base_url.rstrip('/')
-                                return f"{base_url}{image_url}"
-                            
-                            # Fallback to request.build_absolute_uri if available (development)
-                            if request:
-                                try:
-                                    full_url = request.build_absolute_uri(image_url)
-                                    return full_url
-                                except Exception as build_error:
-                                    print(f"Error building absolute URI: {build_error}")
-                                    # Continue to next fallback
-                            
-                            # If already a full URL, return as is
-                            if image_url.startswith('http://') or image_url.startswith('https://'):
-                                return image_url
-                            
-                            # Last resort: construct URL from default
-                            if not image_url.startswith('/'):
-                                image_url = '/' + image_url
-                            default_base = 'http://127.0.0.1:8000'
-                            return f"{default_base}{image_url}"
-                except Exception as e:
-                    import traceback
-                    print(f"Error getting image URL: {e}")
-                    if getattr(settings, 'DEBUG', False):
-                        print(traceback.format_exc())
-                    # Don't raise, just continue to try image_url field
-                    pass
-            
-            # If no uploaded image, try the image_url field (external URL)
+            # Fallback: image_url field (for external images only, not local files)
             if obj.image_url:
                 return obj.image_url
             
             return None
         except Exception as e:
-            import traceback
-            print(f"Error in get_image_url: {e}")
-            if getattr(settings, 'DEBUG', False):
-                print(traceback.format_exc())
+            print(f"Error in PetSerializer.get_image_url: {e}")
             return None
 
     def get_photos(self, obj):
-        """Get all photos as an array of URLs for frontend compatibility."""
+        """Get all photos as an array of URLs - ONLY from Cloudinary."""
         photos = []
-        request = self.context.get('request')
         
-        # Add main image if available
+        # Add main image if available (Cloudinary only)
         main_image_url = self.get_image_url(obj)
         if main_image_url:
             photos.append(main_image_url)
         
-        # Add images from PetImage model
+        # Add images from PetImage model (Cloudinary only)
         if hasattr(obj, 'images'):
             try:
                 for img in obj.images.all():
-                    if img.image:
-                        try:
-                            if hasattr(img.image, 'url'):
-                                try:
-                                    image_url = img.image.url
-                                except (ValueError, AttributeError, Exception) as url_error:
-                                    print(f"Error accessing PetImage.url: {url_error}")
-                                    continue  # Skip this image
-                                
-                                if image_url:
-                                    # Always prefer BACKEND_URL from settings for consistency
-                                    base_url = getattr(settings, 'BACKEND_URL', None)
-                                    
-                                    # If BACKEND_URL is set, use it (production)
-                                    if base_url and base_url != 'http://127.0.0.1:8000':
-                                        if not image_url.startswith('/'):
-                                            image_url = '/' + image_url
-                                        if base_url.endswith('/'):
-                                            base_url = base_url.rstrip('/')
-                                        photos.append(f"{base_url}{image_url}")
-                                    # Fallback to request.build_absolute_uri if available
-                                    elif request:
-                                        try:
-                                            full_url = request.build_absolute_uri(image_url)
-                                            photos.append(full_url)
-                                        except Exception as build_error:
-                                            print(f"Error building absolute URI for PetImage: {build_error}")
-                                            # Continue to next fallback
-                                            if image_url.startswith('http://') or image_url.startswith('https://'):
-                                                photos.append(image_url)
-                                    # If already a full URL, return as is
-                                    elif image_url.startswith('http://') or image_url.startswith('https://'):
-                                        photos.append(image_url)
-                                    # Last resort: construct from default
-                                    else:
-                                        if not image_url.startswith('/'):
-                                            image_url = '/' + image_url
-                                        default_base = 'http://127.0.0.1:8000'
-                                        photos.append(f"{default_base}{image_url}")
-                        except Exception as e:
-                            import traceback
-                            print(f"Error processing PetImage: {e}")
-                            if getattr(settings, 'DEBUG', False):
-                                print(traceback.format_exc())
-                            continue  # Skip this image and continue with next
+                    # ONLY use Cloudinary URL - no local storage
+                    if img.cloudinary_url:
+                        photos.append(img.cloudinary_url)
             except Exception as e:
-                import traceback
                 print(f"Error iterating PetImages: {e}")
-                if getattr(settings, 'DEBUG', False):
-                    print(traceback.format_exc())
-                # Don't raise, just return what we have so far
-                # Also check if PetImage has image_url field
-                if hasattr(img, 'image_url') and img.image_url:
-                    photos.append(img.image_url)
         
         return photos
 
@@ -265,46 +157,18 @@ class PetListSerializer(serializers.ModelSerializer):
             'id', 'name', 'breed', 'age', 'gender', 'size', 'weight', 'description',
             'category', 'adoption_status', 'location', 'pincode', 'last_seen',
             'tag_registration_number', 'location_map_url', 'location_latitude', 'location_longitude',
-            'image', 'image_url', 'images', 'photos', 'posted_by',
+            'image', 'image_url', 'cloudinary_url', 'cloudinary_public_id', 'images', 'photos', 'posted_by',
             'created_at', 'updated_at', 'is_verified', 'is_featured', 'views_count'
         ]
 
     def get_image_url(self, obj):
-        """Get full URL for the main pet image."""
+        """Get full URL for the main pet image - ONLY from Cloudinary."""
         try:
-            request = self.context.get('request')
+            # ONLY use Cloudinary URL - no local storage
+            if obj.cloudinary_url:
+                return obj.cloudinary_url
             
-            # First, try the uploaded image field
-            if obj.image:
-                try:
-                    if hasattr(obj.image, 'url'):
-                        image_url = obj.image.url
-                        
-                        # Always prefer BACKEND_URL from settings for consistency
-                        base_url = getattr(settings, 'BACKEND_URL', None)
-                        
-                        # If BACKEND_URL is set, use it (production)
-                        if base_url and base_url != 'http://127.0.0.1:8000':
-                            if not image_url.startswith('/'):
-                                image_url = '/' + image_url
-                            if base_url.endswith('/'):
-                                base_url = base_url.rstrip('/')
-                            return f"{base_url}{image_url}"
-                        
-                        # Fallback to request.build_absolute_uri if available
-                        if request:
-                            return request.build_absolute_uri(image_url)
-                        
-                        # If already a full URL, return as is
-                        if image_url.startswith('http://') or image_url.startswith('https://'):
-                            return image_url
-                        
-                        # Last resort: return relative URL
-                        return image_url
-                except (ValueError, AttributeError):
-                    pass
-            
-            # If no uploaded image, try the image_url field (external URL)
+            # Fallback: image_url field (for external images only, not local files)
             if obj.image_url:
                 return obj.image_url
             
@@ -313,44 +177,20 @@ class PetListSerializer(serializers.ModelSerializer):
             return None
 
     def get_photos(self, obj):
-        """Get all photos as an array of URLs for frontend compatibility."""
+        """Get all photos as an array of URLs - ONLY from Cloudinary."""
         photos = []
-        request = self.context.get('request')
         
-        # Add main image if available
+        # Add main image if available (Cloudinary only)
         main_image_url = self.get_image_url(obj)
         if main_image_url:
             photos.append(main_image_url)
         
-        # Add images from PetImage model
+        # Add images from PetImage model (Cloudinary only)
         if hasattr(obj, 'images'):
             for img in obj.images.all():
-                if img.image:
-                    try:
-                        if hasattr(img.image, 'url'):
-                            image_url = img.image.url
-                            
-                            # Always prefer BACKEND_URL from settings
-                            base_url = getattr(settings, 'BACKEND_URL', None)
-                            
-                            # If BACKEND_URL is set, use it (production)
-                            if base_url and base_url != 'http://127.0.0.1:8000':
-                                if not image_url.startswith('/'):
-                                    image_url = '/' + image_url
-                                if base_url.endswith('/'):
-                                    base_url = base_url.rstrip('/')
-                                photos.append(f"{base_url}{image_url}")
-                            # Fallback to request.build_absolute_uri
-                            elif request:
-                                photos.append(request.build_absolute_uri(image_url))
-                            # If already full URL
-                            elif image_url.startswith('http://') or image_url.startswith('https://'):
-                                photos.append(image_url)
-                            # Last resort
-                            else:
-                                photos.append(image_url)
-                    except (ValueError, AttributeError):
-                        pass
+                # ONLY use Cloudinary URL - no local storage
+                if img.cloudinary_url:
+                    photos.append(img.cloudinary_url)
         
         return photos
 
