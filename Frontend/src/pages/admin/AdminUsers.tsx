@@ -476,7 +476,6 @@ export default function AdminUsers() {
                 )}
               </CardContent>
             </Card>
-          </div>
 
         {/* View User Dialog */}
         <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>

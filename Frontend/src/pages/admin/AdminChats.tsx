@@ -852,7 +852,6 @@ export default function AdminChats() {
                 )}
               </CardContent>
             </Card>
-          </div>
 
         {/* View Request Dialog */}
         <Dialog open={requestDialogOpen} onOpenChange={setRequestDialogOpen}>
