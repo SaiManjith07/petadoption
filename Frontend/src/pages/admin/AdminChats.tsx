@@ -807,19 +807,33 @@ export default function AdminChats() {
                                       const currentUserId = user?.id || user?._id || user?.user_id;
                                       
                                       // Check if current admin is a participant in the room
-                                      const isParticipant = participants.some((p: any) => {
+                                      const isParticipant = participants && participants.length > 0 && participants.some((p: any) => {
                                         const participantId = p.id || p._id || p.user_id;
                                         return participantId && currentUserId && String(participantId) === String(currentUserId);
                                       });
                                       
                                       // Check if current admin is the verifying admin (for pet-related chats)
                                       const isVerifyingAdmin = chat.chat_request?.verified_by_admin?.id === currentUserId ||
-                                                               chat.verified_by_admin_id === currentUserId;
+                                                               chat.verified_by_admin_id === currentUserId ||
+                                                               chat.created_by_admin_id === currentUserId;
                                       
                                       const roomIdToOpen = roomId || chat.roomId || chat.room_id || chat.id || chat._id;
                                       
                                       // Check if current admin is the creator (who activated/verified the chat)
-                                      const isCreator = chat.created_by_admin_id === user?.id;
+                                      // Also check if created_by_admin_id matches (with type coercion)
+                                      const isCreator = chat.created_by_admin_id === user?.id ||
+                                                        (chat.created_by_admin_id && user?.id && String(chat.created_by_admin_id) === String(user.id));
+                                      
+                                      // Debug logging
+                                      console.log('Chat permission check:', {
+                                        roomId: roomIdToOpen,
+                                        currentUserId,
+                                        isParticipant,
+                                        isCreator,
+                                        isVerifyingAdmin,
+                                        created_by_admin_id: chat.created_by_admin_id,
+                                        participants: participants?.map((p: any) => ({ id: p.id, name: p.name })),
+                                      });
                                       
                                       // If admin is the creator OR is a participant OR is the verifying admin, they can open full chat
                                       if (isCreator || isParticipant || isVerifyingAdmin) {
