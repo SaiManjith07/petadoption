@@ -36,9 +36,10 @@ class ChatRoomListView(generics.ListCreateAPIView):
             
             # Try to prefetch, but don't fail if it doesn't work
             try:
-                # Only try to select_related if fields exist
-                queryset = queryset.select_related('user_a', 'user_b', 'chat_request', 'chat_request__pet')
-            except Exception:
+                # Only try to select_related if fields exist - IMPORTANT: Load chat_request and pet for pet_id access
+                queryset = queryset.select_related('chat_request', 'chat_request__pet', 'user_a', 'user_b')
+            except Exception as e:
+                print(f"Warning: Could not use select_related: {e}")
                 pass  # Fields might not exist, that's okay
             
             try:
@@ -106,14 +107,27 @@ class ChatRoomListView(generics.ListCreateAPIView):
                     pet_id = None
                     chat_type = None
                     try:
+                        # Try to access chat_request - ensure it's loaded
                         if hasattr(room, 'chat_request') and room.chat_request:
                             chat_request = room.chat_request
+                            # Check if pet exists and is accessible
                             if hasattr(chat_request, 'pet') and chat_request.pet:
-                                pet_id = chat_request.pet.id
+                                try:
+                                    pet_id = chat_request.pet.id
+                                    print(f"Room {room.id}: Found pet_id {pet_id} from chat_request")
+                                except Exception as pet_error:
+                                    print(f"Error accessing pet.id for room {room.id}: {pet_error}")
+                            else:
+                                print(f"Room {room.id}: chat_request has no pet attribute or pet is None")
+                            
                             if hasattr(chat_request, 'type'):
                                 chat_type = chat_request.type
+                        else:
+                            print(f"Room {room.id}: No chat_request found (hasattr: {hasattr(room, 'chat_request')})")
                     except Exception as e:
+                        import traceback
                         print(f"Error getting pet_id/type for room {room.id}: {e}")
+                        print(traceback.format_exc())
                     
                     data.append({
                         'id': room.id,

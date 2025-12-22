@@ -402,7 +402,7 @@ export default function Chat() {
                                   message.cloudinary_url 
                                     ? message.cloudinary_url
                                     : (message.image_url 
-                                      ? (message.image_url.startsWith('http') ? message.image_url : getImageUrl(message.image_url) || message.image_url)
+                                    ? (message.image_url.startsWith('http') ? message.image_url : getImageUrl(message.image_url) || message.image_url)
                                       : (message.image ? (message.image.startsWith('http') ? message.image : getImageUrl(message.image) || message.image) : ''))
                                 } 
                                 alt="Chat image" 
