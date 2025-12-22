@@ -92,10 +92,22 @@ export default function Admin() {
     if (!isAdmin) return;
     
     const interval = setInterval(() => {
-      loadDashboardData();
+      loadDashboardData(false);
     }, 30000); // Refresh every 30 seconds
 
     return () => clearInterval(interval);
+  }, [isAdmin]);
+
+  // Refresh dashboard when window regains focus
+  useEffect(() => {
+    if (!isAdmin) return;
+    
+    const handleFocus = () => {
+      loadDashboardData(false);
+    };
+    
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
   }, [isAdmin]);
 
   // Load pets when navigating to #pets section and scroll to it
@@ -535,7 +547,8 @@ export default function Admin() {
         verified_financial_stability: false,
       });
       
-      // Refresh full data immediately
+      // Refresh full data immediately with a small delay to ensure backend has processed
+      await new Promise(resolve => setTimeout(resolve, 500));
       await loadDashboardData(false);
     } catch (error: any) {
       toast({
@@ -583,7 +596,8 @@ export default function Admin() {
         description: 'Report rejected',
       });
       
-      // Refresh full data immediately
+      // Refresh full data immediately with a small delay to ensure backend has processed
+      await new Promise(resolve => setTimeout(resolve, 500));
       await loadDashboardData(false);
     } catch (error: any) {
       toast({

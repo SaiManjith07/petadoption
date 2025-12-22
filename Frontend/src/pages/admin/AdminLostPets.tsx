@@ -403,31 +403,69 @@ export default function AdminLostPets() {
               <Card key={pet._id} className="hover:shadow-md transition-shadow">
                 <CardContent className="pt-6">
                   <div className="flex flex-col md:flex-row gap-6">
-                    {/* Pet Images */}
-                    {(pet.images && pet.images.length > 0) || pet.image ? (
-                      <div className="flex gap-2">
-                        {pet.images && pet.images.length > 0 ? (
-                          pet.images.slice(0, 3).map((img: any, idx: number) => {
-                            const imageUrl = img.image_url || img.image || img.url;
-                            const photoUrl = imageUrl ? (imageUrl.startsWith('http') ? imageUrl : getImageUrl(imageUrl)) : 'https://via.placeholder.com/128';
-                            return (
-                              <img
-                                key={idx}
-                                src={photoUrl}
-                                alt={`Pet ${idx + 1}`}
-                                className="h-32 w-32 rounded-lg object-cover border border-gray-200"
-                              />
-                            );
-                          })
-                        ) : pet.image ? (
-                          <img
-                            src={pet.image_url || getImageUrl(pet.image) || 'https://via.placeholder.com/128'}
-                            alt="Pet"
-                            className="h-32 w-32 rounded-lg object-cover border border-gray-200"
-                          />
-                        ) : null}
-                      </div>
-                    ) : null}
+                    {/* Pet Images - Using Cloudinary URLs */}
+                    {(() => {
+                      // Get all available image URLs
+                      const imageUrls: string[] = [];
+                      
+                      // Priority 1: Use cloudinary_url (primary Cloudinary URL)
+                      if (pet.cloudinary_url) {
+                        imageUrls.push(pet.cloudinary_url);
+                      }
+                      
+                      // Priority 2: Use image_url from serializer
+                      if (pet.image_url && pet.image_url !== pet.cloudinary_url) {
+                        imageUrls.push(pet.image_url);
+                      }
+                      
+                      // Priority 3: Use photos array from serializer (includes all photos)
+                      if (pet.photos && Array.isArray(pet.photos) && pet.photos.length > 0) {
+                        pet.photos.forEach((photo: string) => {
+                          if (photo && !imageUrls.includes(photo)) {
+                            imageUrls.push(photo);
+                          }
+                        });
+                      }
+                      
+                      // Priority 4: Use images array (from PetImage model)
+                      if (pet.images && Array.isArray(pet.images) && pet.images.length > 0) {
+                        pet.images.forEach((img: any) => {
+                          const imgUrl = img.cloudinary_url || img.image_url || img.image || img.url;
+                          if (imgUrl && !imageUrls.includes(imgUrl)) {
+                            imageUrls.push(imgUrl);
+                          }
+                        });
+                      }
+                      
+                      // Priority 5: Fallback to single image field
+                      if (pet.image && !imageUrls.includes(pet.image)) {
+                        const imgUrl = pet.image.startsWith('http') ? pet.image : getImageUrl(pet.image);
+                        if (imgUrl) {
+                          imageUrls.push(imgUrl);
+                        }
+                      }
+                      
+                      if (imageUrls.length === 0) {
+                        return null;
+                      }
+                      
+                      return (
+                        <div className="flex gap-2">
+                          {imageUrls.slice(0, 3).map((imgUrl: string, idx: number) => (
+                            <img
+                              key={idx}
+                              src={imgUrl}
+                              alt={`Pet ${idx + 1}`}
+                              className="h-32 w-32 rounded-lg object-cover border border-gray-200"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.src = 'https://via.placeholder.com/128?text=No+Image';
+                              }}
+                            />
+                          ))}
+                        </div>
+                      );
+                    })()}
 
                     {/* Pet Details */}
                     <div className="flex-1 space-y-3">
