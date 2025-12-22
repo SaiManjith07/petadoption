@@ -305,9 +305,9 @@ export default function UserHome() {
                           const imageUrl = petImage ? (petImage.startsWith('http') ? petImage : getImageUrl(petImage)) : 'https://via.placeholder.com/300x200?text=No+Image';
                           
                           return (
-                            <Card key={petId} className="bg-white rounded-xl shadow-[0_1px_4px_rgba(0,0,0,0.1)] border border-[#E5E7EB] hover:shadow-[0_4px_12px_rgba(0,0,0,0.15)] transition-all duration-300 overflow-hidden flex flex-col pet-card hover:-translate-y-1">
+                            <Card key={petId} className="bg-white rounded-xl shadow-[0_1px_4px_rgba(0,0,0,0.1)] border border-[#E5E7EB] hover:shadow-[0_4px_12px_rgba(0,0,0,0.15)] transition-all duration-300 overflow-hidden flex flex-col pet-card hover:-translate-y-1 min-h-[400px]">
                               {/* Pet Image */}
-                              <div className="relative h-40 sm:h-48 w-full overflow-hidden bg-gray-100">
+                              <div className="relative h-56 sm:h-64 md:h-72 w-full overflow-hidden bg-gray-100">
                                 <img
                                   src={imageUrl}
                                   alt={p.name || 'Pet'}
@@ -338,44 +338,44 @@ export default function UserHome() {
                       </div>
 
                               {/* Card Content */}
-                              <CardContent className="p-3 sm:p-4 md:p-5 flex-1 flex flex-col">
+                              <CardContent className="p-4 sm:p-5 md:p-6 flex-1 flex flex-col">
                                 <div className="flex-1">
-                                  <div className="space-y-1.5 sm:space-y-2 mb-3 sm:mb-4">
-                                    <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-gray-600">
-                                      <PawPrint className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400 flex-shrink-0" />
-                                      <span className="font-medium">Type:</span>
-                                      <span className="capitalize truncate">{getPetType(p)}</span>
+                                  <div className="space-y-2 sm:space-y-2.5 mb-4 sm:mb-5">
+                                    <div className="flex items-center gap-2 sm:gap-2.5 text-sm sm:text-base text-gray-700">
+                                      <PawPrint className="h-4 w-4 sm:h-5 sm:w-5 text-[#2DD4BF] flex-shrink-0" />
+                                      <span className="font-semibold">Type:</span>
+                                      <span className="capitalize truncate font-medium">{getPetType(p)}</span>
                                     </div>
-                                    <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-gray-600">
-                                      <PawPrint className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400 flex-shrink-0" />
-                                      <span className="font-medium">Breed:</span>
-                                      <span className="truncate">{p.breed || 'Unknown'}</span>
+                                    <div className="flex items-center gap-2 sm:gap-2.5 text-sm sm:text-base text-gray-700">
+                                      <PawPrint className="h-4 w-4 sm:h-5 sm:w-5 text-[#2DD4BF] flex-shrink-0" />
+                                      <span className="font-semibold">Breed:</span>
+                                      <span className="truncate font-medium">{p.breed || 'Unknown'}</span>
                                     </div>
-                                    <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-gray-600">
-                                      <Search className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400 flex-shrink-0" />
-                                      <span className="font-medium">Location:</span>
-                                      <span className="line-clamp-1 truncate">{p.location || 'N/A'}</span>
+                                    <div className="flex items-center gap-2 sm:gap-2.5 text-sm sm:text-base text-gray-700">
+                                      <Search className="h-4 w-4 sm:h-5 sm:w-5 text-[#2DD4BF] flex-shrink-0" />
+                                      <span className="font-semibold">Location:</span>
+                                      <span className="line-clamp-1 truncate font-medium">{p.location || 'N/A'}</span>
                                     </div>
                                     {createdDate && (
-                                      <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-gray-600">
-                                        <Calendar className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400 flex-shrink-0" />
-                                        <span className="font-medium">Reported:</span>
-                                        <span className="truncate">{format(new Date(createdDate), 'MMM dd, yyyy')}</span>
+                                      <div className="flex items-center gap-2 sm:gap-2.5 text-sm sm:text-base text-gray-700">
+                                        <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-[#2DD4BF] flex-shrink-0" />
+                                        <span className="font-semibold">Reported:</span>
+                                        <span className="truncate font-medium">{format(new Date(createdDate), 'MMM dd, yyyy')}</span>
                                       </div>
                                     )}
                                   </div>
                       </div>
 
                       {/* Action Buttons */}
-                                <div className="flex gap-2 mt-auto">
+                                <div className="flex gap-2 mt-auto pt-2">
                         <Button
                                     variant="default"
-                                    className="flex-1 bg-[#2DD4BF] hover:bg-[#14B8A6] text-white text-sm py-2.5 rounded-lg transition-all duration-200 hover:scale-105"
+                                    className="flex-1 bg-[#2DD4BF] hover:bg-[#14B8A6] text-white text-sm sm:text-base py-3 rounded-lg transition-all duration-200 hover:scale-105 font-semibold"
                                     onClick={() => {
                                       navigate(`/pets/${petId}`);
                                     }}
                                   >
-                                    <Eye className="h-4 w-4 mr-2" />
+                                    <Eye className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
                                     <span>View More</span>
                         </Button>
                       </div>
