@@ -130,19 +130,19 @@ export default function UserHome() {
   return (
     <div className="min-h-screen bg-white">
       {/* Hero Section with Image */}
-      <div className="relative w-full h-48 md:h-64 lg:h-72 overflow-hidden bg-gradient-to-br from-blue-50 to-green-50 rounded-2xl">
+      <div className="relative w-full h-40 sm:h-48 md:h-64 lg:h-72 overflow-hidden bg-gradient-to-br from-blue-50 to-green-50 rounded-xl sm:rounded-2xl mx-4 sm:mx-6 lg:mx-8 mt-4 sm:mt-6 lg:mt-8">
         <img
           src="https://media.istockphoto.com/id/1417882544/photo/large-group-of-cats-and-dogs-looking-at-the-camera-on-blue-background.jpg?s=612x612&w=0&k=20&c=kGKANSIFdNfhBJMipyuaKU4BcVE1oELWev9lF2ickE0="
           alt="Cats and dogs"
-          className="w-full h-full object-cover rounded-2xl"
+          className="w-full h-full object-cover rounded-xl sm:rounded-2xl"
         />
         <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/30 to-black/50 flex items-center justify-center">
-          <div className="w-full px-6 md:px-10 lg:px-8">
+          <div className="w-full px-4 sm:px-6 md:px-10 lg:px-8">
             <div className="max-w-7xl mx-auto text-center">
-              <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-2 drop-shadow-lg">
+              <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-bold text-white mb-1 sm:mb-2 drop-shadow-lg px-2">
                 Welcome back, {user?.name || 'User'}!
               </h1>
-              <p className="text-lg md:text-xl text-white/90 drop-shadow-md">
+              <p className="text-sm sm:text-base md:text-lg lg:text-xl text-white/90 drop-shadow-md px-2">
                 Here's what's happening with your pet reports
               </p>
             </div>
@@ -158,22 +158,22 @@ export default function UserHome() {
 
       {/* Main Content Area - Scrollable */}
       <main className="flex-1 overflow-y-auto bg-white">
-        <div className="p-6 lg:p-8 space-y-6 lg:space-y-8">
+        <div className="p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6 lg:space-y-8">
           <section id="pets" className="scroll-mt-8">
-            <Card className="bg-white rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-gray-100">
-            <CardHeader className="border-b border-gray-100 pb-4">
+            <Card className="bg-white rounded-xl sm:rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-gray-100">
+            <CardHeader className="border-b border-gray-100 pb-3 sm:pb-4 px-4 sm:px-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle className="text-2xl font-bold text-gray-900">All Pets</CardTitle>
-                  <CardDescription className="text-sm text-gray-500 mt-1">
+                  <CardTitle className="text-xl sm:text-2xl font-bold text-gray-900">All Pets</CardTitle>
+                  <CardDescription className="text-xs sm:text-sm text-gray-500 mt-1">
                     View all pets in the database (Lost, Found, Adopted)
                   </CardDescription>
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="pt-6 space-y-4">
+            <CardContent className="pt-4 sm:pt-6 space-y-4 px-4 sm:px-6">
               {/* Search and Filter */}
-              <div className="flex flex-col sm:flex-row gap-4 mb-4">
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-4">
                 <div className="flex-1">
                   <Input
                     placeholder="Search by breed, species, location, or status..."
@@ -182,11 +182,11 @@ export default function UserHome() {
                     className="w-full"
                   />
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   <select
                     value={typeFilter}
                     onChange={(e) => setTypeFilter(e.target.value)}
-                    className="px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-green-500"
+                    className="px-2 sm:px-3 py-2 border rounded-md text-xs sm:text-sm focus:ring-2 focus:ring-green-500 flex-1 sm:flex-none min-w-[100px]"
                   >
                     <option value="all">All Animals</option>
                     <option value="dog">Dog</option>
@@ -206,7 +206,7 @@ export default function UserHome() {
                   <select
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value)}
-                    className="px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-green-500"
+                    className="px-2 sm:px-3 py-2 border rounded-md text-xs sm:text-sm focus:ring-2 focus:ring-green-500 flex-1 sm:flex-none min-w-[100px]"
                   >
                     <option value="all">All Status</option>
                     <option value="Found">Found</option>
@@ -304,7 +304,7 @@ export default function UserHome() {
                         </p>
                       </div>
                     ) : (
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                         {filtered.map((p: any) => {
                           const petId = p.id || p._id;
                           const createdDate = p.created_at || p.createdAt || p.date_submitted;
@@ -312,9 +312,9 @@ export default function UserHome() {
                           const imageUrl = petImage ? (petImage.startsWith('http') ? petImage : getImageUrl(petImage)) : 'https://via.placeholder.com/300x200?text=No+Image';
                           
                           return (
-                            <Card key={petId} className="bg-white rounded-xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-gray-100 hover:shadow-[0_8px_24px_rgba(0,0,0,0.1)] transition-all duration-300 overflow-hidden flex flex-col">
+                            <Card key={petId} className="bg-white rounded-lg sm:rounded-xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-gray-100 hover:shadow-[0_8px_24px_rgba(0,0,0,0.1)] transition-all duration-300 overflow-hidden flex flex-col">
                               {/* Pet Image */}
-                              <div className="relative h-48 w-full overflow-hidden bg-gray-100">
+                              <div className="relative h-40 sm:h-48 w-full overflow-hidden bg-gray-100">
                                 <img
                                   src={imageUrl}
                                   alt={p.name || 'Pet'}
@@ -345,29 +345,29 @@ export default function UserHome() {
                       </div>
 
                               {/* Card Content */}
-                              <CardContent className="p-5 flex-1 flex flex-col">
+                              <CardContent className="p-3 sm:p-4 md:p-5 flex-1 flex flex-col">
                                 <div className="flex-1">
-                                  <div className="space-y-2 mb-4">
-                                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                                      <PawPrint className="h-4 w-4 text-gray-400" />
+                                  <div className="space-y-1.5 sm:space-y-2 mb-3 sm:mb-4">
+                                    <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-gray-600">
+                                      <PawPrint className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400 flex-shrink-0" />
                                       <span className="font-medium">Type:</span>
-                                      <span className="capitalize">{getPetType(p)}</span>
+                                      <span className="capitalize truncate">{getPetType(p)}</span>
                                     </div>
-                                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                                      <PawPrint className="h-4 w-4 text-gray-400" />
+                                    <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-gray-600">
+                                      <PawPrint className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400 flex-shrink-0" />
                                       <span className="font-medium">Breed:</span>
-                                      <span>{p.breed || 'Unknown'}</span>
+                                      <span className="truncate">{p.breed || 'Unknown'}</span>
                                     </div>
-                                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                                      <Search className="h-4 w-4 text-gray-400" />
+                                    <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-gray-600">
+                                      <Search className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400 flex-shrink-0" />
                                       <span className="font-medium">Location:</span>
-                                      <span className="line-clamp-1">{p.location || 'N/A'}</span>
+                                      <span className="line-clamp-1 truncate">{p.location || 'N/A'}</span>
                                     </div>
                                     {createdDate && (
-                                      <div className="flex items-center gap-2 text-sm text-gray-600">
-                                        <Calendar className="h-4 w-4 text-gray-400" />
+                                      <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-gray-600">
+                                        <Calendar className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400 flex-shrink-0" />
                                         <span className="font-medium">Reported:</span>
-                                        <span>{format(new Date(createdDate), 'MMM dd, yyyy')}</span>
+                                        <span className="truncate">{format(new Date(createdDate), 'MMM dd, yyyy')}</span>
                                       </div>
                                     )}
                                   </div>
@@ -377,13 +377,14 @@ export default function UserHome() {
                                 <div className="flex gap-2 mt-auto">
                         <Button
                                     variant="default"
-                                    className="flex-1 bg-[#2BB6AF] hover:bg-[#239a94] text-white"
+                                    className="flex-1 bg-[#2BB6AF] hover:bg-[#239a94] text-white text-xs sm:text-sm py-2 sm:py-2.5"
                                     onClick={() => {
                                       navigate(`/pets/${petId}`);
                                     }}
                                   >
-                                    <Eye className="h-4 w-4 mr-2" />
-                                    View More
+                                    <Eye className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                                    <span className="hidden sm:inline">View More</span>
+                                    <span className="sm:hidden">View</span>
                         </Button>
                       </div>
                     </CardContent>

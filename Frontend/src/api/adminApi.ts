@@ -162,14 +162,22 @@ export const adminApi = {
    */
   async getAllChats(): Promise<any[]> {
     try {
-    const response = await apiClient.get('/admin/chats');
-      const data = response.data.data || response.data || [];
+      const response = await apiClient.get('/admin/chats');
+      // Backend returns {data: [...]} structure
+      const data = response.data?.data || response.data || [];
       console.log('API Response:', {
         status: response.status,
         dataLength: Array.isArray(data) ? data.length : 0,
-        hasError: !!response.data.error,
-        error: response.data.error
+        hasError: !!response.data?.error,
+        error: response.data?.error,
+        fullResponse: response.data // Log full response for debugging
       });
+      
+      if (!Array.isArray(data)) {
+        console.warn('getAllChats: Response data is not an array:', data);
+        return [];
+      }
+      
       return data;
     } catch (error: any) {
       console.error('Error in getAllChats:', error);

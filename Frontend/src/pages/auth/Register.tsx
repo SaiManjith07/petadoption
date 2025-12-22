@@ -348,10 +348,10 @@ export default function Register() {
       </div>
 
       {/* Right Panel - Form Section (Scrollable) */}
-      <div className="flex-1 lg:w-[55%] xl:w-[60%] h-screen overflow-y-auto overflow-x-hidden bg-[#F8FAFB] p-6 md:p-10 lg:p-[40px_50px] xl:p-[60px_80px] form-section">
+      <div className="flex-1 lg:w-[55%] xl:w-[60%] h-screen overflow-y-auto overflow-x-hidden bg-[#F8FAFB] p-4 sm:p-6 md:p-10 lg:p-[40px_50px] xl:p-[60px_80px] form-section">
         <div className="w-full max-w-[600px] mx-auto">
           {/* Mobile Welcome Section */}
-          <div className="lg:hidden mb-8 text-white p-8 rounded-[2rem] relative overflow-hidden border-2 border-[#2BB6AF] shadow-xl shadow-[#2BB6AF]/30">
+          <div className="lg:hidden mb-6 sm:mb-8 text-white p-6 sm:p-8 rounded-xl sm:rounded-[2rem] relative overflow-hidden border-2 border-[#2BB6AF] shadow-xl shadow-[#2BB6AF]/30">
             {/* Background Image */}
             <div className="absolute inset-0">
               <img
@@ -386,10 +386,10 @@ export default function Register() {
           </div>
 
           {/* Form Container */}
-          <div className="bg-white rounded-2xl p-6 md:p-10 shadow-[0_4px_20px_rgba(0,0,0,0.08)] border border-[#E8ECEF]">
-            <div className="mb-8">
-              <h2 className="text-4xl font-bold text-gray-900 mb-2">Create Account</h2>
-              <p className="text-gray-600 text-base">Join our community and start helping pets today</p>
+          <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 md:p-10 shadow-[0_4px_20px_rgba(0,0,0,0.08)] border border-[#E8ECEF]">
+            <div className="mb-6 sm:mb-8">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-2">Create Account</h2>
+              <p className="text-gray-600 text-sm sm:text-base">Join our community and start helping pets today</p>
             </div>
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">

@@ -608,33 +608,33 @@ export default function Admin() {
   }
 
   return (
-    <div className="p-6 lg:p-8 space-y-6 lg:space-y-8">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6 lg:space-y-8">
           {/* Dashboard Content - Only show when not viewing #shelter-reg */}
           {currentHash !== '#shelter-reg' && (
             <>
           {/* Key Metrics at a Glance - 4 Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
             {/* Pending Reports Card */}
-            <Card className="bg-white rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-gray-100 hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] transition-all duration-300">
-              <CardContent className="p-6">
+            <Card className="bg-white rounded-xl sm:rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-gray-100 hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] transition-all duration-300">
+              <CardContent className="p-4 sm:p-6">
                 <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="h-10 w-10 rounded-xl bg-[#E8F8EE] flex items-center justify-center">
-                        <AlertCircle className="h-5 w-5 text-[#2BB6AF]" />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-2 sm:mb-3">
+                      <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg sm:rounded-xl bg-[#E8F8EE] flex items-center justify-center flex-shrink-0">
+                        <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 text-[#2BB6AF]" />
                     </div>
-                      <span className="text-sm font-semibold text-gray-600">Pending Reports</span>
+                      <span className="text-xs sm:text-sm font-semibold text-gray-600 truncate">Pending Reports</span>
                     </div>
-                    <p className="text-4xl font-bold text-gray-900 mb-2">{dashboardData?.pending?.total || 0}</p>
-                    <div className="flex items-center gap-3 text-xs text-gray-500">
+                    <p className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-1 sm:mb-2">{dashboardData?.pending?.total || 0}</p>
+                    <div className="flex items-center gap-2 sm:gap-3 text-xs text-gray-500">
                       <span>{dashboardData?.pending?.found || 0} Found</span>
                       <span>•</span>
                       <span>{dashboardData?.pending?.lost || 0} Lost</span>
                     </div>
                   </div>
-                  <Link to="/admin/found-pets">
-                    <Button variant="ghost" size="icon" className="text-gray-400 hover:text-[#2BB6AF] hover:bg-[#E8F8EE] rounded-xl">
-                      <ArrowRight className="h-5 w-5" />
+                  <Link to="/admin/found-pets" className="flex-shrink-0 ml-2">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-10 sm:w-10 text-gray-400 hover:text-[#2BB6AF] hover:bg-[#E8F8EE] rounded-lg sm:rounded-xl">
+                      <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5" />
                     </Button>
                   </Link>
                 </div>
@@ -642,22 +642,22 @@ export default function Admin() {
             </Card>
 
             {/* Adoptions Card */}
-            <Card className="bg-white rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-gray-100 hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] transition-all duration-300">
-              <CardContent className="p-6">
+            <Card className="bg-white rounded-xl sm:rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-gray-100 hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] transition-all duration-300">
+              <CardContent className="p-4 sm:p-6">
                 <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="h-10 w-10 rounded-xl bg-blue-50 flex items-center justify-center">
-                        <Home className="h-5 w-5 text-blue-500" />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-2 sm:mb-3">
+                      <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg sm:rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
+                        <Home className="h-4 w-4 sm:h-5 sm:w-5 text-blue-500" />
                     </div>
-                      <span className="text-sm font-semibold text-gray-600">Adoptions</span>
+                      <span className="text-xs sm:text-sm font-semibold text-gray-600 truncate">Adoptions</span>
                     </div>
-                    <p className="text-4xl font-bold text-gray-900 mb-2">{pendingAdoptions.length}</p>
+                    <p className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-1 sm:mb-2">{pendingAdoptions.length}</p>
                     <p className="text-xs text-gray-500">Pending approval</p>
                   </div>
-                  <Link to="/admin/adopt">
-                    <Button variant="ghost" size="icon" className="text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-xl">
-                      <ArrowRight className="h-5 w-5" />
+                  <Link to="/admin/adopt" className="flex-shrink-0 ml-2">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-10 sm:w-10 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg sm:rounded-xl">
+                      <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5" />
                     </Button>
                   </Link>
                 </div>
@@ -665,26 +665,26 @@ export default function Admin() {
             </Card>
 
             {/* Total Users Card */}
-            <Card className="bg-white rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-gray-100 hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] transition-all duration-300">
-              <CardContent className="p-6">
+            <Card className="bg-white rounded-xl sm:rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-gray-100 hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] transition-all duration-300">
+              <CardContent className="p-4 sm:p-6">
                 <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="h-10 w-10 rounded-xl bg-[#E8F8EE] flex items-center justify-center">
-                        <Users className="h-5 w-5 text-[#2BB6AF]" />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-2 sm:mb-3">
+                      <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg sm:rounded-xl bg-[#E8F8EE] flex items-center justify-center flex-shrink-0">
+                        <Users className="h-4 w-4 sm:h-5 sm:w-5 text-[#2BB6AF]" />
                     </div>
-                      <span className="text-sm font-semibold text-gray-600">Total Users</span>
+                      <span className="text-xs sm:text-sm font-semibold text-gray-600 truncate">Total Users</span>
                     </div>
-                    <p className="text-4xl font-bold text-gray-900 mb-2">{dashboardData?.users?.total || 0}</p>
-                    <div className="flex items-center gap-3 text-xs text-gray-500">
+                    <p className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-1 sm:mb-2">{dashboardData?.users?.total || 0}</p>
+                    <div className="flex items-center gap-2 sm:gap-3 text-xs text-gray-500">
                       <span>{dashboardData?.users?.regular || 0} Regular</span>
                       <span>•</span>
                       <span>{dashboardData?.users?.rescuers || 0} Rescuers</span>
                     </div>
                   </div>
-                  <Link to="/admin/users">
-                    <Button variant="ghost" size="icon" className="text-gray-400 hover:text-[#2BB6AF] hover:bg-[#E8F8EE] rounded-xl">
-                      <ArrowRight className="h-5 w-5" />
+                  <Link to="/admin/users" className="flex-shrink-0 ml-2">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-10 sm:w-10 text-gray-400 hover:text-[#2BB6AF] hover:bg-[#E8F8EE] rounded-lg sm:rounded-xl">
+                      <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5" />
                     </Button>
                   </Link>
                 </div>
@@ -692,26 +692,26 @@ export default function Admin() {
             </Card>
 
             {/* Active Reports Card */}
-            <Card className="bg-white rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-gray-100 hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] transition-all duration-300">
-              <CardContent className="p-6">
+            <Card className="bg-white rounded-xl sm:rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-gray-100 hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] transition-all duration-300">
+              <CardContent className="p-4 sm:p-6">
                 <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="h-10 w-10 rounded-xl bg-[#E8F8EE] flex items-center justify-center">
-                      <PawPrint className="h-5 w-5 text-[#4CAF50]" />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-2 sm:mb-3">
+                      <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg sm:rounded-xl bg-[#E8F8EE] flex items-center justify-center flex-shrink-0">
+                      <PawPrint className="h-4 w-4 sm:h-5 sm:w-5 text-[#4CAF50]" />
                     </div>
-                      <span className="text-sm font-semibold text-gray-600">Active Reports</span>
+                      <span className="text-xs sm:text-sm font-semibold text-gray-600 truncate">Active Reports</span>
                     </div>
-                    <p className="text-4xl font-bold text-gray-900 mb-2">{dashboardData?.active?.total || 0}</p>
-                    <div className="flex items-center gap-3 text-xs text-gray-500">
+                    <p className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-1 sm:mb-2">{dashboardData?.active?.total || 0}</p>
+                    <div className="flex items-center gap-2 sm:gap-3 text-xs text-gray-500">
                       <span>{dashboardData?.active?.found || 0} Found</span>
                       <span>•</span>
                       <span>{dashboardData?.active?.lost || 0} Lost</span>
                     </div>
                   </div>
-                  <Link to="/admin/found-pets">
-                    <Button variant="ghost" size="icon" className="text-gray-400 hover:text-[#4CAF50] hover:bg-[#E8F8EE] rounded-xl">
-                      <ArrowRight className="h-5 w-5" />
+                  <Link to="/admin/found-pets" className="flex-shrink-0 ml-2">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-10 sm:w-10 text-gray-400 hover:text-[#4CAF50] hover:bg-[#E8F8EE] rounded-lg sm:rounded-xl">
+                      <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5" />
                     </Button>
                   </Link>
                 </div>
@@ -720,35 +720,35 @@ export default function Admin() {
           </div>
 
           {/* System Overview Analytics */}
-          <Card className="bg-white rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-gray-100">
-            <CardHeader className="border-b border-gray-100 pb-4">
+          <Card className="bg-white rounded-xl sm:rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-gray-100">
+            <CardHeader className="border-b border-gray-100 pb-3 sm:pb-4 px-4 sm:px-6">
                 <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle className="text-xl font-bold text-gray-900">System Overview</CardTitle>
-                  <CardDescription className="text-sm text-gray-500 mt-1">Platform analytics and insights</CardDescription>
+                  <CardTitle className="text-lg sm:text-xl font-bold text-gray-900">System Overview</CardTitle>
+                  <CardDescription className="text-xs sm:text-sm text-gray-500 mt-1">Platform analytics and insights</CardDescription>
                 </div>
-                <div className="h-10 w-10 rounded-xl bg-[#E8F8EE] flex items-center justify-center">
-                  <BarChart3 className="h-5 w-5 text-[#4CAF50]" />
+                <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg sm:rounded-xl bg-[#E8F8EE] flex items-center justify-center flex-shrink-0">
+                  <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-[#4CAF50]" />
                 </div>
               </div>
             </CardHeader>
-          <CardContent className="pt-6">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="text-center p-4 bg-[#E8F8EE] rounded-xl border border-[#4CAF50]/10">
-                  <p className="text-3xl font-bold text-gray-900">{dashboardData?.pets?.found || 0}</p>
-                  <p className="text-xs text-gray-600 mt-2 font-medium">Found Pets</p>
+          <CardContent className="pt-4 sm:pt-6 px-4 sm:px-6">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+                <div className="text-center p-3 sm:p-4 bg-[#E8F8EE] rounded-lg sm:rounded-xl border border-[#4CAF50]/10">
+                  <p className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">{dashboardData?.pets?.found || 0}</p>
+                  <p className="text-xs text-gray-600 mt-1 sm:mt-2 font-medium">Found Pets</p>
                             </div>
-                <div className="text-center p-4 bg-[#E8F8EE] rounded-xl border border-[#4CAF50]/10">
-                  <p className="text-3xl font-bold text-gray-900">{dashboardData?.pets?.lost || 0}</p>
-                  <p className="text-xs text-gray-600 mt-2 font-medium">Lost Pets</p>
+                <div className="text-center p-3 sm:p-4 bg-[#E8F8EE] rounded-lg sm:rounded-xl border border-[#4CAF50]/10">
+                  <p className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">{dashboardData?.pets?.lost || 0}</p>
+                  <p className="text-xs text-gray-600 mt-1 sm:mt-2 font-medium">Lost Pets</p>
                           </div>
-                <div className="text-center p-4 bg-[#E8F8EE] rounded-xl border border-[#4CAF50]/10">
-                  <p className="text-3xl font-bold text-gray-900">{dashboardData?.pets?.adoptable || 0}</p>
-                  <p className="text-xs text-gray-600 mt-2 font-medium">Adoptable</p>
+                <div className="text-center p-3 sm:p-4 bg-[#E8F8EE] rounded-lg sm:rounded-xl border border-[#4CAF50]/10">
+                  <p className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">{dashboardData?.pets?.adoptable || 0}</p>
+                  <p className="text-xs text-gray-600 mt-1 sm:mt-2 font-medium">Adoptable</p>
                             </div>
-                <div className="text-center p-4 bg-[#E8F8EE] rounded-xl border border-[#4CAF50]/10">
-                  <p className="text-3xl font-bold text-gray-900">{dashboardData?.matched || 0}</p>
-                  <p className="text-xs text-gray-600 mt-2 font-medium">Matched</p>
+                <div className="text-center p-3 sm:p-4 bg-[#E8F8EE] rounded-lg sm:rounded-xl border border-[#4CAF50]/10">
+                  <p className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">{dashboardData?.matched || 0}</p>
+                  <p className="text-xs text-gray-600 mt-1 sm:mt-2 font-medium">Matched</p>
                           </div>
                           </div>
                         </CardContent>
@@ -986,12 +986,12 @@ export default function Admin() {
           {/* Shelter Registrations Section - Only show when on #shelter-reg */}
           {currentHash === '#shelter-reg' && (
           <section id="shelter-reg" className="scroll-mt-8">
-            <Card className="bg-white rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-gray-100">
-              <CardHeader className="border-b border-gray-100 pb-4">
-                <div className="flex items-center justify-between">
+            <Card className="bg-white rounded-xl sm:rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-gray-100">
+              <CardHeader className="border-b border-gray-100 pb-3 sm:pb-4 px-4 sm:px-6">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
                   <div>
-                    <CardTitle className="text-2xl font-bold text-gray-900">Shelter Registrations</CardTitle>
-                    <CardDescription className="text-sm text-gray-500 mt-1">
+                    <CardTitle className="text-xl sm:text-2xl font-bold text-gray-900">Shelter Registrations</CardTitle>
+                    <CardDescription className="text-xs sm:text-sm text-gray-500 mt-1">
                       Review and manage shelter registration requests
                     </CardDescription>
                   </div>
@@ -1000,7 +1000,7 @@ export default function Admin() {
                       size="sm"
                       onClick={loadShelterRegistrations}
                       disabled={shelterRegistrationsLoading}
-                      className="gap-2"
+                      className="gap-2 text-xs sm:text-sm"
                     >
                       {shelterRegistrationsLoading ? (
                         <>
@@ -1016,31 +1016,31 @@ export default function Admin() {
                     </Button>
                   </div>
               </CardHeader>
-              <CardContent className="pt-6">
+              <CardContent className="pt-4 sm:pt-6 px-4 sm:px-6">
                 {shelterRegistrationsLoading ? (
-                  <div className="text-center py-12">
+                  <div className="text-center py-8 sm:py-12">
                     <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-green-600 border-r-transparent"></div>
-                    <p className="mt-4 text-gray-600">Loading shelter registrations...</p>
+                    <p className="mt-4 text-sm sm:text-base text-gray-600">Loading shelter registrations...</p>
                   </div>
                 ) : shelterRegistrations.length === 0 ? (
-                  <div className="text-center py-12">
-                    <Building2 className="h-16 w-16 mx-auto text-gray-400 mb-4" />
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">No Shelter Registrations</h3>
-                    <p className="text-gray-600">No shelter registration requests found.</p>
+                  <div className="text-center py-8 sm:py-12">
+                    <Building2 className="h-12 w-12 sm:h-16 sm:w-16 mx-auto text-gray-400 mb-4" />
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">No Shelter Registrations</h3>
+                    <p className="text-sm sm:text-base text-gray-600">No shelter registration requests found.</p>
                           </div>
                           ) : (
-                            <div className="space-y-4">
+                            <div className="space-y-3 sm:space-y-4">
                     {shelterRegistrations.map((shelter: any) => (
                       <Card key={shelter._id || shelter.id} className="hover:shadow-md transition-shadow">
-                                  <CardHeader>
-                                    <div className="flex items-start justify-between">
-                                      <div className="flex items-center gap-3">
-                                        <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-[#2BB6AF] to-[#239a94] flex items-center justify-center">
-                                          <Building2 className="h-6 w-6 text-white" />
+                                  <CardHeader className="p-4 sm:p-6">
+                                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
+                                      <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                                        <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-gradient-to-br from-[#2BB6AF] to-[#239a94] flex items-center justify-center flex-shrink-0">
+                                          <Building2 className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                                         </div>
-                                        <div>
-                                          <CardTitle className="text-lg">{shelter.shelter_name}</CardTitle>
-                                          <CardDescription>
+                                        <div className="min-w-0 flex-1">
+                                          <CardTitle className="text-base sm:text-lg truncate">{shelter.shelter_name}</CardTitle>
+                                          <CardDescription className="text-xs sm:text-sm truncate">
                                             {shelter.user?.name || 'Unknown'} • {shelter.user?.email || 'N/A'}
                                           </CardDescription>
                                         </div>
@@ -1060,12 +1060,12 @@ export default function Admin() {
                                         {shelter.status === 'pending' && <Clock className="h-3 w-3 mr-1" />}
                                         {shelter.status === 'approved' && <CheckCircle className="h-3 w-3 mr-1" />}
                                         {shelter.status === 'rejected' && <X className="h-3 w-3 mr-1" />}
-                                        {shelter.status || 'Pending'}
+                                        <span className="text-xs sm:text-sm">{shelter.status || 'Pending'}</span>
                                       </Badge>
                                     </div>
                                   </CardHeader>
-                                  <CardContent>
-                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                                  <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-3 sm:mb-4">
                                       <div>
                                         <p className="text-sm font-semibold text-gray-700 mb-1">Location</p>
                                         <p className="text-sm text-gray-600">
@@ -1087,10 +1087,10 @@ export default function Admin() {
                                       </div>
                                     </div>
                                     {shelter.status === 'pending' && (
-                                      <div className="flex gap-2">
+                                      <div className="flex flex-col sm:flex-row gap-2">
                                         <Button
                                           size="sm"
-                                          className="bg-green-600 hover:bg-green-700"
+                                          className="bg-green-600 hover:bg-green-700 text-xs sm:text-sm flex-1 sm:flex-none"
                                           onClick={() => {
                                             const notes = prompt('Add optional notes for approval:');
                                             if (notes !== null) {
@@ -1098,12 +1098,13 @@ export default function Admin() {
                                             }
                                           }}
                                         >
-                                          <CheckCircle className="mr-2 h-4 w-4" />
+                                          <CheckCircle className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                                           Approve
                                         </Button>
                                         <Button
                                           size="sm"
                                           variant="destructive"
+                                          className="text-xs sm:text-sm flex-1 sm:flex-none"
                                           onClick={() => {
                                             const reason = prompt('Please provide a reason for rejection:');
                                             if (reason && reason.trim()) {
@@ -1111,7 +1112,7 @@ export default function Admin() {
                                             }
                                           }}
                                         >
-                                          <X className="mr-2 h-4 w-4" />
+                                          <X className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                                           Reject
                                         </Button>
                                       </div>
@@ -1700,13 +1701,13 @@ export default function Admin() {
           {/* Modals and other components */}
       {/* Reject Modal */}
       {showRejectModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 sm:p-6 backdrop-blur-sm">
           <Card className="w-full max-w-md shadow-2xl">
-            <CardHeader>
-              <CardTitle>Reject Report</CardTitle>
-              <CardDescription>Provide a reason for rejection</CardDescription>
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="text-lg sm:text-xl">Reject Report</CardTitle>
+              <CardDescription className="text-sm">Provide a reason for rejection</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 p-4 sm:p-6 pt-0">
               <div>
                 <Label className="text-sm font-medium">Rejection Reason *</Label>
                 <textarea
@@ -1741,19 +1742,19 @@ export default function Admin() {
 
       {/* Verification/Accept Modal */}
       {showAcceptModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 sm:p-6 backdrop-blur-sm">
           <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
-            <CardHeader>
-              <CardTitle>
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="text-lg sm:text-xl">
                 {acceptType === 'report' ? 'Accept & Verify Report' : 'Accept & Verify Adoption Request'}
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-xs sm:text-sm">
                 {acceptType === 'report' 
                   ? 'Verify at least 2 parameters before accepting (photos, location, contact, identity)'
                   : 'Verify at least 3 parameters before accepting (identity, home check, references, financial stability)'}
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-4 sm:space-y-6 p-4 sm:p-6 pt-0">
               <div className="space-y-4">
                 <Label className="text-base font-semibold">Verification Parameters</Label>
                 

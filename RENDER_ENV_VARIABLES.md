@@ -1,5 +1,14 @@
 # Render Environment Variables
 
+## Required Environment Variables
+
+### CORS Configuration (Important for Frontend Access)
+
+1. **CORS_ALLOWED_ORIGINS** (Optional but Recommended)
+   - Value: `https://petadoption-amber.vercel.app,https://petadoption-frontend.onrender.com`
+   - Description: Comma-separated list of allowed frontend origins for CORS
+   - Note: The code already includes common production URLs, but you can override/add more here
+
 ## Required Environment Variables for Cloudinary Integration
 
 To deploy the Cloudinary integration on Render, you need to add the following environment variables in your Render dashboard:

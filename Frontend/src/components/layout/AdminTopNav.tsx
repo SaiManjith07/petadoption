@@ -10,6 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Logo } from '@/components/ui/Logo';
 import { useAuth } from '@/lib/auth';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { notificationsApi } from '@/api';
@@ -82,34 +83,30 @@ export function AdminTopNav({ onMenuToggle, sidebarOpen, onRefresh, isRefreshing
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-gray-200 bg-white shadow-sm">
-      <div className="flex h-16 items-center px-4 lg:px-6">
-        {/* Mobile Menu Toggle */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="lg:hidden mr-2"
-          onClick={onMenuToggle}
-        >
-          {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-        </Button>
-
-        {/* Left: Page Title with Current Section */}
-        <div className="flex-1">
-          <div className="flex items-center gap-2">
-            <h2 className="text-lg font-bold text-gray-900">Admin Control Panel</h2>
-            <ChevronRight className="h-4 w-4 text-gray-400" />
-            <div className="flex items-center gap-2 px-3 py-1 bg-[#E8F8EE] rounded-lg border border-[#2BB6AF]/20">
-              <div className="h-1.5 w-1.5 rounded-full bg-[#2BB6AF]"></div>
-              <span className="text-sm font-semibold text-[#2BB6AF]">{getCurrentSection()}</span>
-            </div>
-          </div>
-          <p className="text-xs text-gray-500 mt-1">Platform management & monitoring dashboard</p>
+      <div className="flex h-16 items-center justify-between px-4 lg:px-6 w-full">
+        {/* Logo and Website Name */}
+        <div className="flex items-center gap-3">
+          <Logo 
+            size="md" 
+            showText={true} 
+            showTagline={false}
+            linkTo="/admin"
+          />
         </div>
 
         {/* Right Side Actions */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
+          {/* Mobile Menu Toggle */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="lg:hidden"
+            onClick={onMenuToggle}
+          >
+            {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </Button>
           {/* Live System Indicator */}
-          <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-[#E8F8EE] rounded-lg border border-[#2BB6AF]/20">
+          <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 bg-[#E8F8EE] rounded-lg border border-[#2BB6AF]/20">
             <div className="relative">
               <Circle className="h-2 w-2 text-[#2BB6AF] fill-[#4CAF50]" />
               <div className="absolute inset-0 animate-ping">
@@ -125,11 +122,11 @@ export function AdminTopNav({ onMenuToggle, sidebarOpen, onRefresh, isRefreshing
             size="sm"
             onClick={onRefresh}
             disabled={isRefreshing}
-            className="hidden md:flex gap-2 text-gray-600 hover:text-[#2BB6AF] disabled:opacity-50"
+            className="hidden lg:flex gap-2 text-gray-600 hover:text-[#2BB6AF] disabled:opacity-50"
           >
             <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-            <span className="hidden lg:inline">
-              {isRefreshing ? 'Refreshing...' : 'Refresh Data'}
+            <span>
+              {isRefreshing ? 'Refreshing...' : 'Refresh'}
             </span>
           </Button>
 

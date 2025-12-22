@@ -66,7 +66,7 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center bg-white">
+    <div className="min-h-screen flex flex-col lg:flex-row items-center bg-white">
       {/* Left Panel - Welcome Section */}
       <div className="hidden lg:flex lg:w-[48%] text-white p-12 flex flex-col justify-between relative overflow-hidden rounded-r-[6rem] h-[90vh] my-auto shadow-2xl shadow-[#2BB6AF]/60">
         {/* Background Image */}
@@ -129,10 +129,10 @@ export default function Login() {
       </div>
 
       {/* Right Panel - Login Form */}
-      <div className="flex-1 lg:w-[52%] flex items-center justify-center p-8 bg-white">
+      <div className="flex-1 lg:w-[52%] flex items-center justify-center p-4 sm:p-6 lg:p-8 bg-white w-full">
         <div className="w-full max-w-lg">
           {/* Mobile Welcome Section */}
-          <div className="lg:hidden mb-8 text-white p-8 rounded-[2rem] relative overflow-hidden border-2 border-[#2BB6AF] shadow-xl shadow-[#2BB6AF]/30">
+          <div className="lg:hidden mb-6 sm:mb-8 text-white p-6 sm:p-8 rounded-[2rem] relative overflow-hidden border-2 border-[#2BB6AF] shadow-xl shadow-[#2BB6AF]/30">
             {/* Background Image */}
             <div className="absolute inset-0">
               <img
@@ -166,10 +166,10 @@ export default function Login() {
           </div>
 
           {/* Login Form Card */}
-          <div className="w-full max-w-[450px] mx-auto bg-white p-6 md:p-[40px] rounded-xl shadow-2xl shadow-[#2BB6AF]/40 border border-gray-100">
-            <div className="mb-8">
-              <h2 className="text-4xl font-bold text-gray-900 mb-2">Login</h2>
-              <p className="text-gray-600 text-base">Enter your credentials to access your account</p>
+          <div className="w-full max-w-[450px] mx-auto bg-white p-4 sm:p-6 md:p-[40px] rounded-xl shadow-2xl shadow-[#2BB6AF]/40 border border-gray-100">
+            <div className="mb-6 sm:mb-8">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-2">Login</h2>
+              <p className="text-gray-600 text-sm sm:text-base">Enter your credentials to access your account</p>
             </div>
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">

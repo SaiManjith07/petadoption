@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Logo } from '@/components/ui/Logo';
 import { useAuth } from '@/lib/auth';
 import { useNavigate } from 'react-router-dom';
 import { notificationsApi } from '@/api';
@@ -76,35 +77,43 @@ export function UserTopNav({ onMenuToggle, sidebarOpen, onRefresh }: UserTopNavP
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-gray-200/50 bg-white/90 backdrop-blur-sm shadow-sm">
-      <div className="flex h-14 items-center justify-between px-4 lg:px-4">
-        {/* Mobile Menu Toggle */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="lg:hidden rounded-lg hover:bg-gray-100"
-          onClick={onMenuToggle}
-        >
-          {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-        </Button>
-
-        {/* Middle: Quick Actions */}
-        <div className="flex items-center gap-1 md:gap-2 flex-1 justify-center">
-          {quickActions.map((action) => (
-            <Button
-              key={action.title}
-              variant="ghost"
-              className="rounded-lg hover:bg-gray-100 h-9 px-2 md:px-3 text-xs md:text-sm"
-              onClick={() => navigate(action.href)}
-              title={action.title}
-            >
-              <action.icon className="h-4 w-4 md:mr-2" />
-              <span className="hidden md:inline">{action.title}</span>
-            </Button>
-          ))}
+      <div className="flex h-16 items-center justify-between px-4 lg:px-6 w-full">
+        {/* Logo and Website Name */}
+        <div className="flex items-center gap-3">
+          <Logo 
+            size="md" 
+            showText={true} 
+            showTagline={false}
+            linkTo="/home"
+          />
         </div>
 
         {/* Right: Actions */}
-        <div className="flex items-center gap-2 ml-auto">
+        <div className="flex items-center gap-2">
+          {/* Mobile Menu Toggle */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="lg:hidden rounded-lg hover:bg-gray-100"
+            onClick={onMenuToggle}
+          >
+            {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </Button>
+
+          {/* Quick Actions - Hidden on mobile, shown on desktop */}
+          <div className="hidden lg:flex items-center gap-2">
+            {quickActions.map((action) => (
+              <Button
+                key={action.title}
+                variant="ghost"
+                className="rounded-lg hover:bg-gray-100 h-9 px-3 text-sm"
+                onClick={() => navigate(action.href)}
+              >
+                <action.icon className="h-4 w-4 mr-2" />
+                <span>{action.title}</span>
+              </Button>
+            ))}
+          </div>
           {/* Notifications */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

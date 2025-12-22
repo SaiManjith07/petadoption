@@ -264,11 +264,11 @@ export default function ReportLost() {
         />
         <div className="absolute inset-0 bg-gradient-to-br from-gray-50/95 via-white/95 to-green-50/30"></div>
       </div>
-      <div className="relative mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+      <div className="relative mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
         <Button 
           variant="ghost" 
           onClick={() => navigate(-1)} 
-          className="mb-6"
+          className="mb-4 sm:mb-6"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back
@@ -277,7 +277,7 @@ export default function ReportLost() {
         {/* Single Container with Image and Form */}
         <Card className="shadow-2xl border-2 border-gray-200 bg-white rounded-2xl overflow-hidden">
           {/* Top Image with Text Overlay */}
-          <div className="relative w-full h-56 sm:h-64 overflow-hidden">
+          <div className="relative w-full h-40 sm:h-56 md:h-64 overflow-hidden">
             <img
               src="https://images.unsplash.com/photo-1551717743-49959800b1f6?w=1200&q=80"
               alt="Lost pets - dogs, cats, and other animals waiting to be found"
@@ -288,14 +288,14 @@ export default function ReportLost() {
             <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/50" />
             
             {/* Text Overlay - Better Aligned */}
-            <div className="absolute inset-0 flex flex-col justify-center px-6 sm:px-8 lg:px-12 py-8">
+            <div className="absolute inset-0 flex flex-col justify-center px-4 sm:px-6 md:px-8 lg:px-12 py-4 sm:py-6 md:py-8">
               <div className="max-w-4xl">
-                <div className="flex items-start gap-4 mb-4">
-                  <div className="h-12 w-12 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center border-2 border-white/30 flex-shrink-0 shadow-lg">
-                    <Search className="h-7 w-7 text-white" />
+                <div className="flex items-start gap-2 sm:gap-4 mb-3 sm:mb-4">
+                  <div className="h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12 rounded-lg sm:rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center border-2 border-white/30 flex-shrink-0 shadow-lg">
+                    <Search className="h-4 w-4 sm:h-5 sm:w-5 md:h-7 md:w-7 text-white" />
                   </div>
                   <div className="flex-1">
-                    <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white drop-shadow-2xl leading-tight mb-3">
+                    <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-bold text-white drop-shadow-2xl leading-tight mb-2 sm:mb-3">
                       Report a Lost Pet
                     </h1>
                     <div className="flex items-start gap-2">
@@ -312,21 +312,21 @@ export default function ReportLost() {
 
           {/* Form Section */}
           <div className="bg-gradient-to-b from-white to-gray-50/50">
-            <CardHeader className="pt-8 pb-6 px-6 sm:px-8 border-b border-gray-200 bg-white">
-              <div className="flex items-center gap-4 mb-3">
-                <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-lg">
-                  <Search className="h-6 w-6 text-white" />
+            <CardHeader className="pt-4 sm:pt-6 md:pt-8 pb-4 sm:pb-6 px-4 sm:px-6 md:px-8 border-b border-gray-200 bg-white">
+              <div className="flex items-center gap-2 sm:gap-4 mb-2 sm:mb-3">
+                <div className="h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12 rounded-lg sm:rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-lg flex-shrink-0">
+                  <Search className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-white" />
                 </div>
                 <div>
-                  <CardTitle className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">Pet Details</CardTitle>
-                  <CardDescription className="text-sm text-gray-600">
+                  <CardTitle className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-gray-900 mb-1">Pet Details</CardTitle>
+                  <CardDescription className="text-xs sm:text-sm text-gray-600">
                     Fill in the details below and we'll automatically search for matching found pets in real-time
                   </CardDescription>
                 </div>
               </div>
             </CardHeader>
             <form onSubmit={handleSubmit(onSubmit)}>
-              <CardContent className="space-y-8 px-6 sm:px-8 lg:px-12 py-8">
+              <CardContent className="space-y-4 sm:space-y-6 md:space-y-8 px-4 sm:px-6 md:px-8 lg:px-12 py-4 sm:py-6 md:py-8">
               
               <Alert className="bg-[#E8F8EE] border-2 border-[#2BB6AF]/30 rounded-xl">
                 <AlertCircle className="h-5 w-5 text-[#2BB6AF]" />
@@ -343,7 +343,7 @@ export default function ReportLost() {
                 </div>
 
                 {/* First Row - Species and Breed */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                 {/* Species - Manual Input */}
                 <div className="space-y-2">
                   <Label htmlFor="species" className="text-sm font-semibold">Species *</Label>

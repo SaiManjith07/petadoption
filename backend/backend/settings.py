@@ -233,7 +233,9 @@ if CORS_ORIGINS_ENV:
 # Add common production frontend URLs (always add these)
 production_origins = [
     "https://petadoption-amber.vercel.app",  # Vercel frontend
+    "https://petadoption-amber.vercel.app/",  # Vercel frontend with trailing slash
     "https://petadoption-frontend.onrender.com",  # Render frontend (if deployed)
+    "https://petadoption-frontend.onrender.com/",  # Render frontend with trailing slash
 ]
 
 # Always add production origins
@@ -241,16 +243,24 @@ for origin in production_origins:
     if origin not in CORS_ALLOWED_ORIGINS:
         CORS_ALLOWED_ORIGINS.append(origin)
 
+# Also allow any vercel.app subdomain (for preview deployments)
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https://.*\.vercel\.app$",
+    r"^https://.*\.onrender\.com$",
+]
+
+# In development, also allow localhost
+if DEBUG:
+    CORS_ALLOWED_ORIGIN_REGEXES.extend([
+        r"^http://localhost:\d+$",
+        r"^http://127\.0\.0\.1:\d+$",
+    ])
+
 # Debug: Print CORS origins (only in development or if explicitly enabled)
 if DEBUG or os.getenv('DEBUG_CORS', '').lower() == 'true':
     print(f"[CORS] Allowed Origins: {CORS_ALLOWED_ORIGINS}")
 
-# In development, allow all localhost origins (more flexible)
-if DEBUG:
-    CORS_ALLOWED_ORIGIN_REGEXES = [
-        r"^http://localhost:\d+$",
-        r"^http://127\.0\.0\.1:\d+$",
-    ]
+# Note: CORS_ALLOWED_ORIGIN_REGEXES is now defined above for both dev and production
 
 CORS_ALLOW_CREDENTIALS = True
 

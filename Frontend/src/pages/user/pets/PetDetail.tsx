@@ -357,8 +357,8 @@ export default function PetDetail() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 lg:gap-8">
           {/* Left Column - Main Content (8 columns) */}
           <div className="lg:col-span-8 space-y-6">
             {/* Hero Image Section */}
@@ -416,8 +416,8 @@ export default function PetDetail() {
 
             {/* Pet Name & Basic Info */}
             <Card className="border-0 shadow-lg">
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between mb-6">
+              <CardContent className="p-4 sm:p-6">
+                <div className="flex flex-col sm:flex-row items-start justify-between mb-4 sm:mb-6 gap-3 sm:gap-0">
                   <div>
                     <h1 className="text-3xl font-bold text-gray-900 mb-2">
                       {pet.name || pet.breed || 'Unnamed Pet'}
@@ -429,7 +429,7 @@ export default function PetDetail() {
                 </div>
 
                 {/* Quick Stats Grid */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 mb-4 sm:mb-6">
                   {pet.category?.name && (
                     <div className="text-center p-4 bg-gray-50 rounded-lg">
                       <PawPrint className="h-5 w-5 text-[#2BB6AF] mx-auto mb-2" />

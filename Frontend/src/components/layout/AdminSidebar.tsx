@@ -228,7 +228,7 @@ export const AdminSidebar = ({ isOpen = true, onClose }: AdminSidebarProps) => {
       {/* Mobile Overlay */}
       {isOpen && (
         <div 
-          className="fixed inset-0 bg-black/50 z-30 lg:hidden" 
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden" 
           onClick={onClose}
         />
       )}
@@ -237,22 +237,15 @@ export const AdminSidebar = ({ isOpen = true, onClose }: AdminSidebarProps) => {
       <div className={cn(
         "w-64 bg-white border-r border-gray-200 shadow-[0_4px_12px_rgba(0,0,0,0.05)]",
         "relative overflow-hidden flex flex-col",
-        // Desktop: fixed position
-        "lg:fixed lg:left-0 lg:top-0 lg:h-screen lg:z-40",
+        // Desktop: fixed position below navbar
+        "lg:fixed lg:left-0 lg:top-16 lg:h-[calc(100vh-4rem)] lg:z-40",
         // Mobile: fixed and slideable
-        "fixed left-0 top-0 h-screen z-50 transform transition-transform duration-300",
+        "fixed left-0 top-16 h-[calc(100vh-4rem)] z-50 transform transition-transform duration-300",
         isOpen ? "translate-x-0" : "-translate-x-full",
         "lg:translate-x-0"
       )}>
-        {/* Logo Section */}
-        <div className="px-2 py-2 border-b border-gray-200 h-16 flex items-center">
-          <div className="w-full min-w-0">
-            <Logo size="sm" showText={true} showTagline={false} />
-          </div>
-        </div>
-
         {/* Navigation Menu */}
-        <nav className="px-4 py-6 space-y-1 overflow-y-auto flex-1 min-h-0">
+        <nav className="px-4 py-4 sm:py-6 space-y-1 overflow-y-auto flex-1 min-h-0">
           {menuItems.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.path, item.hash);

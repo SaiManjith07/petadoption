@@ -95,25 +95,14 @@ export function UserSidebar({ isOpen = true, onClose }: UserSidebarProps) {
       {/* Sidebar */}
       <aside
         className={cn(
-          'fixed left-0 top-0 z-50 h-full w-72 bg-gradient-to-b from-white via-gray-50/50 to-white border-r border-gray-200/80 shadow-xl transition-transform duration-300 ease-in-out',
+          'fixed left-0 top-16 z-50 h-[calc(100vh-4rem)] w-72 bg-gradient-to-b from-white via-gray-50/50 to-white border-r border-gray-200/80 shadow-xl transition-transform duration-300 ease-in-out',
           'lg:translate-x-0',
           isOpen ? 'translate-x-0' : '-translate-x-full'
         )}
       >
         <div className="flex h-full flex-col">
-          {/* Logo/Header */}
-          <div className="flex h-24 items-center border-b border-gray-200/80 px-4 bg-gradient-to-r from-[#2BB6AF]/5 to-transparent">
-            <Logo 
-              size="md" 
-              showText={true} 
-              showTagline={false}
-              linkTo="/home"
-              className="group"
-            />
-          </div>
-
           {/* Navigation Menu */}
-          <nav className="flex-1 space-y-1 px-3 py-3">
+          <nav className="flex-1 space-y-1 px-3 py-4 sm:py-6 overflow-y-auto">
             {menuItems.map((item) => {
               const Icon = item.icon;
               const isActive = location.pathname === item.path || 
