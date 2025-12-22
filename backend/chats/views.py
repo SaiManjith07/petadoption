@@ -42,13 +42,23 @@ class ChatRoomListView(generics.ListCreateAPIView):
                 print(f"Warning: Could not use select_related: {e}")
                 pass  # Fields might not exist, that's okay
             
+            # CRITICAL: Prefetch participants to ensure they're loaded
             try:
-                queryset = queryset.prefetch_related('participants', 'messages')
-            except Exception:
+                from django.db.models import Prefetch
+                queryset = queryset.prefetch_related(
+                    Prefetch('participants', queryset=None),  # Load all participants
+                    'messages'
+                )
+            except Exception as e:
                 try:
-                    queryset = queryset.prefetch_related('participants')
-                except Exception:
-                    pass  # If prefetch fails, continue without it
+                    # Fallback: simpler prefetch
+                    queryset = queryset.prefetch_related('participants', 'messages')
+                except Exception as e2:
+                    print(f"Warning: Could not prefetch participants: {e2}")
+                    try:
+                        queryset = queryset.prefetch_related('participants')
+                    except Exception:
+                        pass  # If prefetch fails, continue without it
             
             return queryset.distinct()
             
