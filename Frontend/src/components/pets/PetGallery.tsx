@@ -127,7 +127,7 @@ export const PetGallery = ({
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 w-full overflow-x-hidden">
       {/* Filters */}
       {showFilters && (
         <div className="bg-white rounded-2xl border-2 border-gray-200 shadow-xl p-6 lg:p-8">
@@ -216,7 +216,7 @@ export const PetGallery = ({
             </p>
           </div>
         ) : (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 w-full">
             {filteredPets.map((pet) => {
               const petId = pet.id || pet._id || '';
               return (

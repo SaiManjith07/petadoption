@@ -32,8 +32,8 @@ export function UserLayout({ children, title, subtitle, onRefresh }: UserLayoutP
       </div>
 
       {/* Main Content - Updated margins and padding */}
-      <div className="flex flex-col min-w-0 lg:ml-[260px] pt-[70px] transition-all duration-300">
-        <main className="flex-1 overflow-y-auto bg-[#F5F7FA] min-h-[calc(100vh-70px)]">
+      <div className="flex flex-col min-w-0 lg:ml-[260px] pt-[70px] transition-all duration-300 overflow-x-hidden">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden bg-[#F5F7FA] min-h-[calc(100vh-70px)] w-full">
           {title && (
             <div className="border-b border-[#E5E7EB] bg-white px-6 lg:px-8 py-6">
               <h1 className="text-3xl font-bold text-[#111827]">{title}</h1>

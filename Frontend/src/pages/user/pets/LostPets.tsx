@@ -44,8 +44,8 @@ export default function LostPets() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-green-50/30 -m-6 lg:-m-8">
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-green-50/30 -m-6 lg:-m-8 overflow-x-hidden">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 w-full">
         {/* Hero Section */}
         <div className="relative rounded-2xl mt-6 mb-6 overflow-hidden">
           <div className="absolute inset-0">
