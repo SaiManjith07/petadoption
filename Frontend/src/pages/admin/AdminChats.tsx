@@ -333,9 +333,10 @@ export default function AdminChats() {
           </div>
         </div>
 
-            {/* Stats Cards */}
-            {chatStats && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        {/* Stats Cards */}
+        {chatStats && (
+          <div className="mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                 <Card>
                   <CardHeader className="pb-3">
                     <CardTitle className="text-sm font-medium text-gray-600">Pending Requests</CardTitle>
@@ -376,11 +377,12 @@ export default function AdminChats() {
                     <div className="text-3xl font-bold text-red-600">{chatStats.rejected_requests || 0}</div>
                   </CardContent>
                 </Card>
-              </div>
-            )}
+            </div>
+          </div>
+        )}
 
-            {/* Tabs */}
-            <Card>
+        {/* Tabs */}
+        <Card>
               <CardHeader>
                 <div className="flex gap-4 border-b">
                   <button
@@ -862,7 +864,7 @@ export default function AdminChats() {
             </DialogHeader>
             {selectedRequest && (
               <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Request ID</p>
                   <p className="text-sm font-mono">{selectedRequest.id || selectedRequest._id}</p>
@@ -938,51 +940,51 @@ export default function AdminChats() {
                     </p>
                   </div>
                 )}
+              </div>
+              {selectedRequest.message && (
+                <div>
+                  <p className="text-sm font-medium text-gray-600 mb-2">Request Message</p>
+                  <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                    <p className="text-sm text-gray-700 whitespace-pre-wrap">{selectedRequest.message}</p>
+                  </div>
                 </div>
-                {selectedRequest.message && (
-                  <div>
-                    <p className="text-sm font-medium text-gray-600 mb-2">Request Message</p>
-                    <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                      <p className="text-sm text-gray-700 whitespace-pre-wrap">{selectedRequest.message}</p>
-                    </div>
+              )}
+              {selectedRequest.admin_notes && (
+                <div>
+                  <p className="text-sm font-medium text-gray-600 mb-2">Admin Notes</p>
+                  <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                    <p className="text-sm text-gray-700 whitespace-pre-wrap">{selectedRequest.admin_notes}</p>
                   </div>
-                )}
-                {selectedRequest.admin_notes && (
-                  <div>
-                    <p className="text-sm font-medium text-gray-600 mb-2">Admin Notes</p>
-                    <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-                      <p className="text-sm text-gray-700 whitespace-pre-wrap">{selectedRequest.admin_notes}</p>
-                    </div>
-                  </div>
-                )}
-                {selectedRequest.status === 'pending' && (
-                  <div className="flex gap-2 pt-4 border-t">
-                    <Button
-                      onClick={() => {
-                        handleRespondToRequest(selectedRequest.id || selectedRequest._id, true);
-                        setRequestDialogOpen(false);
-                      }}
-                      className="flex-1 bg-green-600 hover:bg-green-700"
-                    >
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      Approve & Forward to Owner
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      onClick={() => {
-                        handleRespondToRequest(selectedRequest.id || selectedRequest._id, false);
-                        setRequestDialogOpen(false);
-                      }}
-                      className="flex-1"
-                    >
-                      <XCircle className="h-4 w-4 mr-2" />
-                      Reject
-                    </Button>
-                  </div>
-                )}
+                </div>
+              )}
+              {selectedRequest.status === 'pending' && (
+                <div className="flex gap-2 pt-4 border-t">
+                  <Button
+                    onClick={() => {
+                      handleRespondToRequest(selectedRequest.id || selectedRequest._id, true);
+                      setRequestDialogOpen(false);
+                    }}
+                    className="flex-1 bg-green-600 hover:bg-green-700"
+                  >
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    Approve & Forward to Owner
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={() => {
+                      handleRespondToRequest(selectedRequest.id || selectedRequest._id, false);
+                      setRequestDialogOpen(false);
+                    }}
+                    className="flex-1"
+                  >
+                    <XCircle className="h-4 w-4 mr-2" />
+                    Reject
+                  </Button>
+                </div>
+              )}
               </div>
             )}
-        </DialogContent>
+          </DialogContent>
         </Dialog>
 
         {/* View Chat Dialog */}
