@@ -71,14 +71,22 @@ class ChatRoomListView(generics.ListCreateAPIView):
                 try:
                     # Get other participant
                     other_participant = None
+                    # Force evaluation of participants - ensure they're loaded
                     participants = list(room.participants.all())
+                    
+                    # If no participants found, try to get from user_a and user_b (legacy support)
+                    if not participants:
+                        if hasattr(room, 'user_a') and room.user_a:
+                            participants.append(room.user_a)
+                        if hasattr(room, 'user_b') and room.user_b:
+                            participants.append(room.user_b)
                     
                     # Build full participants list with all user details
                     participants_list = []
                     for p in participants:
                         participant_data = {
-                            'id': p.id,
-                            'name': getattr(p, 'name', p.email),
+                                'id': p.id,
+                                'name': getattr(p, 'name', p.email),
                             'email': p.email,
                             'is_staff': getattr(p, 'is_staff', False),
                             'is_superuser': getattr(p, 'is_superuser', False),
@@ -89,6 +97,11 @@ class ChatRoomListView(generics.ListCreateAPIView):
                         # Set other_participant (not current user)
                         if p.id != request.user.id:
                             other_participant = participant_data
+                    
+                    # Debug logging
+                    print(f"Room {room.id} (room_id: {room.room_id}): Found {len(participants_list)} participants")
+                    for p in participants_list:
+                        print(f"  - Participant: {p['name']} (ID: {p['id']}, Admin: {p['is_staff'] or p['is_superuser']})")
                     
                     # Get last message
                     last_message = None
