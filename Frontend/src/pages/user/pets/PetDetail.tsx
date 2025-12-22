@@ -378,30 +378,53 @@ export default function PetDetail() {
             <ArrowLeft className="h-4 w-4" />
             Back
           </Button>
-          <Button 
-            variant="outline" 
-            onClick={() => {
-              if (navigator.share) {
-                navigator.share({ title: pet.name, url: window.location.href });
-              } else {
-                navigator.clipboard.writeText(window.location.href);
-                toast({ title: 'Link copied!' });
-              }
-            }}
-            className="px-5 py-2.5 rounded-lg border-[#E5E7EB] bg-white hover:bg-[#F9FAFB] transition-all duration-300 shadow-sm hover:shadow-md"
-          >
-            <Share2 className="h-4 w-4 mr-2" />
-            Share
-          </Button>
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+            {isAdmin && (
+              <>
+                <Button 
+                  variant="outline" 
+                  onClick={() => navigate(`/pets/${pet.id}/edit`)}
+                  className="flex items-center gap-2 px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg border-blue-500 bg-blue-500 text-white hover:bg-blue-600 transition-all duration-300 shadow-sm hover:shadow-md text-sm sm:text-base"
+                >
+                  <Edit className="h-4 w-4" />
+                  <span className="hidden sm:inline">Edit</span>
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowDeleteDialog(true)}
+                  className="flex items-center gap-2 px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg border-red-500 bg-red-500 text-white hover:bg-red-600 transition-all duration-300 shadow-sm hover:shadow-md text-sm sm:text-base"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  <span className="hidden sm:inline">Delete</span>
+                </Button>
+              </>
+            )}
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                if (navigator.share) {
+                  navigator.share({ title: pet.name, url: window.location.href });
+                } else {
+                  navigator.clipboard.writeText(window.location.href);
+                  toast({ title: 'Link copied!' });
+                }
+              }}
+              className="px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg border-[#E5E7EB] bg-white hover:bg-[#F9FAFB] transition-all duration-300 shadow-sm hover:shadow-md text-sm sm:text-base"
+            >
+              <Share2 className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Share</span>
+            </Button>
+          </div>
         </div>
 
         {/* Full Width Pet Image - 600px height */}
-        <div className="relative w-full h-[600px] rounded-2xl overflow-hidden shadow-[0_4px_12px_rgba(0,0,0,0.1)] mb-6 bg-white">
+        <div className="relative w-full h-[600px] rounded-2xl overflow-hidden shadow-[0_4px_12px_rgba(0,0,0,0.1)] mb-6 bg-[#f5f5f5] flex items-center justify-center">
           {fullImageUrl && !imageError ? (
             <img
               src={fullImageUrl}
               alt={pet.name || 'Pet'}
-              className="w-full h-full object-cover object-center"
+              className="w-full h-full max-h-[600px] object-contain object-center"
+              style={{ maxWidth: '100%', maxHeight: '100%' }}
               onError={() => setImageError(true)}
             />
           ) : (
@@ -587,9 +610,22 @@ export default function PetDetail() {
                 <span className="text-2xl">📍</span>
                 Location Details
               </h3>
-              <div className="p-3 bg-[#F9FAFB] rounded-lg mb-4 flex items-center gap-2.5">
-                <span className="text-lg">📌</span>
-                <div className="text-base font-semibold text-[#1F2937]">{locationFound}</div>
+              <div className="space-y-3 mb-4">
+                <div className="p-3 bg-[#F9FAFB] rounded-lg flex items-center gap-2.5">
+                  <span className="text-lg">📌</span>
+                  <div className="text-base font-semibold text-[#1F2937]">{locationFound}</div>
+                </div>
+                
+                {/* Google Maps Link */}
+                <a
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(locationFound + (pet.pincode ? ` ${pet.pincode}` : ''))}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#f0f9ff] text-[#0ea5e9] rounded-lg font-medium text-sm hover:bg-[#e0f2fe] hover:text-[#0284c7] transition-all duration-300 shadow-sm hover:shadow-md"
+                >
+                  <MapPin className="h-4 w-4" />
+                  View on Google Maps
+                </a>
               </div>
               
               {/* Map Preview */}
