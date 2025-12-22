@@ -856,13 +856,13 @@ export default function AdminChats() {
 
         {/* View Request Dialog */}
         <Dialog open={requestDialogOpen} onOpenChange={setRequestDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Chat Request Details</DialogTitle>
-            <DialogDescription>Complete information about the chat request</DialogDescription>
-          </DialogHeader>
-          {selectedRequest && (
-            <div className="space-y-4">
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Chat Request Details</DialogTitle>
+              <DialogDescription>Complete information about the chat request</DialogDescription>
+            </DialogHeader>
+            {selectedRequest && (
+              <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Request ID</p>
