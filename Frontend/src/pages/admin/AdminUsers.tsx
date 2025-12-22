@@ -534,7 +534,7 @@ export default function AdminUsers() {
                     <Label>Address</Label>
                     <p className="text-sm text-gray-600">
                       {selectedUser.address.full_address || 
-                       `${selectedUser.address.city || ''}, ${selectedUser.address.state || ''} ${selectedUser.address.pincode || ''}`}
+                        (selectedUser.address.city || '') + ', ' + (selectedUser.address.state || '') + ' ' + (selectedUser.address.pincode || '')}
                     </p>
                   </div>
                 )}
@@ -591,7 +591,7 @@ export default function AdminUsers() {
                 </div>
               </div>
             )}
-        </DialogContent>
+          </DialogContent>
         </Dialog>
       </div>
     </AdminLayout>
