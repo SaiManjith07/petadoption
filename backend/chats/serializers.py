@@ -395,7 +395,7 @@ class ChatRequestSerializer(serializers.ModelSerializer):
     target = UserSerializer(read_only=True, allow_null=True)
     verified_by_admin = UserSerializer(read_only=True, allow_null=True)
     pet = serializers.SerializerMethodField()
-    pet_id = serializers.SerializerMethodField()
+    pet_id = serializers.IntegerField(read_only=True, source='pet_id', allow_null=True)
     target_id = serializers.SerializerMethodField()
     requester_id = serializers.IntegerField(write_only=True, required=False)
     room_id = serializers.SerializerMethodField()
@@ -463,14 +463,6 @@ class ChatRequestSerializer(serializers.ModelSerializer):
             print(traceback.format_exc())
         return None
     
-    def get_pet_id(self, obj):
-        """Get pet_id safely."""
-        try:
-            if hasattr(obj, 'pet') and obj.pet:
-                return obj.pet.id
-        except Exception as e:
-            print(f"Error getting pet_id in ChatRequest: {e}")
-        return None
     
     class Meta:
         model = ChatRequest
