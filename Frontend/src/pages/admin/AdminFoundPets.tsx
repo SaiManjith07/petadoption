@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Shield, CheckCircle, X, AlertCircle, Search, ArrowLeft, Eye, Stethoscope } from 'lucide-react';
+import { Shield, CheckCircle, X, AlertCircle, Search, ArrowLeft, Eye, Stethoscope, ChevronLeft, ChevronRight } from 'lucide-react';
 import { MedicalDetailsDialog } from '@/components/admin/MedicalDetailsDialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -38,6 +38,9 @@ export default function AdminFoundPets() {
   const [rejectReason, setRejectReason] = useState('');
   const [showMedicalDialog, setShowMedicalDialog] = useState(false);
   const [selectedPetForMedical, setSelectedPetForMedical] = useState<{ id: number; name?: string } | null>(null);
+  const [showImageModal, setShowImageModal] = useState(false);
+  const [selectedImages, setSelectedImages] = useState<string[]>([]);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   useEffect(() => {
     if (!isAdmin) {
@@ -409,31 +412,102 @@ export default function AdminFoundPets() {
               <Card key={pet._id} className="hover:shadow-md transition-shadow">
                 <CardContent className="pt-6">
                   <div className="flex flex-col md:flex-row gap-6">
-                    {/* Pet Images */}
-                    {(pet.images && pet.images.length > 0) || pet.image ? (
-                      <div className="flex gap-2">
-                        {pet.images && pet.images.length > 0 ? (
-                          pet.images.slice(0, 3).map((img: any, idx: number) => {
-                            const imageUrl = img.image_url || img.image || img.url;
-                            const photoUrl = imageUrl ? (imageUrl.startsWith('http') ? imageUrl : getImageUrl(imageUrl)) : 'https://via.placeholder.com/128';
-                            return (
-                              <img
-                                key={idx}
-                                src={photoUrl}
-                                alt={`Pet ${idx + 1}`}
-                                className="h-32 w-32 rounded-lg object-cover border border-gray-200"
-                              />
-                            );
-                          })
-                        ) : pet.image ? (
-                          <img
-                            src={pet.image_url || getImageUrl(pet.image) || 'https://via.placeholder.com/128'}
-                            alt="Pet"
-                            className="h-32 w-32 rounded-lg object-cover border border-gray-200"
-                          />
-                        ) : null}
-                      </div>
-                    ) : null}
+                    {/* Pet Images - Using Cloudinary URLs */}
+                    {(() => {
+                      // Get all available image URLs
+                      const imageUrls: string[] = [];
+                      
+                      // Priority 1: Use cloudinary_url (primary Cloudinary URL)
+                      if (pet.cloudinary_url) {
+                        imageUrls.push(pet.cloudinary_url);
+                      }
+                      
+                      // Priority 2: Use image_url from serializer
+                      if (pet.image_url && pet.image_url !== pet.cloudinary_url) {
+                        imageUrls.push(pet.image_url);
+                      }
+                      
+                      // Priority 3: Use photos array from serializer (includes all photos)
+                      if (pet.photos && Array.isArray(pet.photos) && pet.photos.length > 0) {
+                        pet.photos.forEach((photo: string) => {
+                          if (photo && !imageUrls.includes(photo)) {
+                            imageUrls.push(photo);
+                          }
+                        });
+                      }
+                      
+                      // Priority 4: Use images array (from PetImage model)
+                      if (pet.images && Array.isArray(pet.images) && pet.images.length > 0) {
+                        pet.images.forEach((img: any) => {
+                          const imgUrl = img.cloudinary_url || img.image_url || img.image || img.url;
+                          if (imgUrl && !imageUrls.includes(imgUrl)) {
+                            imageUrls.push(imgUrl);
+                          }
+                        });
+                      }
+                      
+                      // Priority 5: Fallback to single image field
+                      if (pet.image && !imageUrls.length) {
+                        const fallbackUrl = pet.image.startsWith('http') ? pet.image : getImageUrl(pet.image);
+                        if (fallbackUrl) imageUrls.push(fallbackUrl);
+                      }
+                      
+                      // Display images if available
+                      if (imageUrls.length > 0) {
+                        return (
+                          <div className="flex gap-2 flex-wrap">
+                            {imageUrls.slice(0, 3).map((imgUrl: string, idx: number) => (
+                              <div 
+                                key={idx} 
+                                className="relative group"
+                                onClick={() => {
+                                  setSelectedImages(imageUrls);
+                                  setCurrentImageIndex(idx);
+                                  setShowImageModal(true);
+                                }}
+                              >
+                                <img
+                                  src={imgUrl}
+                                  alt={`Pet photo ${idx + 1}`}
+                                  className="h-32 w-32 rounded-lg object-cover border-2 border-gray-200 hover:border-[#2BB6AF] transition-all cursor-pointer shadow-md hover:shadow-lg"
+                                  onError={(e) => {
+                                    // Fallback if image fails to load
+                                    (e.target as HTMLImageElement).src = 'https://via.placeholder.com/128?text=No+Image';
+                                  }}
+                                />
+                                <div className="absolute inset-0 bg-black/0 hover:bg-black/10 rounded-lg transition-all flex items-center justify-center">
+                                  <Eye className="h-6 w-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                                </div>
+                                {idx === 0 && imageUrls.length > 1 && (
+                                  <div className="absolute top-1 right-1 bg-[#2BB6AF] text-white text-xs px-2 py-1 rounded">
+                                    +{imageUrls.length - 1}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                            {imageUrls.length > 3 && (
+                              <div 
+                                className="h-32 w-32 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-500 text-sm cursor-pointer hover:border-[#2BB6AF] transition-all"
+                                onClick={() => {
+                                  setSelectedImages(imageUrls);
+                                  setCurrentImageIndex(0);
+                                  setShowImageModal(true);
+                                }}
+                              >
+                                +{imageUrls.length - 3} more
+                              </div>
+                            )}
+                          </div>
+                        );
+                      }
+                      
+                      // No images available
+                      return (
+                        <div className="h-32 w-32 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-400 text-sm">
+                          No image
+                        </div>
+                      );
+                    })()}
 
                     {/* Pet Details */}
                     <div className="flex-1 space-y-3">
@@ -697,6 +771,81 @@ export default function AdminFoundPets() {
           petId={selectedPetForMedical.id}
           petName={selectedPetForMedical.name}
         />
+      )}
+
+      {/* Image Viewer Modal */}
+      {showImageModal && selectedImages.length > 0 && (
+        <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4" onClick={() => setShowImageModal(false)}>
+          <div className="relative max-w-4xl w-full max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            {/* Close Button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute top-4 right-4 z-10 bg-white/10 hover:bg-white/20 text-white"
+              onClick={() => setShowImageModal(false)}
+            >
+              <X className="h-6 w-6" />
+            </Button>
+            
+            {/* Main Image */}
+            <div className="flex-1 flex items-center justify-center mb-4">
+              <img
+                src={selectedImages[currentImageIndex]}
+                alt={`Pet photo ${currentImageIndex + 1}`}
+                className="max-w-full max-h-[70vh] object-contain rounded-lg shadow-2xl"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = 'https://via.placeholder.com/400?text=Image+Not+Available';
+                }}
+              />
+            </div>
+            
+            {/* Navigation */}
+            {selectedImages.length > 1 && (
+              <div className="flex items-center justify-center gap-4 bg-white/10 backdrop-blur-sm rounded-lg p-4">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-white hover:bg-white/20"
+                  onClick={() => setCurrentImageIndex((prev) => (prev > 0 ? prev - 1 : selectedImages.length - 1))}
+                >
+                  <ChevronLeft className="h-6 w-6" />
+                </Button>
+                
+                <div className="text-white text-sm font-medium">
+                  {currentImageIndex + 1} / {selectedImages.length}
+                </div>
+                
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-white hover:bg-white/20"
+                  onClick={() => setCurrentImageIndex((prev) => (prev < selectedImages.length - 1 ? prev + 1 : 0))}
+                >
+                  <ChevronRight className="h-6 w-6" />
+                </Button>
+              </div>
+            )}
+            
+            {/* Thumbnail Strip */}
+            {selectedImages.length > 1 && (
+              <div className="flex gap-2 overflow-x-auto pb-2 mt-4">
+                {selectedImages.map((imgUrl: string, idx: number) => (
+                  <img
+                    key={idx}
+                    src={imgUrl}
+                    alt={`Thumbnail ${idx + 1}`}
+                    className={`h-16 w-16 rounded object-cover cursor-pointer border-2 transition-all ${
+                      idx === currentImageIndex 
+                        ? 'border-[#2BB6AF] scale-110' 
+                        : 'border-transparent hover:border-gray-400'
+                    }`}
+                    onClick={() => setCurrentImageIndex(idx)}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );
