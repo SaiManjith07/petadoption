@@ -160,9 +160,13 @@ export const adminApi = {
   /**
    * Get all chats
    */
-  async getAllChats(): Promise<any[]> {
+  async getAllChats(params?: { include_inactive?: boolean }): Promise<any[]> {
     try {
-      const response = await apiClient.get('/admin/chats');
+      const queryParams: any = {};
+      if (params?.include_inactive) {
+        queryParams.include_inactive = 'true';
+      }
+      const response = await apiClient.get('/chats/rooms/', { params: queryParams });
       // Backend returns {data: [...]} structure
       const data = response.data?.data || response.data || [];
       console.log('API Response:', {

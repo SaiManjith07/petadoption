@@ -231,11 +231,48 @@ export default function Chat() {
     }
   };
 
-  const handleMarkReunified = () => {
-    toast({
-      title: 'Pet marked as reunified!',
-      description: 'Both parties will be notified. Great work!',
-    });
+  const handleMarkReunified = async () => {
+    if (!room || !isAdmin) {
+      toast({
+        title: 'Error',
+        description: 'Only admins can mark pets as reunited',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      const actualRoomId = room.room_id || room.id || roomId;
+      if (!actualRoomId) {
+        throw new Error('Room ID not found');
+      }
+      
+      const result = await chatApi.markReunified(actualRoomId);
+      
+      toast({
+        title: 'Success!',
+        description: 'Pet marked as reunited. Chat has been closed.',
+      });
+      
+      // Update room status locally
+      setRoom({ ...room, is_active: false });
+      
+      // Navigate back to chats after a short delay
+      setTimeout(() => {
+        if (isAdmin) {
+          navigate('/admin/chats');
+        } else {
+          navigate('/chats');
+        }
+      }, 2000);
+    } catch (error: any) {
+      console.error('Error marking pet as reunited:', error);
+      toast({
+        title: 'Error',
+        description: error?.response?.data?.error || error?.message || 'Failed to mark pet as reunited',
+        variant: 'destructive',
+      });
+    }
   };
 
   if (loading) {

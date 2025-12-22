@@ -21,12 +21,18 @@ class ChatRoomListView(generics.ListCreateAPIView):
         user = self.request.user
         
         try:
+            # Get active status from query params (default to True for active chats)
+            include_inactive = self.request.query_params.get('include_inactive', 'false').lower() == 'true'
+            
             # Use participants filter (most reliable, always works)
             # This should work regardless of whether user_a/user_b fields exist
             queryset = ChatRoom.objects.filter(
-                participants=user,
-                is_active=True
+                participants=user
             )
+            
+            # Filter by active status unless include_inactive is True
+            if not include_inactive:
+                queryset = queryset.filter(is_active=True)
             
             # Try to prefetch, but don't fail if it doesn't work
             try:

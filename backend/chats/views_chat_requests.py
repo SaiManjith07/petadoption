@@ -767,6 +767,114 @@ def get_all_chat_requests(request):
         )
 
 
+@api_view(['POST'])
+@permission_classes([IsAdminUser])
+def mark_pet_reunified(request, room_id):
+    """Mark pet as reunited and close the chat room (admin only).
+    
+    This endpoint:
+    1. Marks the pet as 'Reunited' status
+    2. Sets is_reunited=True and reunited_at timestamp
+    3. Sets reunited_with_owner to the owner/user
+    4. Closes the chat room (is_active=False)
+    5. Updates chat request status to 'reunited' or 'closed'
+    """
+    try:
+        # Get the chat room
+        try:
+            chat_room = ChatRoom.objects.get(room_id=room_id)
+        except ChatRoom.DoesNotExist:
+            try:
+                chat_room = ChatRoom.objects.get(id=int(room_id))
+            except (ChatRoom.DoesNotExist, ValueError):
+                return Response(
+                    {'error': 'Chat room not found'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+        
+        # Get the chat request associated with this room
+        chat_request = None
+        if hasattr(chat_room, 'chat_request') and chat_room.chat_request:
+            chat_request = chat_room.chat_request
+        else:
+            # Try to find chat request by room
+            chat_request = ChatRequest.objects.filter(
+                admin_verification_room=chat_room
+            ).first()
+            if not chat_request:
+                chat_request = ChatRequest.objects.filter(
+                    final_chat_room=chat_room
+                ).first()
+        
+        if not chat_request:
+            return Response(
+                {'error': 'No chat request found for this room'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Get the pet
+        pet = chat_request.pet
+        if not pet:
+            return Response(
+                {'error': 'No pet associated with this chat request'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Get the owner (reunited_with_owner)
+        # Priority: target user (claimant), then requester, then pet owner
+        owner = None
+        if chat_request.target:
+            owner = chat_request.target
+        elif chat_request.requester:
+            owner = chat_request.requester
+        elif hasattr(pet, 'posted_by') and pet.posted_by:
+            owner = pet.posted_by
+        elif hasattr(pet, 'owner') and pet.owner:
+            owner = pet.owner
+        
+        # Update pet status
+        from pets.models import Pet
+        pet.adoption_status = 'Reunited'
+        pet.is_reunited = True
+        pet.reunited_at = timezone.now()
+        if owner:
+            pet.reunited_with_owner = owner
+        pet.save()
+        
+        # Close the chat room
+        chat_room.is_active = False
+        chat_room.save()
+        
+        # Update chat request status (add 'reunited' status if needed, or use 'closed')
+        # For now, we'll add a note in admin_notes
+        if not chat_request.admin_notes:
+            chat_request.admin_notes = 'Pet marked as reunited by admin'
+        else:
+            chat_request.admin_notes += '\n\nPet marked as reunited by admin'
+        chat_request.save()
+        
+        return Response({
+            'message': 'Pet marked as reunited successfully',
+            'pet_id': pet.id,
+            'pet_status': pet.adoption_status,
+            'chat_room_closed': True,
+            'reunited_with': {
+                'id': owner.id if owner else None,
+                'name': getattr(owner, 'name', owner.email) if owner else None,
+                'email': owner.email if owner else None
+            } if owner else None
+        }, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        import traceback
+        print(f"Error in mark_pet_reunified: {e}")
+        print(traceback.format_exc())
+        return Response(
+            {'error': str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_my_chat_requests(request):

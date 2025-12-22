@@ -47,6 +47,7 @@ export default function AdminChats() {
   const { user } = useAuth();
   const [chatRequests, setChatRequests] = useState<any[]>([]);
   const [activeChats, setActiveChats] = useState<any[]>([]);
+  const [closedChats, setClosedChats] = useState<any[]>([]);
   const [chatStats, setChatStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -56,16 +57,16 @@ export default function AdminChats() {
   const [selectedRequest, setSelectedRequest] = useState<any>(null);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [requestDialogOpen, setRequestDialogOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'requests' | 'chats'>('requests');
+  const [activeTab, setActiveTab] = useState<'requests' | 'chats' | 'closed'>('requests');
 
   useEffect(() => {
     loadData();
   }, []);
   
-  // Reload data when switching to Active Chats tab
+  // Reload data when switching tabs
   useEffect(() => {
-    if (activeTab === 'chats') {
-      console.log('Switched to Active Chats tab, reloading data...');
+    if (activeTab === 'chats' || activeTab === 'closed') {
+      console.log(`Switched to ${activeTab} tab, reloading data...`);
       loadData();
     }
   }, [activeTab]);
@@ -93,27 +94,41 @@ export default function AdminChats() {
         });
       }
       
-      // Handle chats
+      // Handle chats - load both active and closed
       if (chatsResult.status === 'fulfilled') {
         const chats = Array.isArray(chatsResult.value) ? chatsResult.value : [];
         console.log('✓ Loaded chats from API:', chats.length);
+        
+        // Separate active and closed chats
+        const active = chats.filter((c: any) => c.is_active !== false);
+        const closed = chats.filter((c: any) => c.is_active === false);
+        
         if (chats.length > 0) {
           console.log('Sample chat data:', JSON.stringify(chats[0], null, 2));
-          console.log('All chat room IDs:', chats.map((c: any) => ({
-            id: c.id,
-            roomId: c.roomId || c.room_id,
-            isActive: c.is_active,
-            participants: c.participants?.length || 0
-          })));
+          console.log('Active chats:', active.length, 'Closed chats:', closed.length);
         } else {
           console.warn('⚠ No chats returned from API. Check backend logs.');
         }
-        setActiveChats(chats);
+        setActiveChats(active);
+        setClosedChats(closed);
       } else {
         console.error('✗ Error loading chats:', chatsResult.reason);
         console.error('Error details:', chatsResult.reason?.response?.data);
         console.error('Error status:', chatsResult.reason?.response?.status);
         setActiveChats([]);
+        setClosedChats([]);
+      }
+      
+      // Also load closed chats separately if on closed tab
+      if (activeTab === 'closed') {
+        try {
+          const closedChatsResult = await adminApi.getAllChats({ include_inactive: true });
+          const allChats = Array.isArray(closedChatsResult) ? closedChatsResult : [];
+          const closed = allChats.filter((c: any) => c.is_active === false);
+          setClosedChats(closed);
+        } catch (error) {
+          console.warn('Could not load closed chats separately:', error);
+        }
       }
       
       // Handle stats
@@ -298,6 +313,8 @@ export default function AdminChats() {
   });
 
   const filteredChats = activeChats.filter((chat: any) => {
+    // Only show active chats
+    if (chat.is_active === false) return false;
     const roomId = chat.roomId || chat.room_id || chat.id || '';
     const petId = chat.petId || chat.pet_id || chat.pet?.id || '';
     const participants = chat.participants || [];
@@ -404,6 +421,16 @@ export default function AdminChats() {
                     }`}
                   >
                     Active Chats ({activeChats.length}) {activeChats.length > 0 && `(${filteredChats.length} shown)`}
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('closed')}
+                    className={`pb-2 px-1 font-medium transition-colors ${
+                      activeTab === 'closed'
+                        ? 'border-b-2 border-gray-600 text-gray-600'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    Closed/Reunited ({closedChats.length})
                   </button>
                 </div>
               </CardHeader>
@@ -845,6 +872,116 @@ export default function AdminChats() {
                                 </TableCell>
                               </TableRow>
                             );
+                            })}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Closed/Reunited Chats Tab */}
+                {activeTab === 'closed' && (
+                  <div className="space-y-4">
+                    {loading ? (
+                      <div className="text-center py-12">
+                        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-600"></div>
+                        <p className="mt-4 text-gray-600">Loading closed chats...</p>
+                      </div>
+                    ) : closedChats.length === 0 ? (
+                      <div className="text-center py-12">
+                        <CheckCircle className="h-16 w-16 mx-auto text-gray-400 mb-4" />
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">No Closed Chats</h3>
+                        <p className="text-gray-600">
+                          No closed or reunited chats at the moment.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Type</TableHead>
+                              <TableHead>Room ID</TableHead>
+                              <TableHead>Pet</TableHead>
+                              <TableHead>Participants</TableHead>
+                              <TableHead>Status</TableHead>
+                              <TableHead>Closed Date</TableHead>
+                              <TableHead className="text-right">Actions</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {closedChats.map((chat: any, index: number) => {
+                              const roomId = chat.roomId || chat.room_id || chat.id || chat._id;
+                              const pet = chat.pet || chat.chat_request?.pet;
+                              const participants = chat.participants || [];
+                              
+                              return (
+                                <TableRow key={roomId || `closed-chat-${index}`} className="opacity-75">
+                                  <TableCell>
+                                    <Badge variant="outline" className="bg-gray-50 text-gray-700">
+                                      {chat.type || 'General'}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell>
+                                    <span className="font-mono text-sm">{roomId}</span>
+                                  </TableCell>
+                                  <TableCell>
+                                    {pet ? (
+                                      <div>
+                                        <p className="text-sm font-medium">
+                                          {pet.name || `Pet #${pet.id}`}
+                                        </p>
+                                        <Badge 
+                                          variant={pet.adoption_status === 'Reunited' ? 'default' : 'outline'}
+                                          className={pet.adoption_status === 'Reunited' ? 'bg-green-100 text-green-700' : ''}
+                                        >
+                                          {pet.adoption_status || 'N/A'}
+                                        </Badge>
+                                      </div>
+                                    ) : (
+                                      <span className="text-gray-400">N/A</span>
+                                    )}
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="flex flex-col gap-1">
+                                      {participants.slice(0, 2).map((p: any) => (
+                                        <span key={p.id || p} className="text-sm">
+                                          {p.name || p.email || p}
+                                        </span>
+                                      ))}
+                                      {participants.length > 2 && (
+                                        <span className="text-xs text-gray-500">+{participants.length - 2} more</span>
+                                      )}
+                                    </div>
+                                  </TableCell>
+                                  <TableCell>
+                                    <Badge variant="outline" className="bg-gray-100 text-gray-700">
+                                      <CheckCircle className="h-3 w-3 mr-1" />
+                                      Closed/Reunited
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell>
+                                    {chat.updated_at ? format(new Date(chat.updated_at), 'MMM d, yyyy') : 'N/A'}
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => {
+                                        const roomIdToOpen = chat.roomId || chat.room_id || chat.id;
+                                        if (roomIdToOpen) {
+                                          navigate(`/admin/chats/view/${roomIdToOpen}`);
+                                        }
+                                      }}
+                                      className="gap-1"
+                                    >
+                                      <Eye className="h-4 w-4" />
+                                      View
+                                    </Button>
+                                  </TableCell>
+                                </TableRow>
+                              );
                             })}
                           </TableBody>
                         </Table>

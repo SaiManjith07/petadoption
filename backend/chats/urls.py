@@ -30,6 +30,9 @@ urlpatterns = [
     # Admin read-only chat view
     path('rooms/<str:room_id>/admin-view/', views_chat_requests.admin_view_chat_readonly, name='admin-view-chat-readonly'),
     
+    # Mark pet as reunited (admin only)
+    path('rooms/<str:room_id>/mark-reunified/', views_chat_requests.mark_pet_reunified, name='mark-pet-reunified'),
+    
     # Legacy endpoints (for backward compatibility)
     path('requests/', views.get_chat_requests, name='get-chat-requests'),
     path('requests/owner', views.get_chat_requests_for_owner, name='get-chat-requests-for-owner'),

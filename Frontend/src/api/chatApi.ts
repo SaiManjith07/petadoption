@@ -431,5 +431,18 @@ export const chatApi = {
       throw error;
     }
   },
+
+  /**
+   * Mark pet as reunited and close chat (admin only)
+   */
+  async markReunified(roomId: string | number): Promise<any> {
+    try {
+      const response = await apiClient.post(`/chats/rooms/${roomId}/mark-reunified/`);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error marking pet as reunited:', error);
+      throw error;
+    }
+  },
 };
 
