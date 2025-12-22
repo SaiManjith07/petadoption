@@ -42,15 +42,13 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { adminApi, chatApi } from '@/api';
-import { AdminSidebar } from '@/components/layout/AdminSidebar';
-import { AdminTopNav } from '@/components/layout/AdminTopNav';
+import { AdminLayout } from '@/components/layout/AdminLayout';
 import { useAuth } from '@/lib/auth';
 
 export default function AdminUsers() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user: currentUser } = useAuth();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -246,35 +244,17 @@ export default function AdminUsers() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Fixed Sidebar - Desktop */}
-      <div className="hidden lg:block">
-        <AdminSidebar isOpen={true} onClose={() => setSidebarOpen(false)} />
-      </div>
-      
-      {/* Mobile Sidebar */}
-      <div className="lg:hidden">
-        <AdminSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      </div>
-
-      {/* Main Content */}
-      <div className="flex flex-col min-w-0 lg:ml-64">
-        <AdminTopNav 
-          onMenuToggle={() => setSidebarOpen(!sidebarOpen)} 
-          sidebarOpen={sidebarOpen}
-          onRefresh={loadUsers}
-        />
-
-        {/* Main Content Area - Scrollable */}
-        <main className="flex-1 overflow-y-auto">
-          <div className="p-6 space-y-6">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">User Management</h1>
-                <p className="text-gray-600 mt-1">Manage all users, roles, and permissions</p>
-              </div>
+    <AdminLayout onRefresh={loadUsers}>
+      <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8 w-full">
+        {/* Header */}
+        <div className="mb-4 sm:mb-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-4">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">User Management</h1>
+              <p className="text-sm sm:text-base text-gray-600 mt-1">Manage all users, roles, and permissions</p>
             </div>
+          </div>
+        </div>
 
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -497,12 +477,10 @@ export default function AdminUsers() {
               </CardContent>
             </Card>
           </div>
-        </main>
-      </div>
 
-      {/* View User Dialog */}
-      <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        {/* View User Dialog */}
+        <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>User Details</DialogTitle>
             <DialogDescription>Complete information about the user</DialogDescription>
@@ -563,15 +541,15 @@ export default function AdminUsers() {
             </div>
           )}
         </DialogContent>
-      </Dialog>
+        </Dialog>
 
-      {/* Edit User Dialog */}
-      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit User</DialogTitle>
-            <DialogDescription>Update user role and status</DialogDescription>
-          </DialogHeader>
+        {/* Edit User Dialog */}
+        <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit User</DialogTitle>
+              <DialogDescription>Update user role and status</DialogDescription>
+            </DialogHeader>
           {selectedUser && (
             <div className="space-y-4">
               <div>
@@ -614,8 +592,9 @@ export default function AdminUsers() {
             </div>
           )}
         </DialogContent>
-      </Dialog>
-    </div>
+        </Dialog>
+      </div>
+    </AdminLayout>
   );
 }
 

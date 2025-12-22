@@ -79,7 +79,7 @@ export function UserTopNav({ onMenuToggle, sidebarOpen, onRefresh }: UserTopNavP
     <header className="fixed top-0 left-0 right-0 z-50 w-full border-b border-gray-200/50 bg-white/90 backdrop-blur-sm shadow-sm">
       <div className="flex h-16 items-center justify-between px-4 lg:px-6 w-full">
         {/* Logo and Website Name */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-shrink-0">
           <Logo 
             size="md" 
             showText={true} 
@@ -88,8 +88,23 @@ export function UserTopNav({ onMenuToggle, sidebarOpen, onRefresh }: UserTopNavP
           />
         </div>
 
+        {/* Center: Quick Actions */}
+        <div className="hidden lg:flex items-center gap-2 absolute left-1/2 -translate-x-1/2">
+          {quickActions.map((action) => (
+            <Button
+              key={action.title}
+              variant="ghost"
+              className="rounded-lg hover:bg-gray-100 h-9 px-3 text-sm"
+              onClick={() => navigate(action.href)}
+            >
+              <action.icon className="h-4 w-4 mr-2" />
+              <span>{action.title}</span>
+            </Button>
+          ))}
+        </div>
+
         {/* Right: Actions */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 ml-auto">
           {/* Mobile Menu Toggle */}
           <Button
             variant="ghost"
@@ -99,21 +114,6 @@ export function UserTopNav({ onMenuToggle, sidebarOpen, onRefresh }: UserTopNavP
           >
             {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
-
-          {/* Quick Actions - Hidden on mobile, shown on desktop */}
-          <div className="hidden lg:flex items-center gap-2">
-            {quickActions.map((action) => (
-              <Button
-                key={action.title}
-                variant="ghost"
-                className="rounded-lg hover:bg-gray-100 h-9 px-3 text-sm"
-                onClick={() => navigate(action.href)}
-              >
-                <action.icon className="h-4 w-4 mr-2" />
-                <span>{action.title}</span>
-              </Button>
-            ))}
-          </div>
           {/* Notifications */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

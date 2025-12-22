@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Plus, Eye, Edit, Trash2, Filter, Grid, List, MoreVertical } from 'lucide-react';
+import { Search, Plus, Eye, Edit, Trash2, Filter, Grid, List, MoreVertical, PawPrint } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -19,8 +19,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { AdminSidebarNew } from '@/components/layout/AdminSidebarNew';
-import { AdminTopNav } from '@/components/layout/AdminTopNav';
+import { AdminLayout } from '@/components/layout/AdminLayout';
 import { adminApi } from '@/api';
 import { getImageUrl } from '@/services/api';
 import { useToast } from '@/hooks/use-toast';
@@ -37,7 +36,6 @@ export default function AllPets() {
   const [speciesFilter, setSpeciesFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
-  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     if (!isAdmin) {
@@ -118,23 +116,18 @@ export default function AllPets() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <AdminSidebarNew isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      
-      <div className="lg:ml-64 flex flex-col min-h-screen">
-        <AdminTopNav onMenuToggle={() => setSidebarOpen(!sidebarOpen)} sidebarOpen={sidebarOpen} />
-        
-        <main className="flex-1 p-6 lg:p-8">
-          {/* Header Section */}
-          <div className="mb-6">
-            <div className="flex items-center justify-between mb-4">
+    <AdminLayout>
+      <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8 w-full">
+        {/* Header Section */}
+          <div className="mb-4 sm:mb-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-4">
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">All Pets</h1>
-                <p className="text-gray-600 mt-1">Manage and view all pets in the system</p>
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">All Pets</h1>
+                <p className="text-sm sm:text-base text-gray-600 mt-1">Manage and view all pets in the system</p>
               </div>
               <Button
                 onClick={() => navigate('/pets/report-found')}
-                className="bg-[#2BB6AF] hover:bg-[#239a94] text-white"
+                className="bg-[#2BB6AF] hover:bg-[#239a94] text-white w-full sm:w-auto"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Add Pet
@@ -142,7 +135,7 @@ export default function AllPets() {
             </div>
             
             {/* Breadcrumb */}
-            <nav className="text-sm text-gray-500 mb-6">
+            <nav className="text-xs sm:text-sm text-gray-500 mb-4 sm:mb-6">
               <span className="hover:text-gray-700 cursor-pointer">Dashboard</span>
               <span className="mx-2">/</span>
               <span className="text-gray-900 font-medium">All Pets</span>
@@ -150,28 +143,28 @@ export default function AllPets() {
           </div>
 
           {/* Search and Filters */}
-          <Card className="mb-6">
-            <CardContent className="pt-6">
-              <div className="flex flex-col md:flex-row gap-4">
+          <Card className="mb-4 sm:mb-6">
+            <CardContent className="pt-4 sm:pt-6 px-4 sm:px-6">
+              <div className="flex flex-col gap-3 sm:gap-4">
                 {/* Search */}
-                <div className="flex-1">
+                <div className="flex-1 w-full">
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                     <Input
                       placeholder="Search by name, breed, or location..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-10"
+                      className="pl-10 w-full"
                     />
                   </div>
                 </div>
 
                 {/* Filters */}
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   <select
                     value={speciesFilter}
                     onChange={(e) => setSpeciesFilter(e.target.value)}
-                    className="px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-[#4CAF50] focus:border-[#4CAF50]"
+                    className="px-2 sm:px-3 py-2 border rounded-lg text-xs sm:text-sm focus:ring-2 focus:ring-[#4CAF50] focus:border-[#4CAF50] flex-1 sm:flex-none min-w-[120px]"
                   >
                     <option value="all">All Species</option>
                     <option value="dog">Dog</option>
@@ -183,7 +176,7 @@ export default function AllPets() {
                   <select
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value)}
-                    className="px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-[#4CAF50] focus:border-[#4CAF50]"
+                    className="px-2 sm:px-3 py-2 border rounded-lg text-xs sm:text-sm focus:ring-2 focus:ring-[#4CAF50] focus:border-[#4CAF50] flex-1 sm:flex-none min-w-[120px]"
                   >
                     <option value="all">All Status</option>
                     <option value="Found">Found</option>
@@ -250,49 +243,63 @@ export default function AllPets() {
                   <Table>
                     <TableHeader>
                       <TableRow className="bg-gray-50">
-                        <TableHead className="w-20">Photo</TableHead>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Species</TableHead>
-                        <TableHead>Breed</TableHead>
-                        <TableHead>Age</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Location</TableHead>
-                        <TableHead>Reported</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
+                        <TableHead className="w-16 sm:w-20">Photo</TableHead>
+                        <TableHead className="min-w-[100px]">Name</TableHead>
+                        <TableHead className="hidden sm:table-cell">Species</TableHead>
+                        <TableHead className="hidden md:table-cell">Breed</TableHead>
+                        <TableHead className="hidden lg:table-cell">Age</TableHead>
+                        <TableHead className="min-w-[80px]">Status</TableHead>
+                        <TableHead className="hidden xl:table-cell">Location</TableHead>
+                        <TableHead className="hidden lg:table-cell">Reported</TableHead>
+                        <TableHead className="text-right w-12">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {filteredPets.map((pet: any) => {
                         const petId = pet.id || pet._id;
-                        const imageUrl = pet.images?.[0]?.image || pet.image;
+                        const imageUrl = pet.images?.[0]?.image || pet.image || pet.cloudinary_url;
                         return (
                           <TableRow key={petId} className="hover:bg-gray-50">
                             <TableCell>
-                              <div className="h-12 w-12 rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center">
+                              <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center">
                                 {imageUrl ? (
                                   <img
-                                    src={getImageUrl(imageUrl)}
+                                    src={imageUrl.startsWith('http') ? imageUrl : getImageUrl(imageUrl)}
                                     alt={pet.name}
                                     className="h-full w-full object-cover"
                                   />
                                 ) : (
-                                  <PawPrint className="h-6 w-6 text-gray-400" />
+                                  <PawPrint className="h-5 w-5 sm:h-6 sm:w-6 text-gray-400" />
                                 )}
                               </div>
                             </TableCell>
-                            <TableCell className="font-medium">{pet.name || 'Unnamed'}</TableCell>
-                            <TableCell>{pet.category?.name || pet.species || 'Unknown'}</TableCell>
-                            <TableCell>{pet.breed || 'Mixed'}</TableCell>
-                            <TableCell>
+                            <TableCell className="font-medium text-sm sm:text-base">
+                              <div className="flex flex-col">
+                                <span>{pet.name || 'Unnamed'}</span>
+                                <span className="text-xs text-gray-500 sm:hidden">
+                                  {pet.category?.name || pet.species || 'Unknown'}
+                                </span>
+                              </div>
+                            </TableCell>
+                            <TableCell className="hidden sm:table-cell">{pet.category?.name || pet.species || 'Unknown'}</TableCell>
+                            <TableCell className="hidden md:table-cell">{pet.breed || 'Mixed'}</TableCell>
+                            <TableCell className="hidden lg:table-cell text-sm">
                               {pet.age ? `${pet.age} ${pet.age_unit || 'years'}` : 'N/A'}
                               {pet.gender && ` (${pet.gender})`}
                             </TableCell>
-                            <TableCell>{getStatusBadge(pet)}</TableCell>
-                            <TableCell className="text-sm text-gray-600">
+                            <TableCell>
+                              <div className="flex flex-col gap-1">
+                                {getStatusBadge(pet)}
+                                <span className="text-xs text-gray-500 lg:hidden xl:hidden">
+                                  {pet.location ? (pet.location.length > 15 ? pet.location.substring(0, 15) + '...' : pet.location) : 'N/A'}
+                                </span>
+                              </div>
+                            </TableCell>
+                            <TableCell className="hidden xl:table-cell text-sm text-gray-600">
                               {pet.location || 'N/A'}
                               {pet.pincode && ` - ${pet.pincode}`}
                             </TableCell>
-                            <TableCell className="text-sm text-gray-600">
+                            <TableCell className="hidden lg:table-cell text-sm text-gray-600">
                               {pet.created_at || pet.createdAt
                                 ? format(new Date(pet.created_at || pet.createdAt), 'MMM d, yyyy')
                                 : 'N/A'}
@@ -300,7 +307,7 @@ export default function AllPets() {
                             <TableCell className="text-right">
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon">
+                                  <Button variant="ghost" size="icon" className="h-8 w-8">
                                     <MoreVertical className="h-4 w-4" />
                                   </Button>
                                 </DropdownMenuTrigger>
@@ -336,29 +343,29 @@ export default function AllPets() {
               </CardContent>
             </Card>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
               {filteredPets.map((pet: any) => {
                 const petId = pet.id || pet._id;
                 const imageUrl = pet.images?.[0]?.image || pet.image;
                 return (
                   <Card key={petId} className="overflow-hidden hover:shadow-lg transition-shadow">
-                    <div className="relative h-48 bg-gray-100">
+                    <div className="relative h-40 sm:h-48 bg-gray-100">
                       {imageUrl ? (
                         <img
-                          src={getImageUrl(imageUrl)}
+                          src={imageUrl.startsWith('http') ? imageUrl : getImageUrl(imageUrl)}
                           alt={pet.name}
                           className="h-full w-full object-cover"
                         />
                       ) : (
                         <div className="h-full w-full flex items-center justify-center">
-                          <PawPrint className="h-16 w-16 text-gray-400" />
+                          <PawPrint className="h-12 w-12 sm:h-16 sm:w-16 text-gray-400" />
                         </div>
                       )}
                       <div className="absolute top-2 right-2">{getStatusBadge(pet)}</div>
                     </div>
-                    <CardContent className="p-4">
-                      <h3 className="font-semibold text-lg mb-1">{pet.name || 'Unnamed'}</h3>
-                      <div className="space-y-1 text-sm text-gray-600 mb-4">
+                    <CardContent className="p-3 sm:p-4">
+                      <h3 className="font-semibold text-base sm:text-lg mb-1 line-clamp-1">{pet.name || 'Unnamed'}</h3>
+                      <div className="space-y-1 text-xs sm:text-sm text-gray-600 mb-3 sm:mb-4">
                         <p>
                           <span className="font-medium">Category:</span> {pet.category?.name || 'Unknown'}
                         </p>
@@ -389,23 +396,23 @@ export default function AllPets() {
                           </p>
                         )}
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex flex-col sm:flex-row gap-2">
                         <Button
                           variant="outline"
                           size="sm"
-                          className="flex-1"
+                          className="flex-1 text-xs sm:text-sm"
                           onClick={() => navigate(`/pets/${petId}`)}
                         >
-                          <Eye className="h-4 w-4 mr-1" />
+                          <Eye className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
                           View
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
-                          className="flex-1"
+                          className="flex-1 text-xs sm:text-sm"
                           onClick={() => navigate(`/pets/${petId}/edit`)}
                         >
-                          <Edit className="h-4 w-4 mr-1" />
+                          <Edit className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
                           Edit
                         </Button>
                       </div>
@@ -418,14 +425,13 @@ export default function AllPets() {
 
           {/* Results Count */}
           {!loading && filteredPets.length > 0 && (
-            <div className="mt-6 text-sm text-gray-600">
+            <div className="mt-4 sm:mt-6 text-xs sm:text-sm text-gray-600">
               Showing <span className="font-semibold">{filteredPets.length}</span> of{' '}
               <span className="font-semibold">{pets.length}</span> pets
             </div>
           )}
-        </main>
       </div>
-    </div>
+    </AdminLayout>
   );
 }
 

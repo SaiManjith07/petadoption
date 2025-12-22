@@ -39,14 +39,12 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/lib/auth';
 import { adminApi } from '@/api';
-import { AdminSidebar } from '@/components/layout/AdminSidebar';
-import { AdminTopNav } from '@/components/layout/AdminTopNav';
+import { AdminLayout } from '@/components/layout/AdminLayout';
 
 export default function AdminChats() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [chatRequests, setChatRequests] = useState<any[]>([]);
   const [activeChats, setActiveChats] = useState<any[]>([]);
   const [chatStats, setChatStats] = useState<any>(null);
@@ -323,35 +321,17 @@ export default function AdminChats() {
   console.log('Active chats:', activeChats.length, 'Filtered chats:', filteredChats.length);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Fixed Sidebar - Desktop */}
-      <div className="hidden lg:block">
-        <AdminSidebar isOpen={true} onClose={() => setSidebarOpen(false)} />
-      </div>
-      
-      {/* Mobile Sidebar */}
-      <div className="lg:hidden">
-        <AdminSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      </div>
-
-      {/* Main Content */}
-      <div className="flex flex-col min-w-0 lg:ml-64">
-        <AdminTopNav 
-          onMenuToggle={() => setSidebarOpen(!sidebarOpen)} 
-          sidebarOpen={sidebarOpen}
-          onRefresh={loadData}
-        />
-
-        {/* Main Content Area - Scrollable */}
-        <main className="flex-1 overflow-y-auto">
-          <div className="p-6 space-y-6">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">Chat Management</h1>
-                <p className="text-gray-600 mt-1">Manage chat requests and monitor active conversations</p>
-              </div>
+    <AdminLayout onRefresh={loadData}>
+      <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8 w-full">
+        {/* Header */}
+        <div className="mb-4 sm:mb-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-4">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Chat Management</h1>
+              <p className="text-sm sm:text-base text-gray-600 mt-1">Manage chat requests and monitor active conversations</p>
             </div>
+          </div>
+        </div>
 
             {/* Stats Cards */}
             {chatStats && (
@@ -873,11 +853,9 @@ export default function AdminChats() {
               </CardContent>
             </Card>
           </div>
-        </main>
-      </div>
 
-      {/* View Request Dialog */}
-      <Dialog open={requestDialogOpen} onOpenChange={setRequestDialogOpen}>
+        {/* View Request Dialog */}
+        <Dialog open={requestDialogOpen} onOpenChange={setRequestDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Chat Request Details</DialogTitle>
@@ -1006,58 +984,59 @@ export default function AdminChats() {
             </div>
           )}
         </DialogContent>
-      </Dialog>
+        </Dialog>
 
-      {/* View Chat Dialog */}
-      <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Chat Details</DialogTitle>
-            <DialogDescription>Complete information about the chat conversation</DialogDescription>
-          </DialogHeader>
-          {selectedChat && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Room ID</p>
-                  <p className="text-sm font-mono">{selectedChat.room_id || selectedChat.roomId}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Type</p>
-                  <Badge variant={selectedChat.type === 'adoption' ? 'default' : 'secondary'}>
-                    {selectedChat.type || 'N/A'}
-                  </Badge>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Pet ID</p>
-                  <p className="text-sm font-mono">{selectedChat.pet_id?._id || selectedChat.petId || 'N/A'}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Participants</p>
-                  <p className="text-sm">{selectedChat.participants?.length || 0}</p>
-                </div>
-              </div>
-              {selectedChat.messages && selectedChat.messages.length > 0 && (
-                <div>
-                  <p className="text-sm font-medium text-gray-600 mb-2">Messages ({selectedChat.messages.length})</p>
-                  <div className="space-y-2 max-h-64 overflow-y-auto border rounded-lg p-4">
-                    {selectedChat.messages.map((msg: any, idx: number) => (
-                      <div key={idx} className="text-sm">
-                        <p className="font-medium">{msg.sender?.name || 'Unknown'}</p>
-                        <p className="text-gray-700">{msg.text || msg.message}</p>
-                        <p className="text-xs text-gray-500">
-                          {msg.timestamp ? format(new Date(msg.timestamp), 'MMM dd, yyyy HH:mm') : 'N/A'}
-                        </p>
-                      </div>
-                    ))}
+        {/* View Chat Dialog */}
+        <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Chat Details</DialogTitle>
+              <DialogDescription>Complete information about the chat conversation</DialogDescription>
+            </DialogHeader>
+            {selectedChat && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Room ID</p>
+                    <p className="text-sm font-mono">{selectedChat.room_id || selectedChat.roomId}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Type</p>
+                    <Badge variant={selectedChat.type === 'adoption' ? 'default' : 'secondary'}>
+                      {selectedChat.type || 'N/A'}
+                    </Badge>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Pet ID</p>
+                    <p className="text-sm font-mono">{selectedChat.pet_id?._id || selectedChat.petId || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Participants</p>
+                    <p className="text-sm">{selectedChat.participants?.length || 0}</p>
                   </div>
                 </div>
-              )}
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-    </div>
+                {selectedChat.messages && selectedChat.messages.length > 0 && (
+                  <div>
+                    <p className="text-sm font-medium text-gray-600 mb-2">Messages ({selectedChat.messages.length})</p>
+                    <div className="space-y-2 max-h-64 overflow-y-auto border rounded-lg p-4">
+                      {selectedChat.messages.map((msg: any, idx: number) => (
+                        <div key={idx} className="text-sm">
+                          <p className="font-medium">{msg.sender?.name || 'Unknown'}</p>
+                          <p className="text-gray-700">{msg.text || msg.message}</p>
+                          <p className="text-xs text-gray-500">
+                            {msg.timestamp ? format(new Date(msg.timestamp), 'MMM dd, yyyy HH:mm') : 'N/A'}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+      </div>
+    </AdminLayout>
   );
 }
 

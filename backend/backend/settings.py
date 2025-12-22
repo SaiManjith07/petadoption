@@ -69,6 +69,7 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'backend.middleware.RenderHostMiddleware',  # Allow .onrender.com domains
+    'backend.middleware.CORSExceptionMiddleware',  # Ensure CORS headers on errors
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
