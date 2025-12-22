@@ -107,23 +107,41 @@ class ChatRoomListView(generics.ListCreateAPIView):
                     pet_id = None
                     chat_type = None
                     try:
-                        # Try to access chat_request - ensure it's loaded
+                        # Method 1: Try to get from chat_request (primary method)
                         if hasattr(room, 'chat_request') and room.chat_request:
                             chat_request = room.chat_request
                             # Check if pet exists and is accessible
                             if hasattr(chat_request, 'pet') and chat_request.pet:
                                 try:
-                                    pet_id = chat_request.pet.id
-                                    print(f"Room {room.id}: Found pet_id {pet_id} from chat_request")
+                                    # Force evaluation of the pet relationship
+                                    pet = chat_request.pet
+                                    if pet:
+                                        pet_id = pet.id
+                                        print(f"Room {room.id}: Found pet_id {pet_id} from chat_request.pet")
                                 except Exception as pet_error:
                                     print(f"Error accessing pet.id for room {room.id}: {pet_error}")
-                            else:
-                                print(f"Room {room.id}: chat_request has no pet attribute or pet is None")
+                                    # Try to get pet_id directly from chat_request if it has a pet_id field
+                                    try:
+                                        if hasattr(chat_request, 'pet_id') and chat_request.pet_id:
+                                            pet_id = chat_request.pet_id
+                                            print(f"Room {room.id}: Found pet_id {pet_id} from chat_request.pet_id")
+                                    except:
+                                        pass
                             
                             if hasattr(chat_request, 'type'):
                                 chat_type = chat_request.type
-                        else:
-                            print(f"Room {room.id}: No chat_request found (hasattr: {hasattr(room, 'chat_request')})")
+                        
+                        # Method 2: If still no pet_id, try to get from ChatRequest directly via reverse lookup
+                        if not pet_id:
+                            try:
+                                from .models import ChatRequest
+                                chat_request_obj = ChatRequest.objects.filter(chat_room=room).select_related('pet').first()
+                                if chat_request_obj and chat_request_obj.pet:
+                                    pet_id = chat_request_obj.pet.id
+                                    print(f"Room {room.id}: Found pet_id {pet_id} via reverse lookup")
+                            except Exception as reverse_error:
+                                print(f"Room {room.id}: Reverse lookup failed: {reverse_error}")
+                        
                     except Exception as e:
                         import traceback
                         print(f"Error getting pet_id/type for room {room.id}: {e}")
