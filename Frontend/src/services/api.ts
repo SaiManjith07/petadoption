@@ -22,9 +22,10 @@ export const getImageUrl = (imagePath: string | undefined | null): string | null
   
   // If it's a relative path, prepend the base URL
   const baseUrl = getBaseUrl();
-  // Ensure path starts with /
+  // Ensure path starts with / and baseUrl doesn't end with /
+  const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
   const path = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
-  return `${baseUrl}${path}`;
+  return `${cleanBaseUrl}${path}`;
 };
 
 // Helper for mock delays

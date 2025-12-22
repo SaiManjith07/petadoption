@@ -411,11 +411,13 @@ export default function Chat() {
                                   // Fallback if image fails to load
                                   const target = e.target as HTMLImageElement;
                                   if (message.image_url && !message.image_url.startsWith('http')) {
-                                    const apiUrl = getBaseUrl();
-                                    target.src = `${apiUrl}${message.image_url}`;
+                                    const apiUrl = getBaseUrl().endsWith('/') ? getBaseUrl().slice(0, -1) : getBaseUrl();
+                                    const imagePath = message.image_url.startsWith('/') ? message.image_url : `/${message.image_url}`;
+                                    target.src = `${apiUrl}${imagePath}`;
                                   } else if (message.image && !message.image.startsWith('http')) {
-                                    const apiUrl = getBaseUrl();
-                                    target.src = `${apiUrl}${message.image}`;
+                                    const apiUrl = getBaseUrl().endsWith('/') ? getBaseUrl().slice(0, -1) : getBaseUrl();
+                                    const imagePath = message.image.startsWith('/') ? message.image : `/${message.image}`;
+                                    target.src = `${apiUrl}${imagePath}`;
                                   }
                                 }}
                               />

@@ -62,9 +62,10 @@ export function useChatSSE({
     try {
       // Build SSE URL with token and last message ID
       // Note: EventSource doesn't support custom headers, so we pass token as query param
-      const baseUrl = API_BASE_URL;
+      // API_BASE_URL already includes /api, so we don't need to add it again
+      const baseUrl = API_BASE_URL.endsWith('/api') ? API_BASE_URL : (API_BASE_URL.endsWith('/') ? API_BASE_URL.slice(0, -1) : API_BASE_URL);
       const encodedToken = encodeURIComponent(token);
-      const url = `${baseUrl}/api/chats/rooms/${roomId}/stream/?token=${encodedToken}&last_id=${lastMessageId || 0}`;
+      const url = `${baseUrl}/chats/rooms/${roomId}/stream/?token=${encodedToken}&last_id=${lastMessageId || 0}`;
       
       // Create EventSource (SSE connection)
       // Note: EventSource uses GET requests and doesn't support custom headers
