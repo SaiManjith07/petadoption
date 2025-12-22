@@ -156,6 +156,8 @@ export default function Admin() {
       } else {
         setIsRefreshing(true);
       }
+      // Add timestamp to prevent caching
+      const timestamp = new Date().getTime();
       const [dashDataRes, pendingFoundRes, pendingLostRes, adoptionData, chatRequestsData, chatsData, chatStatsData] = await Promise.allSettled([
         adminApi.getDashboardStats(),
         adminApi.getPendingReports('found'),
@@ -373,7 +375,7 @@ export default function Admin() {
       });
       // Reload shelter registrations and refresh dashboard
       await loadShelterRegistrations();
-      loadDashboardData(false);
+      await loadDashboardData(false);
     } catch (error: any) {
       toast({
         title: 'Error',
@@ -408,7 +410,7 @@ export default function Admin() {
       setRoleRequestActionType(null);
       // Reload role requests and refresh dashboard
       await loadRoleRequests();
-      loadDashboardData(false);
+      await loadDashboardData(false);
     } catch (error: any) {
       toast({
         title: 'Error',
@@ -533,8 +535,8 @@ export default function Admin() {
         verified_financial_stability: false,
       });
       
-      // Refresh full data in background
-      loadDashboardData(false);
+      // Refresh full data immediately
+      await loadDashboardData(false);
     } catch (error: any) {
       toast({
         title: 'Error',
@@ -581,8 +583,8 @@ export default function Admin() {
         description: 'Report rejected',
       });
       
-      // Refresh full data in background
-      loadDashboardData(false);
+      // Refresh full data immediately
+      await loadDashboardData(false);
     } catch (error: any) {
       toast({
         title: 'Error',
@@ -612,6 +614,33 @@ export default function Admin() {
           {/* Dashboard Content - Only show when not viewing #shelter-reg */}
           {currentHash !== '#shelter-reg' && (
             <>
+          {/* Header with Refresh Button */}
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">Dashboard Overview</h2>
+              <p className="text-sm text-gray-500 mt-1">Auto-refreshes every 30 seconds</p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => loadDashboardData(true)}
+              disabled={loading || isRefreshing}
+              className="gap-2"
+            >
+              {loading || isRefreshing ? (
+                <>
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600"></div>
+                  Refreshing...
+                </>
+              ) : (
+                <>
+                  <Activity className="h-4 w-4" />
+                  Refresh Now
+                </>
+              )}
+            </Button>
+          </div>
+
           {/* Key Metrics at a Glance - 4 Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
             {/* Pending Reports Card */}
