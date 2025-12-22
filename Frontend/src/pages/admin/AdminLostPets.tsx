@@ -12,6 +12,7 @@ import { useAuth } from '@/lib/auth';
 import { adminApi } from '@/api';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
+import { PetGallerySkeleton, PageHeaderSkeleton } from '@/components/ui/skeletons';
 import { getImageUrl } from '@/services/api';
 
 export default function AdminLostPets() {
@@ -287,10 +288,10 @@ export default function AdminLostPets() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <Shield className="h-12 w-12 mx-auto animate-spin text-primary" />
-          <p className="mt-4 text-lg text-muted-foreground">Loading Lost Pets...</p>
+      <div className="min-h-screen p-6">
+        <div className="max-w-6xl mx-auto">
+          <PageHeaderSkeleton />
+          <PetGallerySkeleton count={6} />
         </div>
       </div>
     );

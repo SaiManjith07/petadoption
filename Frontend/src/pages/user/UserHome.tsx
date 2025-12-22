@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { PetGallerySkeleton } from '@/components/ui/skeletons';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   Heart, Search as SearchIcon, PawPrint, Search, Activity, Eye, Calendar, CheckCircle
@@ -251,12 +252,7 @@ export default function UserHome() {
 
               {(() => {
                 if (loading) {
-                  return (
-                    <div className="text-center py-12">
-                      <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-green-600 border-r-transparent"></div>
-                      <p className="mt-4 text-gray-600">Loading all pets...</p>
-                    </div>
-                  );
+                  return <PetGallerySkeleton count={6} />;
                 }
 
                 const filtered = availablePets.filter((p: any) => {

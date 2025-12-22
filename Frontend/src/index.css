@@ -9,11 +9,11 @@ All colors MUST be HSL.
 @layer base {
   :root {
     /* PetReunite Platform Redesign - New Design System */
-    /* Primary Colors - Cyan/Blue Gradient */
-    --primary: 188 94% 43%; /* Cyan #06B6D4 */
+    /* Primary Colors - Teal (Landing Page Logo Color) */
+    --primary: 173 80% 40%; /* Teal #14b8a6 */
     --primary-foreground: 0 0% 100%;
-    --primary-light: 188 96% 50%; /* #22D3EE */
-    --primary-dark: 188 85% 37%; /* #0891B2 */
+    --primary-light: 173 85% 45%; /* Lighter teal */
+    --primary-dark: 188 85% 37%; /* #0891b2 */
     
     --secondary: 258 90% 66%; /* Purple #8B5CF6 */
     --secondary-foreground: 0 0% 100%;

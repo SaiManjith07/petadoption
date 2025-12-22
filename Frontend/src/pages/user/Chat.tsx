@@ -14,6 +14,7 @@ import { useChatSSE } from '@/hooks/useChatSSE';
 import { format } from 'date-fns';
 import { getImageUrl } from '@/services/api';
 import { getBaseUrl } from '@/config/api';
+import { ChatMessageSkeleton, Skeleton } from '@/components/ui/skeletons';
 
 interface Message {
   id: number;
@@ -277,10 +278,25 @@ export default function Chat() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto" />
-          <p className="mt-4 text-muted-foreground">Loading chat...</p>
+      <div className="flex h-screen">
+        <div className="flex-1 flex flex-col">
+          <div className="border-b p-4">
+            <div className="flex items-center gap-3">
+              <Skeleton className="h-10 w-10 rounded-full" />
+              <div className="flex-1">
+                <Skeleton className="h-5 w-32 mb-2" />
+                <Skeleton className="h-3 w-24" />
+              </div>
+            </div>
+          </div>
+          <div className="flex-1 p-4 space-y-4 overflow-y-auto">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <ChatMessageSkeleton key={i} isOwn={i % 2 === 0} />
+            ))}
+          </div>
+          <div className="border-t p-4">
+            <Skeleton className="h-12 w-full rounded-lg" />
+          </div>
         </div>
       </div>
     );

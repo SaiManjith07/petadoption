@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { notificationsApi } from '@/api';
 import { formatDistanceToNow, format } from 'date-fns';
+import { NotificationSkeleton } from '@/components/ui/skeletons';
 
 interface Notification {
   id: number | string;
@@ -252,9 +253,8 @@ const Notifications: React.FC = () => {
           {/* Content */}
           <CardContent className="p-0">
             {loading ? (
-              <div className="p-12 text-center">
-                <div className="inline-block h-10 w-10 animate-spin rounded-full border-4 border-solid border-[#2BB6AF] border-r-transparent mb-4"></div>
-                <p className="text-gray-500">Loading notifications...</p>
+              <div className="p-6">
+                <NotificationSkeleton count={5} />
               </div>
             ) : filteredNotifications.length === 0 ? (
               <div className="p-16 text-center">

@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label';
 import { useAuth } from '@/lib/auth';
 import { adminApi } from '@/api';
 import { useToast } from '@/hooks/use-toast';
+import { TableSkeleton, PageHeaderSkeleton } from '@/components/ui/skeletons';
 import { format } from 'date-fns';
 
 export default function AdminAdopt() {
@@ -184,10 +185,10 @@ export default function AdminAdopt() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <Shield className="h-12 w-12 mx-auto animate-spin text-primary" />
-          <p className="mt-4 text-lg text-muted-foreground">Loading Adoption Requests...</p>
+      <div className="min-h-screen p-6">
+        <div className="max-w-6xl mx-auto">
+          <PageHeaderSkeleton />
+          <TableSkeleton rows={6} columns={5} />
         </div>
       </div>
     );

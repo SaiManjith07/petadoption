@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Input } from '@/components/ui/input';
 import { format } from 'date-fns';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { TableSkeleton, Skeleton } from '@/components/ui/skeletons';
 
 export default function AdminChatRequests() {
   const { isAuthenticated, isAdmin } = useAuth();
@@ -202,10 +203,10 @@ export default function AdminChatRequests() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto" />
-          <p className="mt-4 text-muted-foreground">Loading chat requests...</p>
+      <div className="min-h-screen p-6">
+        <div className="max-w-6xl mx-auto">
+          <Skeleton className="h-8 w-48 mb-6" />
+          <TableSkeleton rows={6} columns={5} />
         </div>
       </div>
     );

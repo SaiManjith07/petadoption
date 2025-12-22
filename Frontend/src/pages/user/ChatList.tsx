@@ -11,6 +11,7 @@ import { chatApi } from '@/api';
 import { useAuth } from '@/lib/auth';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
+import { ChatListSkeleton } from '@/components/ui/skeletons';
 
 export default function ChatList() {
   const navigate = useNavigate();
@@ -175,10 +176,10 @@ export default function ChatList() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto" />
-          <p className="mt-4 text-muted-foreground">Loading chats...</p>
+      <div className="min-h-screen p-6">
+        <div className="max-w-6xl mx-auto">
+          <Skeleton className="h-8 w-48 mb-6" />
+          <ChatListSkeleton count={6} />
         </div>
       </div>
     );
