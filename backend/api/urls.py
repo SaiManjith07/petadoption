@@ -8,7 +8,30 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from django.db import models
+from django.db import connection
 from users import views_role_request, views_feeding
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def health_check(request):
+    """Simple health check endpoint for Render and monitoring."""
+    try:
+        # Test database connection
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT 1")
+        
+        return Response({
+            'status': 'healthy',
+            'service': 'petadoption-backend',
+            'database': 'connected'
+        }, status=200)
+    except Exception as e:
+        return Response({
+            'status': 'unhealthy',
+            'service': 'petadoption-backend',
+            'database': 'disconnected',
+            'error': str(e)
+        }, status=503)
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -109,6 +132,9 @@ def shelters_list(request):
         )
 
 urlpatterns = [
+    # Health check endpoint (must be first for Render health checks)
+    path('', health_check, name='health-check'),
+    
     # Authentication endpoints
     path('auth/', include('users.urls')),
     path('auth/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),

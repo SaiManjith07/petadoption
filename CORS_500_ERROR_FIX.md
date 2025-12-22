@@ -83,3 +83,63 @@ To test CORS locally:
 - CORS headers are added even when exceptions occur
 - Error responses are returned as JSON with proper CORS headers
 - The middleware handles both view exceptions and middleware exceptions
+
+## Latest Fixes (December 2025)
+
+### 1. Health Check Endpoint
+- **Location**: `backend/api/urls.py`
+- **Issue**: Render was showing "No open HTTP ports detected" even though the server was running
+- **Solution**: Added a simple health check endpoint at `/api/` that:
+  - Tests database connectivity
+  - Returns a 200 status when healthy
+  - Returns a 503 status when unhealthy
+  - Allows public access (no authentication required)
+- **Purpose**: This endpoint is used by Render's health check system to verify the service is running
+
+### 2. Enhanced Login Error Handling
+- **Location**: `backend/users/views.py`
+- **Issue**: Login errors were not being logged properly, making debugging difficult
+- **Solution**: Wrapped the entire login function in a try-except block that:
+  - Logs full error tracebacks to console
+  - Returns detailed error messages in DEBUG mode
+  - Returns safe error messages in production
+  - Ensures proper HTTP status codes are returned
+- **Benefits**: 
+  - Easier debugging of login issues
+  - Better error messages for frontend
+  - Full traceback logging for production debugging
+
+### 3. Render Port Detection
+- **Issue**: Render was not detecting the HTTP port correctly
+- **Root Cause**: The health check endpoint at `/api/` was not responding correctly
+- **Solution**: Created a dedicated health check endpoint that responds immediately
+- **Note**: The server is correctly binding to `$PORT` (10000 in logs), but Render needs a working health check endpoint to confirm the service is ready
+
+## Debugging Login Errors
+
+When login fails, check Render logs for:
+1. `[LOGIN ERROR]` messages - these show the actual exception
+2. `[CORSExceptionMiddleware]` messages - these show if CORS headers are being added
+3. Database connection errors
+4. Missing environment variables
+
+The login endpoint now logs:
+- Full exception messages
+- Complete tracebacks
+- Request data (in DEBUG mode)
+
+## Next Steps After Deployment
+
+1. **Verify Health Check**: 
+   - Visit `https://your-render-url.onrender.com/api/` 
+   - Should return `{"status": "healthy", ...}`
+
+2. **Test Login**:
+   - Try logging in from the frontend
+   - Check Render logs for `[LOGIN ERROR]` messages if it fails
+   - Check browser console for CORS errors
+
+3. **Monitor Logs**:
+   - Watch for any `[CORSExceptionMiddleware]` messages
+   - Watch for any `[LOGIN ERROR]` messages
+   - These will help identify the root cause of any issues

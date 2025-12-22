@@ -35,49 +35,73 @@ def register(request):
 @permission_classes([AllowAny])
 def login(request):
     """User login endpoint."""
-    email = request.data.get('email')
-    password = request.data.get('password')
-
-    if not email or not password:
-        return Response(
-            {'message': 'Email and password are required'},
-            status=status.HTTP_400_BAD_REQUEST
-        )
-
-    # Use email as username for authentication
-    user = authenticate(request, username=email, password=password)
+    import traceback
+    from django.conf import settings
     
-    if user is None:
-        # Try to find if user exists to provide better error message
-        try:
-            user_obj = User.objects.get(email__iexact=email)
-            if not user_obj.is_active:
-                return Response(
-                    {'message': 'User account is disabled'},
-                    status=status.HTTP_401_UNAUTHORIZED
-                )
-        except User.DoesNotExist:
-            pass
+    try:
+        email = request.data.get('email')
+        password = request.data.get('password')
+
+        if not email or not password:
+            return Response(
+                {'message': 'Email and password are required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Use email as username for authentication
+        user = authenticate(request, username=email, password=password)
+        
+        if user is None:
+            # Try to find if user exists to provide better error message
+            try:
+                user_obj = User.objects.get(email__iexact=email)
+                if not user_obj.is_active:
+                    return Response(
+                        {'message': 'User account is disabled'},
+                        status=status.HTTP_401_UNAUTHORIZED
+                    )
+            except User.DoesNotExist:
+                pass
+            
+            return Response(
+                {'message': 'Invalid credentials'},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+
+        if not user.is_active:
+            return Response(
+                {'message': 'User account is disabled'},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+
+        refresh = RefreshToken.for_user(user)
+        user_serializer = UserSerializer(user)
+        
+        return Response({
+            'token': str(refresh.access_token),
+            'refresh': str(refresh),
+            'user': user_serializer.data
+        }, status=status.HTTP_200_OK)
+    
+    except Exception as e:
+        # Log the full error for debugging
+        error_trace = traceback.format_exc()
+        print(f"[LOGIN ERROR] Exception: {str(e)}")
+        print(f"[LOGIN ERROR] Traceback: {error_trace}")
+        
+        # Return a safe error response
+        error_response = {
+            'message': 'An error occurred during login',
+            'error': str(e) if settings.DEBUG else 'Internal server error'
+        }
+        
+        if settings.DEBUG:
+            error_response['traceback'] = error_trace
         
         return Response(
-            {'message': 'Invalid credentials'},
-            status=status.HTTP_401_UNAUTHORIZED
+            error_response,
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
-
-    if not user.is_active:
-        return Response(
-            {'message': 'User account is disabled'},
-            status=status.HTTP_401_UNAUTHORIZED
-        )
-
-    refresh = RefreshToken.for_user(user)
-    user_serializer = UserSerializer(user)
-    
-    return Response({
-        'token': str(refresh.access_token),
-        'refresh': str(refresh),
-        'user': user_serializer.data
-    }, status=status.HTTP_200_OK)
 
 
 @api_view(['GET'])
