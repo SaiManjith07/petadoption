@@ -42,9 +42,9 @@ class CORSExceptionMiddleware:
     def __call__(self, request):
         try:
             response = self.get_response(request)
-            # Always add CORS headers if not already present
-            if not response.has_header('Access-Control-Allow-Origin'):
-                response = self._add_cors_headers(response, request)
+            # Always ensure CORS headers are present on ALL responses
+            # This is critical for 401, 403, 404, 500, etc.
+            response = self._add_cors_headers(response, request)
             return response
         except Exception as e:
             # Catch any exception and ensure CORS headers are added
@@ -141,7 +141,7 @@ class CORSExceptionMiddleware:
         return False
 
     def _add_cors_headers(self, response, request):
-        """Add CORS headers to response"""
+        """Add CORS headers to response - ensures headers are always added for allowed origins"""
         from django.conf import settings
         
         origin = request.META.get('HTTP_ORIGIN')
@@ -154,22 +154,40 @@ class CORSExceptionMiddleware:
                 parsed = urlparse(referer)
                 origin = f"{parsed.scheme}://{parsed.netloc}"
         
+        # Handle OPTIONS preflight requests
+        if request.method == 'OPTIONS':
+            if origin and self._is_allowed_origin(origin, request):
+                response['Access-Control-Allow-Origin'] = origin
+                response['Access-Control-Allow-Credentials'] = 'true'
+                response['Access-Control-Allow-Methods'] = ', '.join(
+                    getattr(settings, 'CORS_ALLOW_METHODS', ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'])
+                )
+                response['Access-Control-Allow-Headers'] = ', '.join(
+                    getattr(settings, 'CORS_ALLOW_HEADERS', ['accept', 'accept-encoding', 'authorization', 'content-type', 'dnt', 'origin', 'user-agent', 'x-csrftoken', 'x-requested-with'])
+                )
+                response['Access-Control-Max-Age'] = str(
+                    getattr(settings, 'CORS_PREFLIGHT_MAX_AGE', 86400)
+                )
+                response.status_code = 200
+            return response
+        
+        # For all other responses, add CORS headers if origin is allowed
         if origin and self._is_allowed_origin(origin, request):
-            response['Access-Control-Allow-Origin'] = origin
-            response['Access-Control-Allow-Credentials'] = 'true'
+            # Only set if not already set (to avoid overriding django-cors-headers)
+            if not response.has_header('Access-Control-Allow-Origin'):
+                response['Access-Control-Allow-Origin'] = origin
+            if not response.has_header('Access-Control-Allow-Credentials'):
+                response['Access-Control-Allow-Credentials'] = 'true'
+            # Always add these headers for consistency
             response['Access-Control-Allow-Methods'] = ', '.join(
                 getattr(settings, 'CORS_ALLOW_METHODS', ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'])
             )
             response['Access-Control-Allow-Headers'] = ', '.join(
                 getattr(settings, 'CORS_ALLOW_HEADERS', ['accept', 'accept-encoding', 'authorization', 'content-type', 'dnt', 'origin', 'user-agent', 'x-csrftoken', 'x-requested-with'])
             )
-            response['Access-Control-Max-Age'] = str(
-                getattr(settings, 'CORS_PREFLIGHT_MAX_AGE', 86400)
-            )
         elif not origin:
-            # If no origin, allow all (for same-origin requests or when origin is missing)
-            # This is a fallback - ideally we should always have an origin
-            print(f"[CORSExceptionMiddleware] No origin header found in request")
+            # Log when origin is missing (for debugging)
+            print(f"[CORSExceptionMiddleware] No origin header found in request to {request.path}")
         
         return response
 
