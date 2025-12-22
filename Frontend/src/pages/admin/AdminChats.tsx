@@ -818,12 +818,15 @@ export default function AdminChats() {
                                       
                                       const roomIdToOpen = roomId || chat.roomId || chat.room_id || chat.id || chat._id;
                                       
-                                      // If admin is a participant OR is the verifying admin, they can open full chat
-                                      if (isParticipant || isVerifyingAdmin) {
+                                      // Check if current admin is the creator (who activated/verified the chat)
+                                      const isCreator = chat.created_by_admin_id === user?.id;
+                                      
+                                      // If admin is the creator OR is a participant OR is the verifying admin, they can open full chat
+                                      if (isCreator || isParticipant || isVerifyingAdmin) {
                                         return (
                                           <Button
                                             key={`view-${roomId || index}`}
-                                            variant="outline"
+                                            variant="default"
                                             size="sm"
                                             onClick={() => {
                                               if (roomIdToOpen) {
@@ -843,7 +846,7 @@ export default function AdminChats() {
                                           </Button>
                                         );
                                       } else {
-                                        // Other admins (not participants) can only view in read-only mode
+                                        // Other admins (not creator, not participants) can only view in read-only mode
                                         return (
                                           <Button
                                             key={`view-readonly-${roomId || index}`}
@@ -863,7 +866,7 @@ export default function AdminChats() {
                                             className="gap-1 text-blue-600 border-blue-200 hover:bg-blue-50"
                                           >
                                             <Eye className="h-4 w-4" />
-                                            View Read-Only
+                                            View Only
                                           </Button>
                                         );
                                       }
