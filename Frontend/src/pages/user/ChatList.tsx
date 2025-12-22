@@ -11,7 +11,7 @@ import { chatApi } from '@/api';
 import { useAuth } from '@/lib/auth';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
-import { ChatListSkeleton } from '@/components/ui/skeletons';
+import { ChatListSkeleton, Skeleton } from '@/components/ui/skeletons';
 
 export default function ChatList() {
   const navigate = useNavigate();
@@ -183,6 +183,11 @@ export default function ChatList() {
         </div>
       </div>
     );
+  }
+
+  // Early return if no user (shouldn't happen due to UserProtectedRoute, but safety check)
+  if (!user) {
+    return null;
   }
 
   // Separate incoming and outgoing requests (ensure requests is an array)

@@ -22,7 +22,10 @@ export function UserProtectedRoute({ children }: UserProtectedRouteProps) {
   }
 
   // Allow admins to access chat routes (for verification and monitoring)
-  const isChatRoute = location.pathname.startsWith('/chat/') || location.pathname.startsWith('/chats/');
+  const isChatRoute = location.pathname.startsWith('/chat/') || 
+                      location.pathname.startsWith('/chats/') || 
+                      location.pathname === '/chats' ||
+                      location.pathname === '/chat';
   if (isAdmin && isChatRoute) {
     return <>{children}</>;
   }
