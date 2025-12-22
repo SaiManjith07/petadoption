@@ -117,9 +117,9 @@ export default function AllPets() {
 
   return (
     <AdminLayout>
-      <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8 w-full">
+      <div className="w-full overflow-x-hidden space-y-6">
         {/* Header Section */}
-          <div className="mb-4 sm:mb-6">
+          <div>
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-4">
               <div>
                 <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">All Pets</h1>
@@ -265,8 +265,28 @@ export default function AllPets() {
                                 {imageUrl ? (
                                   <img
                                     src={imageUrl.startsWith('http') ? imageUrl : getImageUrl(imageUrl)}
-                                    alt={pet.name}
-                                    className="h-full w-full object-cover"
+                                    alt={pet.name || 'Pet'}
+                                    className="h-full w-full object-contain object-center"
+                                    style={{ maxWidth: '100%', maxHeight: '100%' }}
+                                    onError={(e) => {
+                                      const target = e.target as HTMLImageElement;
+                                      target.style.display = 'none';
+                                      const parent = target.parentElement;
+                                      if (parent && !parent.querySelector('.error-placeholder')) {
+                                        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                                        svg.setAttribute('class', 'error-placeholder h-5 w-5 sm:h-6 sm:w-6 text-gray-400');
+                                        svg.setAttribute('fill', 'none');
+                                        svg.setAttribute('viewBox', '0 0 24 24');
+                                        svg.setAttribute('stroke', 'currentColor');
+                                        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                                        path.setAttribute('stroke-linecap', 'round');
+                                        path.setAttribute('stroke-linejoin', 'round');
+                                        path.setAttribute('stroke-width', '2');
+                                        path.setAttribute('d', 'M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z');
+                                        svg.appendChild(path);
+                                        parent.appendChild(svg);
+                                      }
+                                    }}
                                   />
                                 ) : (
                                   <PawPrint className="h-5 w-5 sm:h-6 sm:w-6 text-gray-400" />
@@ -343,25 +363,37 @@ export default function AllPets() {
               </CardContent>
             </Card>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 w-full max-w-full">
               {filteredPets.map((pet: any) => {
                 const petId = pet.id || pet._id;
                 const imageUrl = pet.images?.[0]?.image || pet.image;
                 return (
-                  <Card key={petId} className="overflow-hidden hover:shadow-lg transition-shadow">
-                    <div className="relative h-40 sm:h-48 bg-gray-100">
+                  <Card key={petId} className="overflow-hidden hover:shadow-lg transition-shadow flex flex-col h-full">
+                    <div className="relative w-full h-[200px] bg-gray-100 overflow-hidden flex items-center justify-center">
                       {imageUrl ? (
                         <img
                           src={imageUrl.startsWith('http') ? imageUrl : getImageUrl(imageUrl)}
-                          alt={pet.name}
-                          className="h-full w-full object-cover"
+                          alt={pet.name || 'Pet'}
+                          className="w-full h-full object-contain object-center"
+                          style={{ maxWidth: '100%', maxHeight: '100%' }}
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                            const parent = target.parentElement;
+                            if (parent && !parent.querySelector('.error-placeholder')) {
+                              const placeholder = document.createElement('div');
+                              placeholder.className = 'error-placeholder h-full w-full flex items-center justify-center';
+                              placeholder.innerHTML = '<svg class="h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>';
+                              parent.appendChild(placeholder);
+                            }
+                          }}
                         />
                       ) : (
                         <div className="h-full w-full flex items-center justify-center">
                           <PawPrint className="h-12 w-12 sm:h-16 sm:w-16 text-gray-400" />
                         </div>
                       )}
-                      <div className="absolute top-2 right-2">{getStatusBadge(pet)}</div>
+                      <div className="absolute top-2 right-2 z-10">{getStatusBadge(pet)}</div>
                     </div>
                     <CardContent className="p-3 sm:p-4">
                       <h3 className="font-semibold text-base sm:text-lg mb-1 line-clamp-1">{pet.name || 'Unnamed'}</h3>
