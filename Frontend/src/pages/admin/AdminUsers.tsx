@@ -256,8 +256,9 @@ export default function AdminUsers() {
           </div>
         </div>
 
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Stats Cards */}
+        <div className="mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-medium text-gray-600">Total Users</CardTitle>
@@ -288,12 +289,13 @@ export default function AdminUsers() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold text-purple-600">{stats.rescuers}</div>
-                </CardContent>
-              </Card>
-            </div>
+                  </CardContent>
+                </Card>
+          </div>
+        </div>
 
-            {/* Search and Filters */}
-            <Card>
+        {/* Search and Filters */}
+        <Card className="mb-6">
               <CardHeader>
                 <CardTitle>Search & Filter</CardTitle>
                 <CardDescription>Find users by name, email, or filter by role and status</CardDescription>
