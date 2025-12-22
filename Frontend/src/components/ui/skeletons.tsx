@@ -1,6 +1,9 @@
 import { Skeleton } from './skeleton';
 import { Card, CardContent, CardHeader } from './card';
 
+// Re-export Skeleton for convenience
+export { Skeleton };
+
 // Pet Card Skeleton
 export function PetCardSkeleton() {
   return (
