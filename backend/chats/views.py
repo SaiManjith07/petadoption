@@ -147,6 +147,22 @@ class ChatRoomListView(generics.ListCreateAPIView):
                         print(f"Error getting pet_id/type for room {room.id}: {e}")
                         print(traceback.format_exc())
                     
+                    # Get admin who created/verified this chat (for permission checking)
+                    created_by_admin_id = None
+                    created_by_admin = None
+                    try:
+                        if hasattr(room, 'chat_request') and room.chat_request:
+                            chat_request = room.chat_request
+                            if hasattr(chat_request, 'verified_by_admin') and chat_request.verified_by_admin:
+                                created_by_admin_id = chat_request.verified_by_admin.id
+                                created_by_admin = {
+                                    'id': chat_request.verified_by_admin.id,
+                                    'name': getattr(chat_request.verified_by_admin, 'name', chat_request.verified_by_admin.email),
+                                    'email': chat_request.verified_by_admin.email
+                                }
+                    except Exception as e:
+                        print(f"Error getting created_by_admin for room {room.id}: {e}")
+                    
                     data.append({
                         'id': room.id,
                         'room_id': room.room_id or getattr(room, 'room_id', None),
@@ -159,6 +175,8 @@ class ChatRoomListView(generics.ListCreateAPIView):
                         'pet_id': pet_id,
                         'petId': pet_id,  # Also include camelCase for frontend compatibility
                         'type': chat_type,
+                        'created_by_admin_id': created_by_admin_id,  # Admin who created/verified this chat
+                        'created_by_admin': created_by_admin,  # Full admin info
                     })
                 except Exception as room_error:
                     # Skip problematic rooms
