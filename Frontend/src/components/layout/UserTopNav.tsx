@@ -76,7 +76,7 @@ export function UserTopNav({ onMenuToggle, sidebarOpen, onRefresh }: UserTopNavP
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-gray-200/50 bg-white/90 backdrop-blur-sm shadow-sm">
+    <header className="fixed top-0 left-0 right-0 z-50 w-full border-b border-gray-200/50 bg-white/90 backdrop-blur-sm shadow-sm">
       <div className="flex h-16 items-center justify-between px-4 lg:px-6 w-full">
         {/* Logo and Website Name */}
         <div className="flex items-center gap-3">

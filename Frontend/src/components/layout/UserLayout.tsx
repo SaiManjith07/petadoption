@@ -14,6 +14,13 @@ export function UserLayout({ children, title, subtitle, onRefresh }: UserLayoutP
 
   return (
     <div className="min-h-screen bg-white">
+      {/* Top Navigation - Full Width */}
+      <UserTopNav 
+        onMenuToggle={() => setSidebarOpen(!sidebarOpen)} 
+        sidebarOpen={sidebarOpen}
+        onRefresh={onRefresh}
+      />
+
       {/* Fixed Sidebar */}
       <div className="hidden lg:block">
         <UserSidebar isOpen={true} onClose={() => setSidebarOpen(false)} />
@@ -25,13 +32,7 @@ export function UserLayout({ children, title, subtitle, onRefresh }: UserLayoutP
       </div>
 
       {/* Main Content */}
-      <div className="flex flex-col min-w-0 lg:ml-72">
-        <UserTopNav 
-          onMenuToggle={() => setSidebarOpen(!sidebarOpen)} 
-          sidebarOpen={sidebarOpen}
-          onRefresh={onRefresh}
-        />
-
+      <div className="flex flex-col min-w-0 lg:ml-72 pt-16">
         <main className="flex-1 overflow-y-auto bg-white">
           {title && (
             <div className="border-b bg-white px-6 py-4">

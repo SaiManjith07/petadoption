@@ -57,7 +57,7 @@ export function Logo({
   const useImageLogo = logoSrc && !imageError;
 
   const LogoContent = (
-    <div className={`relative flex items-center ${className}`}>
+    <div className={`relative flex items-center ${className} ${!iconOnly && showText ? 'pr-4' : ''}`}>
       {/* Logo Image/Icon */}
       <div className={`relative ${currentSize.icon} flex-shrink-0 flex items-center justify-center`}>
         {useImageLogo ? (
@@ -122,21 +122,25 @@ export function Logo({
 
       {/* Text - Overlapping the logo image */}
       {!iconOnly && showText && (
-        <div className={`absolute left-0 top-[45%] -translate-y-1/2 flex flex-col z-20 ${
-          size === 'sm' ? 'ml-[3.5rem]' : 
-          size === 'md' ? 'ml-[4.5rem]' : 
-          size === 'lg' ? 'ml-[6.5rem]' : 
-          'ml-[7.5rem]'
-        }`}>
-          <span className={`${currentSize.text} font-bold ${textColor} leading-tight`}>
-            PetReunite
-          </span>
-          {showTagline && (
-            <span className={`${currentSize.tagline} ${taglineColor} font-medium whitespace-nowrap`}>
-              Helping pets find their way home
+        <>
+          <div className={`absolute left-0 top-[45%] -translate-y-1/2 flex flex-col z-20 hidden md:flex ${
+            size === 'sm' ? 'ml-[3.5rem]' : 
+            size === 'md' ? 'ml-[4.5rem]' : 
+            size === 'lg' ? 'ml-[6.5rem]' : 
+            'ml-[7.5rem]'
+          }`}>
+            <span className={`${currentSize.text} font-bold ${textColor} leading-tight`}>
+              PetReunite
             </span>
-          )}
-        </div>
+            {showTagline && (
+              <span className={`${currentSize.tagline} ${taglineColor} font-medium whitespace-nowrap`}>
+                Helping pets find their way home
+              </span>
+            )}
+          </div>
+          {/* Spacer to account for text width on desktop */}
+          <div className={`hidden md:block ${size === 'sm' ? 'w-32' : size === 'md' ? 'w-40' : size === 'lg' ? 'w-48' : 'w-56'}`}></div>
+        </>
       )}
     </div>
   );

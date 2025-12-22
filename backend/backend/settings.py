@@ -226,22 +226,23 @@ CORS_ALLOWED_ORIGINS = [
 
 # Add production frontend URLs from environment variable
 if CORS_ORIGINS_ENV:
-    # Split by comma and add each origin
-    additional_origins = [origin.strip() for origin in CORS_ORIGINS_ENV.split(',') if origin.strip()]
-    CORS_ALLOWED_ORIGINS.extend(additional_origins)
+    # Split by comma and add each origin (normalize - remove trailing slashes)
+    additional_origins = [origin.strip().rstrip('/') for origin in CORS_ORIGINS_ENV.split(',') if origin.strip()]
+    for origin in additional_origins:
+        if origin not in CORS_ALLOWED_ORIGINS:
+            CORS_ALLOWED_ORIGINS.append(origin)
 
 # Add common production frontend URLs (always add these)
 production_origins = [
     "https://petadoption-amber.vercel.app",  # Vercel frontend
-    "https://petadoption-amber.vercel.app/",  # Vercel frontend with trailing slash
     "https://petadoption-frontend.onrender.com",  # Render frontend (if deployed)
-    "https://petadoption-frontend.onrender.com/",  # Render frontend with trailing slash
 ]
 
-# Always add production origins
+# Always add production origins (normalize - remove trailing slashes)
 for origin in production_origins:
-    if origin not in CORS_ALLOWED_ORIGINS:
-        CORS_ALLOWED_ORIGINS.append(origin)
+    normalized_origin = origin.rstrip('/')
+    if normalized_origin not in CORS_ALLOWED_ORIGINS:
+        CORS_ALLOWED_ORIGINS.append(normalized_origin)
 
 # Also allow any vercel.app subdomain (for preview deployments)
 CORS_ALLOWED_ORIGIN_REGEXES = [
@@ -256,13 +257,18 @@ if DEBUG:
         r"^http://127\.0\.0\.1:\d+$",
     ])
 
-# Debug: Print CORS origins (only in development or if explicitly enabled)
-if DEBUG or os.getenv('DEBUG_CORS', '').lower() == 'true':
-    print(f"[CORS] Allowed Origins: {CORS_ALLOWED_ORIGINS}")
+# Debug: Print CORS origins (always print for troubleshooting)
+print(f"[CORS] Allowed Origins: {CORS_ALLOWED_ORIGINS}")
+print(f"[CORS] Allowed Origin Regexes: {CORS_ALLOWED_ORIGIN_REGEXES}")
+vercel_allowed = 'https://petadoption-amber.vercel.app' in CORS_ALLOWED_ORIGINS or any('vercel.app' in regex for regex in CORS_ALLOWED_ORIGIN_REGEXES)
+print(f"[CORS] Vercel origin allowed: {vercel_allowed}")
 
 # Note: CORS_ALLOWED_ORIGIN_REGEXES is now defined above for both dev and production
 
 CORS_ALLOW_CREDENTIALS = True
+
+# Ensure CORS headers are sent even on errors
+CORS_URLS_REGEX = r'^/api/.*$'
 
 # Ensure CORS middleware handles preflight requests
 CORS_PREFLIGHT_MAX_AGE = 86400

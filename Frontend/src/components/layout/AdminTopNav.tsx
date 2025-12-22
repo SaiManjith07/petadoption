@@ -82,16 +82,21 @@ export function AdminTopNav({ onMenuToggle, sidebarOpen, onRefresh, isRefreshing
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-gray-200 bg-white shadow-sm">
+    <header className="fixed top-0 left-0 right-0 z-50 w-full border-b border-gray-200 bg-white shadow-sm">
       <div className="flex h-16 items-center justify-between px-4 lg:px-6 w-full">
         {/* Logo and Website Name */}
-        <div className="flex items-center gap-3">
-          <Logo 
-            size="md" 
-            showText={true} 
-            showTagline={false}
-            linkTo="/admin"
-          />
+        <div className="flex items-center gap-2 md:gap-4">
+          <div className="flex-shrink-0">
+            <Logo 
+              size="md" 
+              showText={true} 
+              showTagline={false}
+              linkTo="/admin"
+            />
+          </div>
+          <span className="hidden md:block text-base md:text-lg font-semibold text-gray-700 border-l border-gray-300 pl-4 md:pl-6 whitespace-nowrap">
+            Admin Controls
+          </span>
         </div>
 
         {/* Right Side Actions */}
