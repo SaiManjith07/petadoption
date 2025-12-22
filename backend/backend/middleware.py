@@ -40,22 +40,46 @@ class CORSExceptionMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
-        response = self.get_response(request)
-        # Always add CORS headers if not already present
-        if not response.has_header('Access-Control-Allow-Origin'):
+        try:
+            response = self.get_response(request)
+            # Always add CORS headers if not already present
+            if not response.has_header('Access-Control-Allow-Origin'):
+                response = self._add_cors_headers(response, request)
+            return response
+        except Exception as e:
+            # Catch any exception and ensure CORS headers are added
+            from django.http import HttpResponseServerError
+            import traceback
+            
+            # Log the exception for debugging
+            print(f"[CORSExceptionMiddleware] Exception caught: {str(e)}")
+            print(f"[CORSExceptionMiddleware] Traceback: {traceback.format_exc()}")
+            
+            # Create error response with CORS headers
+            response = HttpResponseServerError(
+                content=f'{{"error": "Internal server error", "message": "An error occurred processing your request"}}',
+                content_type='application/json'
+            )
             response = self._add_cors_headers(response, request)
-        return response
+            return response
 
     def process_exception(self, request, exception):
         """
         Handle exceptions and ensure CORS headers are added to error responses.
-        This is called by Django when an exception occurs.
+        This is called by Django when an exception occurs during view processing.
         """
-        from django.views.debug import ExceptionReporter
         from django.http import HttpResponseServerError
+        import traceback
         
-        # Create a basic error response
-        response = HttpResponseServerError()
+        # Log the exception for debugging
+        print(f"[CORSExceptionMiddleware] process_exception called: {str(exception)}")
+        print(f"[CORSExceptionMiddleware] Traceback: {traceback.format_exc()}")
+        
+        # Create a JSON error response
+        response = HttpResponseServerError(
+            content=f'{{"error": "Internal server error", "message": "An error occurred processing your request"}}',
+            content_type='application/json'
+        )
         # Add CORS headers to the error response
         response = self._add_cors_headers(response, request)
         return response
@@ -81,6 +105,14 @@ class CORSExceptionMiddleware:
         
         origin = request.META.get('HTTP_ORIGIN')
         
+        # If no origin header, try to get it from Referer
+        if not origin:
+            referer = request.META.get('HTTP_REFERER', '')
+            if referer:
+                from urllib.parse import urlparse
+                parsed = urlparse(referer)
+                origin = f"{parsed.scheme}://{parsed.netloc}"
+        
         if origin and self._is_allowed_origin(origin, request):
             response['Access-Control-Allow-Origin'] = origin
             response['Access-Control-Allow-Credentials'] = 'true'
@@ -88,11 +120,15 @@ class CORSExceptionMiddleware:
                 getattr(settings, 'CORS_ALLOW_METHODS', ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'])
             )
             response['Access-Control-Allow-Headers'] = ', '.join(
-                getattr(settings, 'CORS_ALLOW_HEADERS', ['content-type', 'authorization'])
+                getattr(settings, 'CORS_ALLOW_HEADERS', ['accept', 'accept-encoding', 'authorization', 'content-type', 'dnt', 'origin', 'user-agent', 'x-csrftoken', 'x-requested-with'])
             )
             response['Access-Control-Max-Age'] = str(
                 getattr(settings, 'CORS_PREFLIGHT_MAX_AGE', 86400)
             )
+        elif not origin:
+            # If no origin, allow all (for same-origin requests or when origin is missing)
+            # This is a fallback - ideally we should always have an origin
+            print(f"[CORSExceptionMiddleware] No origin header found in request")
         
         return response
 
