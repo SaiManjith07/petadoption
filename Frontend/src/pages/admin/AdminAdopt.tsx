@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Shield, CheckCircle, X, AlertCircle, Search, Home, ArrowLeft, Menu } from 'lucide-react';
-import { AdminSidebar } from '@/components/layout/AdminSidebar';
-import { AdminTopNav } from '@/components/layout/AdminTopNav';
+import { AdminLayout } from '@/components/layout/AdminLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -35,7 +34,7 @@ export default function AdminAdopt() {
   });
   const [acceptNotes, setAcceptNotes] = useState('');
   const [adopterId, setAdopterId] = useState('');
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
     if (!isAdmin) {
@@ -49,9 +48,13 @@ export default function AdminAdopt() {
     filterRequests();
   }, [adoptionRequests, searchTerm, statusFilter]);
 
-  const loadAdoptionRequests = async () => {
+  const loadAdoptionRequests = async (showLoading = true) => {
     try {
-      setLoading(true);
+      if (showLoading) {
+        setLoading(true);
+      } else {
+        setIsRefreshing(true);
+      }
       
       // Try to get pending adoption requests first
       let requests: any[] = [];
@@ -100,7 +103,11 @@ export default function AdminAdopt() {
       });
       setAdoptionRequests([]);
     } finally {
-      setLoading(false);
+      if (showLoading) {
+        setLoading(false);
+      } else {
+        setIsRefreshing(false);
+      }
     }
   };
 
@@ -195,29 +202,8 @@ export default function AdminAdopt() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Fixed Sidebar - Desktop */}
-      <div className="hidden lg:block">
-        <AdminSidebar isOpen={true} onClose={() => setSidebarOpen(false)} />
-      </div>
-      
-      {/* Mobile Sidebar */}
-      <div className="lg:hidden">
-        <AdminSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      </div>
-
-      {/* Main Content */}
-      <div className="flex flex-col min-w-0 lg:ml-64">
-        <AdminTopNav 
-          onMenuToggle={() => setSidebarOpen(!sidebarOpen)} 
-          sidebarOpen={sidebarOpen}
-          onRefresh={loadAdoptionRequests}
-        />
-
-        {/* Main Content Area - Scrollable */}
-        <main className="flex-1 overflow-y-auto">
-          <div className="p-6 space-y-6">
-            <div className="max-w-7xl mx-auto space-y-8">
+    <AdminLayout onRefresh={() => loadAdoptionRequests(false)} isRefreshing={isRefreshing}>
+      <div className="space-y-8">
             {/* Header */}
             <div className="flex items-center justify-between">
               <div>
@@ -596,11 +582,8 @@ export default function AdminAdopt() {
             </Card>
           </div>
         )}
-            </div>
-          </div>
-        </main>
       </div>
-    </div>
+    </AdminLayout>
   );
 }
 

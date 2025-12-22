@@ -232,9 +232,9 @@ export const AdminSidebar = ({ isOpen = true, onClose }: AdminSidebarProps) => {
         "shadow-[0_4px_20px_rgba(0,0,0,0.08),0_0_0_1px_rgba(0,0,0,0.04)]",
         "relative overflow-hidden flex flex-col",
         // Desktop: fixed position below navbar
-        "lg:fixed lg:left-0 lg:top-16 lg:h-[calc(100vh-4rem)] lg:z-[999]",
+        "lg:fixed lg:left-0 lg:top-[70px] lg:h-[calc(100vh-70px)] lg:z-[999]",
         // Mobile: fixed and slideable
-        "fixed left-0 top-16 h-[calc(100vh-4rem)] z-[999] transform transition-all duration-300",
+        "fixed left-0 top-[70px] h-[calc(100vh-70px)] z-[999] transform transition-all duration-300",
         isOpen ? "translate-x-0" : "-translate-x-full",
         "lg:translate-x-0"
       )}>

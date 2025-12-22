@@ -32,9 +32,9 @@ export function AdminLayout({ children, onRefresh, isRefreshing = false }: Admin
       </div>
 
       {/* Main Content - Updated margins and padding */}
-      <div className="flex flex-col min-w-0 lg:ml-[280px] transition-all duration-300">
+      <div className="flex flex-col min-w-0 lg:ml-[280px] transition-all duration-300 overflow-x-hidden">
         {/* Main Content Area - Scrollable */}
-        <main className="flex-1 overflow-y-auto bg-[#F9FAFB] pt-16 min-h-[calc(100vh-4rem)]">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden bg-[#F9FAFB] pt-[70px] min-h-[calc(100vh-70px)] w-full">
           <div className="p-6 lg:p-8 max-w-[1400px] mx-auto">
             {children}
           </div>
