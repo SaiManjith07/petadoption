@@ -518,7 +518,7 @@ export default function Chat() {
                 <div className="space-y-3">
                   {room?.participants && room.participants.length > 0 ? (
                     room.participants.map((participant: any) => {
-                      const isParticipantAdmin = participant.is_staff || participant.is_superuser;
+                      const isParticipantAdmin = participant.is_staff || participant.is_superuser || participant.role === 'admin';
                       const isCurrentUser = participant.id === user?.id;
                       return (
                         <div key={participant.id} className="flex items-center gap-3">

@@ -71,14 +71,23 @@ class ChatRoomListView(generics.ListCreateAPIView):
                     # Get other participant
                     other_participant = None
                     participants = list(room.participants.all())
+                    
+                    # Build full participants list with all user details
+                    participants_list = []
                     for p in participants:
+                        participant_data = {
+                            'id': p.id,
+                            'name': getattr(p, 'name', p.email),
+                            'email': p.email,
+                            'is_staff': getattr(p, 'is_staff', False),
+                            'is_superuser': getattr(p, 'is_superuser', False),
+                            'role': getattr(p, 'role', 'user') if hasattr(p, 'role') else ('admin' if (getattr(p, 'is_staff', False) or getattr(p, 'is_superuser', False)) else 'user')
+                        }
+                        participants_list.append(participant_data)
+                        
+                        # Set other_participant (not current user)
                         if p.id != request.user.id:
-                            other_participant = {
-                                'id': p.id,
-                                'name': getattr(p, 'name', p.email),
-                                'email': p.email
-                            }
-                            break
+                            other_participant = participant_data
                     
                     # Get last message
                     last_message = None
@@ -110,6 +119,7 @@ class ChatRoomListView(generics.ListCreateAPIView):
                         'id': room.id,
                         'room_id': room.room_id or getattr(room, 'room_id', None),
                         'other_participant': other_participant,
+                        'participants': participants_list,  # Include full participants list
                         'last_message': last_message,
                         'is_active': room.is_active,
                         'created_at': room.created_at.isoformat() if room.created_at else None,
@@ -202,12 +212,12 @@ class ChatRoomListView(generics.ListCreateAPIView):
 
 class ChatRoomDetailView(generics.RetrieveAPIView):
     """Retrieve a specific chat room."""
-    serializer_class = ChatRoomSerializer
+    serializer_class = ChatRoomListSerializer  # Use ChatRoomListSerializer to include participants with admin info
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         user = self.request.user
-        return ChatRoom.objects.filter(participants=user).prefetch_related('participants', 'messages')
+        return ChatRoom.objects.filter(participants=user).select_related('chat_request', 'chat_request__pet').prefetch_related('participants', 'messages')
     
     def get_serializer_context(self):
         """Add request to serializer context."""
