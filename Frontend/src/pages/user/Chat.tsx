@@ -27,6 +27,8 @@ interface Message {
   message_type?: 'text' | 'image';
   image?: string;
   image_url?: string;
+  cloudinary_url?: string;
+  cloudinary_public_id?: string;
   is_deleted?: boolean;
   timestamp: string;
   created_at?: string;
@@ -74,6 +76,8 @@ export default function Chat() {
         content: message.content || '',
         message_type: message.message_type || (message.image || message.image_url || message.cloudinary_url ? 'image' : 'text'),
         image: message.image,
+        cloudinary_url: message.cloudinary_url,
+        cloudinary_public_id: message.cloudinary_public_id,
         image_url: message.cloudinary_url || message.image_url || (message.image ? (message.image.startsWith('http') ? message.image : `${getBaseUrl()}${message.image}`) : undefined),
         is_deleted: message.is_deleted || false,
         timestamp: message.created_at || message.timestamp,
@@ -373,13 +377,16 @@ export default function Chat() {
                               : 'bg-muted'
                           }`}
                         >
-                          {message.message_type === 'image' && (message.image_url || message.image) && !message.is_deleted ? (
+                          {message.message_type === 'image' && (message.cloudinary_url || message.image_url || message.image) && !message.is_deleted ? (
                             <div className="relative group">
                               <img 
                                 src={
-                                  message.image_url 
-                                    ? (message.image_url.startsWith('http') ? message.image_url : getImageUrl(message.image_url) || message.image_url)
-                                    : (message.image ? (message.image.startsWith('http') ? message.image : getImageUrl(message.image) || message.image) : '')
+                                  // Priority: Cloudinary URL > image_url > local image
+                                  message.cloudinary_url 
+                                    ? message.cloudinary_url
+                                    : (message.image_url 
+                                      ? (message.image_url.startsWith('http') ? message.image_url : getImageUrl(message.image_url) || message.image_url)
+                                      : (message.image ? (message.image.startsWith('http') ? message.image : getImageUrl(message.image) || message.image) : ''))
                                 } 
                                 alt="Chat image" 
                                 className="max-w-full h-auto rounded-lg mb-2"
@@ -389,6 +396,9 @@ export default function Chat() {
                                   if (message.image_url && !message.image_url.startsWith('http')) {
                                     const apiUrl = getBaseUrl();
                                     target.src = `${apiUrl}${message.image_url}`;
+                                  } else if (message.image && !message.image.startsWith('http')) {
+                                    const apiUrl = getBaseUrl();
+                                    target.src = `${apiUrl}${message.image}`;
                                   }
                                 }}
                               />
