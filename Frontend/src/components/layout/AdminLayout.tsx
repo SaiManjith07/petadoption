@@ -12,7 +12,7 @@ export function AdminLayout({ children, onRefresh, isRefreshing = false }: Admin
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-[#F9FAFB]">
       {/* Top Navigation - Full Width */}
       <AdminTopNav 
         onMenuToggle={() => setSidebarOpen(!sidebarOpen)} 
@@ -31,11 +31,13 @@ export function AdminLayout({ children, onRefresh, isRefreshing = false }: Admin
         <AdminSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       </div>
 
-      {/* Main Content */}
-      <div className="flex flex-col min-w-0 lg:ml-64">
+      {/* Main Content - Updated margins and padding */}
+      <div className="flex flex-col min-w-0 lg:ml-[280px] transition-all duration-300">
         {/* Main Content Area - Scrollable */}
-        <main className="flex-1 overflow-y-auto bg-white pt-16">
-          {children}
+        <main className="flex-1 overflow-y-auto bg-[#F9FAFB] pt-16 min-h-[calc(100vh-4rem)]">
+          <div className="p-6 lg:p-8 max-w-[1400px] mx-auto">
+            {children}
+          </div>
         </main>
       </div>
     </div>

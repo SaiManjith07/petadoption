@@ -454,11 +454,11 @@ export default function AdminFoundPets() {
                       
                       // Display images if available
                       if (imageUrls.length > 0) {
-                        return (
+                            return (
                           <div className="flex gap-2 flex-wrap">
                             {imageUrls.slice(0, 3).map((imgUrl: string, idx: number) => (
                               <div 
-                                key={idx} 
+                                key={idx}
                                 className="relative group"
                                 onClick={() => {
                                   setSelectedImages(imageUrls);
@@ -497,7 +497,7 @@ export default function AdminFoundPets() {
                                 +{imageUrls.length - 3} more
                               </div>
                             )}
-                          </div>
+                      </div>
                         );
                       }
                       

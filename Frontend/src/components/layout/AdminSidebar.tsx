@@ -226,14 +226,14 @@ export const AdminSidebar = ({ isOpen = true, onClose }: AdminSidebarProps) => {
         />
       )}
       
-      {/* Fixed Sidebar - Clean White Design */}
+      {/* Fixed Sidebar - Modern floating design with 280px width */}
       <div className={cn(
-        "w-64 bg-white border-r border-gray-200 shadow-[0_4px_12px_rgba(0,0,0,0.05)]",
+        "w-[280px] bg-white border-r border-[#E5E7EB] rounded-r-2xl shadow-xl",
         "relative overflow-hidden flex flex-col",
         // Desktop: fixed position below navbar
-        "lg:fixed lg:left-0 lg:top-16 lg:h-[calc(100vh-4rem)] lg:z-40",
+        "lg:fixed lg:left-0 lg:top-16 lg:h-[calc(100vh-4rem)] lg:z-[999]",
         // Mobile: fixed and slideable
-        "fixed left-0 top-16 h-[calc(100vh-4rem)] z-50 transform transition-transform duration-300",
+        "fixed left-0 top-16 h-[calc(100vh-4rem)] z-[999] transform transition-all duration-300",
         isOpen ? "translate-x-0" : "-translate-x-full",
         "lg:translate-x-0"
       )}>
@@ -252,32 +252,32 @@ export const AdminSidebar = ({ isOpen = true, onClose }: AdminSidebarProps) => {
                 className={cn(
                   'group flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 relative',
                   active
-                    ? 'bg-[#E8F8EE] text-[#2BB6AF]'
+                    ? 'bg-gradient-to-r from-[#06B6D4]/10 to-[#3B82F6]/10 text-[#06B6D4] shadow-sm'
                     : hasPending
-                    ? 'text-gray-700 hover:bg-yellow-50 hover:text-[#2BB6AF] bg-yellow-50/50'
-                    : 'text-gray-700 hover:bg-gray-50 hover:text-[#2BB6AF]'
+                    ? 'text-[#374151] hover:bg-[#FEF3C7] hover:text-[#F59E0B] bg-[#FEF3C7]/50'
+                    : 'text-[#374151] hover:bg-[#F9FAFB] hover:text-[#06B6D4]'
                 )}
               >
                 {/* Active indicator bar */}
                 {active && (
-                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-[#2BB6AF] rounded-r-full" />
+                  <div className="absolute left-0 top-3 w-1 h-8 bg-gradient-to-b from-[#06B6D4] to-[#3B82F6] rounded-r-full" />
                 )}
                 {/* Pending indicator bar */}
                 {hasPending && !active && (
-                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-yellow-500 rounded-r-full" />
+                  <div className="absolute left-0 top-3 w-1 h-8 bg-[#F59E0B] rounded-r-full" />
                 )}
-                <Icon className={cn('h-5 w-5', active && 'text-[#2BB6AF]', hasPending && !active && 'text-yellow-600')} strokeWidth={2} />
-                <span className="font-medium text-sm flex-1 pl-4">{item.title}</span>
+                <Icon className={cn('h-5 w-5 flex-shrink-0', active ? 'text-[#06B6D4]' : hasPending && !active ? 'text-[#F59E0B]' : 'text-[#6B7280] group-hover:text-[#06B6D4]')} strokeWidth={2} />
+                <span className={cn('font-semibold text-sm flex-1', active ? 'text-[#06B6D4]' : hasPending && !active ? 'text-[#92400E]' : 'text-[#111827]')}>{item.title}</span>
                 {hasPending && (
                   <Badge 
                     variant="destructive" 
-                    className="bg-yellow-500 hover:bg-yellow-600 text-white text-xs px-2 py-0.5 min-w-[20px] flex items-center justify-center"
+                    className="bg-[#F59E0B] hover:bg-[#D97706] text-white text-xs px-2 py-0.5 min-w-[20px] flex items-center justify-center rounded-full"
                   >
                     {pendingCount > 99 ? '99+' : pendingCount}
                   </Badge>
                 )}
                 {active && !hasPending && (
-                  <ArrowRight className="h-4 w-4 text-[#2BB6AF]" />
+                  <ArrowRight className="h-4 w-4 text-[#06B6D4] flex-shrink-0" />
                 )}
               </Link>
             );
@@ -285,14 +285,14 @@ export const AdminSidebar = ({ isOpen = true, onClose }: AdminSidebarProps) => {
         </nav>
 
         {/* Admin Info Section - Bottom */}
-        <div className="p-4 border-t border-gray-100 bg-gray-50/50">
-          <div className="flex items-center gap-3 px-2 py-2">
-            <div className="h-10 w-10 rounded-full bg-[#E8F8EE] flex items-center justify-center border-2 border-[#2BB6AF]/20">
-              <User className="h-5 w-5 text-[#2BB6AF]" />
+        <div className="p-4 border-t border-[#E5E7EB] bg-[#F9FAFB]">
+          <div className="flex items-center gap-3 px-3 py-3 rounded-xl bg-white border border-[#E5E7EB] shadow-sm">
+            <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-[#06B6D4] to-[#3B82F6] flex items-center justify-center border-2 border-white shadow-md">
+              <User className="h-5 w-5 text-white" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-gray-900 truncate">{user?.name || 'Admin'}</p>
-              <p className="text-xs text-gray-500 truncate">{user?.email || 'admin@petreunite.com'}</p>
+              <p className="text-sm font-semibold text-[#111827] truncate">{user?.name || 'Admin'}</p>
+              <p className="text-xs text-[#6B7280] truncate">{user?.email || 'admin@petreunite.com'}</p>
             </div>
           </div>
         </div>

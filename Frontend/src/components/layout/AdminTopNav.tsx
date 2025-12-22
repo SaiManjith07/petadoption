@@ -82,8 +82,8 @@ export function AdminTopNav({ onMenuToggle, sidebarOpen, onRefresh, isRefreshing
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 w-full border-b border-gray-200 bg-white shadow-sm">
-      <div className="flex h-16 items-center justify-between px-4 lg:px-6 w-full">
+    <header className="fixed top-0 left-0 right-0 z-[1000] w-full h-16 border-b border-[#E5E7EB] bg-white/95 backdrop-blur-xl shadow-sm">
+      <div className="flex h-16 items-center justify-between px-6 w-full max-w-[1400px] mx-auto">
         {/* Logo and Website Name */}
         <div className="flex items-center gap-2 md:gap-4">
           <div className="flex-shrink-0">
@@ -111,14 +111,14 @@ export function AdminTopNav({ onMenuToggle, sidebarOpen, onRefresh, isRefreshing
             {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
           {/* Live System Indicator */}
-          <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 bg-[#E8F8EE] rounded-lg border border-[#2BB6AF]/20">
+          <div className="hidden lg:flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#D1FAE5] to-[#A7F3D0] rounded-xl border border-[#10B981]/20 shadow-sm">
             <div className="relative">
-              <Circle className="h-2 w-2 text-[#2BB6AF] fill-[#4CAF50]" />
+              <Circle className="h-2.5 w-2.5 text-[#10B981] fill-[#10B981]" />
               <div className="absolute inset-0 animate-ping">
-                <Circle className="h-2 w-2 text-[#2BB6AF] fill-[#4CAF50] opacity-75" />
+                <Circle className="h-2.5 w-2.5 text-[#10B981] fill-[#10B981] opacity-75" />
               </div>
             </div>
-            <span className="text-xs font-medium text-[#2BB6AF]">Live System</span>
+            <span className="text-xs font-semibold text-[#065F46]">Live System</span>
           </div>
 
           {/* Refresh Button */}
@@ -127,10 +127,10 @@ export function AdminTopNav({ onMenuToggle, sidebarOpen, onRefresh, isRefreshing
             size="sm"
             onClick={onRefresh}
             disabled={isRefreshing}
-            className="hidden lg:flex gap-2 text-gray-600 hover:text-[#2BB6AF] disabled:opacity-50"
+            className="hidden lg:flex gap-2 text-[#374151] hover:text-[#06B6D4] hover:bg-[#F0FDFA] rounded-xl disabled:opacity-50 transition-all"
           >
             <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-            <span>
+            <span className="font-medium">
               {isRefreshing ? 'Refreshing...' : 'Refresh'}
             </span>
           </Button>
@@ -138,38 +138,38 @@ export function AdminTopNav({ onMenuToggle, sidebarOpen, onRefresh, isRefreshing
           {/* Notifications */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="relative">
-                <Bell className="h-5 w-5" />
+              <Button variant="ghost" size="icon" className="relative rounded-xl hover:bg-[#F3F4F6] h-10 w-10 transition-all">
+                <Bell className="h-5 w-5 text-[#374151]" />
                 {unreadCount > 0 && (
                   <Badge
                     variant="destructive"
-                    className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs bg-[#2BB6AF]"
+                    className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs bg-[#EF4444] rounded-full"
                   >
                     {unreadCount > 9 ? '9+' : unreadCount}
                   </Badge>
                 )}
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-80">
-              <DropdownMenuLabel className="flex items-center justify-between">
+            <DropdownMenuContent align="end" className="w-80 rounded-xl border border-[#E5E7EB] shadow-xl">
+              <DropdownMenuLabel className="flex items-center justify-between text-[#111827] font-semibold">
                 <span>Notifications</span>
                 {unreadCount > 0 && (
-                  <Badge variant="secondary" className="text-xs bg-[#E8F8EE] text-[#2BB6AF]">
+                  <Badge variant="secondary" className="text-xs bg-[#06B6D4]/10 text-[#06B6D4] border-[#06B6D4]/20 rounded-full">
                     {unreadCount} new
                   </Badge>
                 )}
               </DropdownMenuLabel>
-              <DropdownMenuSeparator />
+              <DropdownMenuSeparator className="bg-[#E5E7EB]" />
               <div className="max-h-96 overflow-y-auto">
                 {notifications.length === 0 ? (
-                  <div className="p-4 text-center text-sm text-gray-500">
+                  <div className="p-6 text-center text-sm text-[#6B7280]">
                     No notifications
                   </div>
                 ) : (
                   notifications.map((notification) => (
                     <DropdownMenuItem
                       key={notification.id}
-                      className="flex flex-col items-start p-3 cursor-pointer hover:bg-gray-50"
+                      className="flex flex-col items-start p-4 cursor-pointer hover:bg-[#F9FAFB] rounded-lg transition-colors"
                       onClick={async () => {
                         if (!notification.is_read) {
                           await notificationsApi.markRead(notification.id);
@@ -181,18 +181,18 @@ export function AdminTopNav({ onMenuToggle, sidebarOpen, onRefresh, isRefreshing
                     >
                       <div className="flex items-start justify-between w-full">
                         <div className="flex-1">
-                          <p className="text-sm font-medium text-gray-900">
+                          <p className="text-sm font-semibold text-[#111827]">
                             {notification.title}
                           </p>
-                          <p className="text-xs text-gray-600 mt-1">
+                          <p className="text-xs text-[#6B7280] mt-1">
                             {notification.message}
                           </p>
-                          <p className="text-xs text-gray-400 mt-1">
+                          <p className="text-xs text-[#9CA3AF] mt-1">
                             {format(new Date(notification.created_at), 'MMM d, h:mm a')}
                           </p>
                         </div>
                         {!notification.is_read && (
-                          <div className="h-2 w-2 rounded-full bg-[#2BB6AF] ml-2" />
+                          <div className="h-2 w-2 rounded-full bg-[#06B6D4] ml-2 mt-1" />
                         )}
                       </div>
                     </DropdownMenuItem>
@@ -201,9 +201,9 @@ export function AdminTopNav({ onMenuToggle, sidebarOpen, onRefresh, isRefreshing
               </div>
               {notifications.length > 0 && (
                 <>
-                  <DropdownMenuSeparator />
+                  <DropdownMenuSeparator className="bg-[#E5E7EB]" />
                   <DropdownMenuItem
-                    className="text-center justify-center text-purple-600 font-medium hover:text-purple-700"
+                    className="text-center justify-center text-[#06B6D4] font-semibold hover:text-[#0891B2] hover:bg-[#F0FDFA] cursor-pointer rounded-lg"
                     onClick={() => navigate('/admin/notifications')}
                   >
                     View More
@@ -216,33 +216,33 @@ export function AdminTopNav({ onMenuToggle, sidebarOpen, onRefresh, isRefreshing
           {/* Profile Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="flex items-center gap-2 h-10 px-3">
-                <div className="h-8 w-8 rounded-full bg-[#E8F8EE] flex items-center justify-center border-2 border-[#2BB6AF]/20">
-                  <span className="text-sm font-semibold text-[#2BB6AF]">
+              <Button variant="ghost" className="flex items-center gap-2 h-10 px-3 rounded-xl hover:bg-[#F3F4F6] transition-all">
+                <div className="h-9 w-9 rounded-full bg-gradient-to-br from-[#06B6D4] to-[#3B82F6] flex items-center justify-center border-2 border-white shadow-md">
+                  <span className="text-sm font-semibold text-white">
                     {user?.name?.charAt(0).toUpperCase() || 'A'}
                   </span>
                 </div>
                 <div className="hidden md:block text-left">
-                  <p className="text-sm font-medium text-gray-900">{user?.name || 'Admin'}</p>
-                  <Badge variant="secondary" className="text-xs bg-[#E8F8EE] text-[#2BB6AF] border-[#2BB6AF]/20">
+                  <p className="text-sm font-semibold text-[#111827]">{user?.name || 'Admin'}</p>
+                  <Badge variant="secondary" className="text-xs bg-[#06B6D4]/10 text-[#06B6D4] border-[#06B6D4]/20 rounded-full">
                     Admin
                   </Badge>
                 </div>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel>My Account</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => navigate('/admin/profile')}>
-                <User className="mr-2 h-4 w-4" />
-                Profile
+            <DropdownMenuContent align="end" className="w-56 rounded-xl border border-[#E5E7EB] shadow-xl">
+              <DropdownMenuLabel className="text-[#111827] font-semibold">My Account</DropdownMenuLabel>
+              <DropdownMenuSeparator className="bg-[#E5E7EB]" />
+              <DropdownMenuItem onClick={() => navigate('/admin/profile')} className="rounded-lg hover:bg-[#F9FAFB]">
+                <User className="mr-2 h-4 w-4 text-[#06B6D4]" />
+                <span className="text-[#374151]">Profile</span>
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate('/admin')}>
-                <Settings className="mr-2 h-4 w-4" />
-                Settings
+              <DropdownMenuItem onClick={() => navigate('/admin')} className="rounded-lg hover:bg-[#F9FAFB]">
+                <Settings className="mr-2 h-4 w-4 text-[#06B6D4]" />
+                <span className="text-[#374151]">Settings</span>
               </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout} className="text-red-600">
+              <DropdownMenuSeparator className="bg-[#E5E7EB]" />
+              <DropdownMenuItem onClick={handleLogout} className="text-[#EF4444] rounded-lg hover:bg-[#FEE2E2]">
                 <LogOut className="mr-2 h-4 w-4" />
                 Logout
               </DropdownMenuItem>

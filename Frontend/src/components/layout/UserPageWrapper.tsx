@@ -29,7 +29,7 @@ export function UserPageWrapper({ children }: UserPageWrapperProps) {
   // For admins on non-admin pages (like pet detail), use admin layout
   if (isAdmin && !isAdminPage && !isPublicPage) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-[#F9FAFB]">
         {/* Fixed Sidebar - Desktop */}
         <div className="hidden lg:block">
           <AdminSidebar isOpen={true} onClose={() => setSidebarOpen(false)} />
@@ -41,15 +41,15 @@ export function UserPageWrapper({ children }: UserPageWrapperProps) {
         </div>
 
         {/* Main Content */}
-        <div className="flex flex-col min-w-0 lg:ml-64">
+        <div className="flex flex-col min-w-0 lg:ml-[280px] transition-all duration-300">
           <AdminTopNav 
             onMenuToggle={() => setSidebarOpen(!sidebarOpen)} 
             sidebarOpen={sidebarOpen}
           />
           
           {/* Main Content Area - Scrollable */}
-          <main className="flex-1 overflow-y-auto">
-            <div className="p-6">
+          <main className="flex-1 overflow-y-auto bg-[#F9FAFB] pt-16 min-h-[calc(100vh-4rem)]">
+            <div className="p-6 lg:p-8 max-w-[1400px] mx-auto">
               {children}
             </div>
           </main>

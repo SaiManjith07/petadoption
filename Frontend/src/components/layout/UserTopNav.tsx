@@ -76,8 +76,8 @@ export function UserTopNav({ onMenuToggle, sidebarOpen, onRefresh }: UserTopNavP
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 w-full border-b border-gray-200/50 bg-white/90 backdrop-blur-sm shadow-sm">
-      <div className="flex h-16 items-center justify-between px-4 lg:px-6 w-full">
+    <header className="fixed top-0 left-0 right-0 z-[1000] w-full h-16 border-b border-[#E5E7EB] bg-white/95 backdrop-blur-xl shadow-sm">
+      <div className="flex h-16 items-center justify-between px-6 w-full max-w-[1400px] mx-auto">
         {/* Logo and Website Name */}
         <div className="flex items-center gap-3 flex-shrink-0">
           <Logo 
@@ -94,10 +94,10 @@ export function UserTopNav({ onMenuToggle, sidebarOpen, onRefresh }: UserTopNavP
             <Button
               key={action.title}
               variant="ghost"
-              className="rounded-lg hover:bg-gray-100 h-9 px-3 text-sm"
+              className="rounded-xl hover:bg-[#F3F4F6] h-9 px-4 text-sm font-medium text-[#374151] transition-all"
               onClick={() => navigate(action.href)}
             >
-              <action.icon className="h-4 w-4 mr-2" />
+              <action.icon className="h-4 w-4 mr-2 text-[#06B6D4]" />
               <span>{action.title}</span>
             </Button>
           ))}
@@ -109,28 +109,28 @@ export function UserTopNav({ onMenuToggle, sidebarOpen, onRefresh }: UserTopNavP
           <Button
             variant="ghost"
             size="icon"
-            className="lg:hidden rounded-lg hover:bg-gray-100"
+            className="lg:hidden rounded-xl hover:bg-[#F3F4F6] h-10 w-10 transition-all"
             onClick={onMenuToggle}
           >
-            {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            {sidebarOpen ? <X className="h-5 w-5 text-[#374151]" /> : <Menu className="h-5 w-5 text-[#374151]" />}
           </Button>
           {/* Notifications */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="relative rounded-lg hover:bg-gray-100 h-9 w-9">
-                <Bell className="h-5 w-5 text-gray-600" />
+              <Button variant="ghost" size="icon" className="relative rounded-xl hover:bg-[#F3F4F6] h-10 w-10 transition-all">
+                <Bell className="h-5 w-5 text-[#374151]" />
                 {unreadCount > 0 && (
-                  <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 bg-red-500 text-white text-xs">
+                  <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 bg-[#EF4444] text-white text-xs rounded-full">
                     {unreadCount > 9 ? '9+' : unreadCount}
                   </Badge>
                 )}
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-80">
-              <DropdownMenuLabel>Notifications</DropdownMenuLabel>
-              <DropdownMenuSeparator />
+            <DropdownMenuContent align="end" className="w-80 rounded-xl border border-[#E5E7EB] shadow-xl">
+              <DropdownMenuLabel className="text-[#111827] font-semibold">Notifications</DropdownMenuLabel>
+              <DropdownMenuSeparator className="bg-[#E5E7EB]" />
               {notifications.length === 0 ? (
-                <div className="p-4 text-center text-sm text-gray-500">
+                <div className="p-6 text-center text-sm text-[#6B7280]">
                   No notifications
                 </div>
               ) : (
@@ -138,7 +138,7 @@ export function UserTopNav({ onMenuToggle, sidebarOpen, onRefresh }: UserTopNavP
                   {notifications.map((notification) => (
                     <DropdownMenuItem
                       key={notification.id}
-                      className="flex flex-col items-start p-3 cursor-pointer hover:bg-gray-50"
+                      className="flex flex-col items-start p-4 cursor-pointer hover:bg-[#F9FAFB] rounded-lg transition-colors"
                       onClick={() => {
                         if (!notification.is_read) {
                           notificationsApi.markRead(notification.id);
@@ -146,26 +146,26 @@ export function UserTopNav({ onMenuToggle, sidebarOpen, onRefresh }: UserTopNavP
                       }}
                     >
                       <div className="flex items-start justify-between w-full">
-                        <p className="text-sm font-medium text-gray-900">
+                        <p className="text-sm font-semibold text-[#111827]">
                           {notification.title}
                         </p>
                         {!notification.is_read && (
-                          <div className="h-2 w-2 rounded-full bg-blue-500 ml-2" />
+                          <div className="h-2 w-2 rounded-full bg-[#06B6D4] ml-2 mt-1" />
                         )}
                       </div>
-                      <p className="text-xs text-gray-500 mt-1">
+                      <p className="text-xs text-[#6B7280] mt-1">
                         {notification.message}
                       </p>
-                      <p className="text-xs text-gray-400 mt-1">
+                      <p className="text-xs text-[#9CA3AF] mt-1">
                         {format(new Date(notification.created_at), 'MMM dd, h:mm a')}
                       </p>
                     </DropdownMenuItem>
                   ))}
                 </div>
               )}
-              <DropdownMenuSeparator />
+              <DropdownMenuSeparator className="bg-[#E5E7EB]" />
               <DropdownMenuItem
-                className="text-center justify-center text-[#2BB6AF] font-medium hover:text-[#239a94] cursor-pointer"
+                className="text-center justify-center text-[#06B6D4] font-semibold hover:text-[#0891B2] hover:bg-[#F0FDFA] cursor-pointer rounded-lg"
                 onClick={() => navigate('/notifications')}
               >
                 View More
@@ -176,28 +176,29 @@ export function UserTopNav({ onMenuToggle, sidebarOpen, onRefresh }: UserTopNavP
           {/* User Profile */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="flex items-center gap-2 h-9 px-2 rounded-lg hover:bg-gray-100">
-                <Avatar className="h-8 w-8 border border-gray-200">
-                  <AvatarFallback className="bg-gradient-to-br from-[#2BB6AF] to-[#239a94] text-white font-semibold text-sm">
+              <Button variant="ghost" className="flex items-center gap-2 h-10 px-2 rounded-xl hover:bg-[#F3F4F6] transition-all">
+                <Avatar className="h-9 w-9 border-2 border-[#E5E7EB]">
+                  <AvatarFallback className="bg-gradient-to-br from-[#06B6D4] to-[#3B82F6] text-white font-semibold text-sm">
                     {user?.name?.charAt(0).toUpperCase() || 'U'}
                   </AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel>My Account</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => navigate('/profile')}>
-                <User className="mr-2 h-4 w-4" />
-                Profile
+            <DropdownMenuContent align="end" className="w-56 rounded-xl border border-[#E5E7EB] shadow-xl">
+              <DropdownMenuLabel className="text-[#111827] font-semibold">My Account</DropdownMenuLabel>
+              <DropdownMenuSeparator className="bg-[#E5E7EB]" />
+              <DropdownMenuItem onClick={() => navigate('/profile')} className="rounded-lg hover:bg-[#F9FAFB]">
+                <User className="mr-2 h-4 w-4 text-[#06B6D4]" />
+                <span className="text-[#374151]">Profile</span>
               </DropdownMenuItem>
               {!['rescuer', 'feeder', 'transporter'].includes(user?.role || '') && (
-                <DropdownMenuItem onClick={() => navigate('/become-volunteer')}>
-                  <UserPlus className="mr-2 h-4 w-4" />
-                  Become Volunteer
+                <DropdownMenuItem onClick={() => navigate('/become-volunteer')} className="rounded-lg hover:bg-[#F9FAFB]">
+                  <UserPlus className="mr-2 h-4 w-4 text-[#06B6D4]" />
+                  <span className="text-[#374151]">Become Volunteer</span>
                 </DropdownMenuItem>
               )}
-              <DropdownMenuItem onClick={handleLogout} className="text-red-600">
+              <DropdownMenuSeparator className="bg-[#E5E7EB]" />
+              <DropdownMenuItem onClick={handleLogout} className="text-[#EF4444] rounded-lg hover:bg-[#FEE2E2]">
                 <LogOut className="mr-2 h-4 w-4" />
                 Logout
               </DropdownMenuItem>

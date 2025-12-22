@@ -92,10 +92,10 @@ export function UserSidebar({ isOpen = true, onClose }: UserSidebarProps) {
         />
       )}
 
-      {/* Sidebar */}
+      {/* Sidebar - Modern floating design with 280px width */}
       <aside
         className={cn(
-          'fixed left-0 top-16 z-50 h-[calc(100vh-4rem)] w-72 bg-gradient-to-b from-white via-gray-50/50 to-white border-r border-gray-200/80 shadow-xl transition-transform duration-300 ease-in-out',
+          'fixed left-0 top-16 z-[999] h-[calc(100vh-4rem)] w-[280px] bg-white border-r border-[#E5E7EB] rounded-r-2xl shadow-xl transition-all duration-300 ease-in-out',
           'lg:translate-x-0',
           isOpen ? 'translate-x-0' : '-translate-x-full'
         )}
@@ -123,28 +123,28 @@ export function UserSidebar({ isOpen = true, onClose }: UserSidebarProps) {
                     }
                   }}
                   className={cn(
-                    'group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 relative',
+                    'group flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 relative',
                     isActive
-                      ? 'bg-[#E8F8EE] text-[#2BB6AF]'
-                      : 'text-gray-700 hover:bg-gray-50 hover:text-[#2BB6AF]'
+                      ? 'bg-gradient-to-r from-[#06B6D4]/10 to-[#3B82F6]/10 text-[#06B6D4] shadow-sm'
+                      : 'text-[#374151] hover:bg-[#F9FAFB] hover:text-[#06B6D4]'
                   )}
                 >
                   {/* Active indicator bar */}
                   {isActive && (
-                    <div className="absolute left-0 top-2.5 w-1 h-9 bg-[#2BB6AF] rounded-r-full" />
+                    <div className="absolute left-0 top-3 w-1 h-8 bg-gradient-to-b from-[#06B6D4] to-[#3B82F6] rounded-r-full" />
                   )}
-                  <Icon className={cn('h-5 w-5', isActive && 'text-[#2BB6AF]')} strokeWidth={2} />
+                  <Icon className={cn('h-5 w-5 flex-shrink-0', isActive ? 'text-[#06B6D4]' : 'text-[#6B7280] group-hover:text-[#06B6D4]')} strokeWidth={2} />
                   <div className="flex-1 min-w-0">
-                    <div className="font-medium text-sm">{item.title}</div>
+                    <div className={cn('font-semibold text-sm', isActive ? 'text-[#06B6D4]' : 'text-[#111827]')}>{item.title}</div>
                     <div className={cn(
-                      'text-xs truncate',
-                      isActive ? 'text-[#2BB6AF]/70' : 'text-gray-500'
+                      'text-xs truncate mt-0.5',
+                      isActive ? 'text-[#06B6D4]/70' : 'text-[#6B7280]'
                     )}>
                       {item.description}
                     </div>
                   </div>
                   {isActive && (
-                    <ArrowRight className="h-4 w-4 text-[#2BB6AF]" />
+                    <ArrowRight className="h-4 w-4 text-[#06B6D4] flex-shrink-0" />
                   )}
                 </Link>
               );
@@ -156,29 +156,29 @@ export function UserSidebar({ isOpen = true, onClose }: UserSidebarProps) {
             <div className="px-3 pb-2">
               <Link
                 to="/admin"
-                className="flex items-center gap-3 rounded-xl px-4 py-3 bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200/50 hover:from-purple-100 hover:to-indigo-100 transition-all group"
+                className="flex items-center gap-3 rounded-xl px-4 py-3 bg-gradient-to-r from-[#8B5CF6]/10 to-[#EC4899]/10 border border-[#8B5CF6]/20 hover:from-[#8B5CF6]/20 hover:to-[#EC4899]/20 transition-all group shadow-sm"
                 onClick={() => {
                   if (window.innerWidth < 1024 && onClose) {
                     onClose();
                   }
                 }}
               >
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-purple-500 to-indigo-600 text-white shadow-md group-hover:scale-105 transition-transform">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#8B5CF6] to-[#EC4899] text-white shadow-md group-hover:scale-105 transition-transform">
                   <ShieldCheck className="h-5 w-5" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-gray-900">Admin Panel</div>
-                  <div className="text-xs text-gray-600">Manage system</div>
+                  <div className="font-semibold text-[#111827]">Admin Panel</div>
+                  <div className="text-xs text-[#6B7280]">Manage system</div>
                 </div>
               </Link>
             </div>
           )}
 
           {/* User Info Footer */}
-          <div className="border-t border-gray-200/80 p-3 bg-gradient-to-r from-gray-50/50 to-transparent">
+          <div className="border-t border-[#E5E7EB] p-4 bg-[#F9FAFB]">
             <Link
               to="/profile"
-              className="flex items-center gap-3 rounded-xl p-2 hover:bg-gray-100/80 transition-colors group"
+              className="flex items-center gap-3 rounded-xl p-3 hover:bg-white transition-all group shadow-sm border border-[#E5E7EB]"
               onClick={() => {
                 if (window.innerWidth < 1024 && onClose) {
                   onClose();
@@ -186,20 +186,20 @@ export function UserSidebar({ isOpen = true, onClose }: UserSidebarProps) {
               }}
             >
               <div className="relative">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#2BB6AF] to-[#239a94] text-white font-bold text-base shadow-md group-hover:scale-105 transition-transform">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#06B6D4] to-[#3B82F6] text-white font-bold text-base shadow-md group-hover:scale-105 transition-transform">
                   {user?.name?.charAt(0)?.toUpperCase() || 'U'}
                 </div>
-                <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-[#2BB6AF] border-2 border-white"></div>
+                <div className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-[#10B981] border-2 border-white"></div>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-gray-900 truncate">
+                <p className="text-sm font-semibold text-[#111827] truncate">
                   {user?.name || 'User'}
                 </p>
-                <p className="text-xs text-gray-500 truncate">
+                <p className="text-xs text-[#6B7280] truncate">
                   {user?.email || 'user@example.com'}
                 </p>
                 {user?.role && user.role !== 'user' && (
-                  <Badge className="mt-1 text-xs bg-[#2BB6AF]/10 text-[#2BB6AF] border-[#2BB6AF]/20 capitalize">
+                  <Badge className="mt-1.5 text-xs bg-[#06B6D4]/10 text-[#06B6D4] border-[#06B6D4]/20 capitalize rounded-full px-2 py-0.5">
                     {user.role}
                   </Badge>
                 )}

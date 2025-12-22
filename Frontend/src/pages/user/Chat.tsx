@@ -267,11 +267,11 @@ export default function Chat() {
       }, 2000);
     } catch (error: any) {
       console.error('Error marking pet as reunited:', error);
-      toast({
+    toast({
         title: 'Error',
         description: error?.response?.data?.error || error?.message || 'Failed to mark pet as reunited',
         variant: 'destructive',
-      });
+    });
     }
   };
 

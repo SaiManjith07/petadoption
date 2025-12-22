@@ -979,9 +979,9 @@ export default function AdminChats() {
                                       <Eye className="h-4 w-4" />
                                       View
                                     </Button>
-                                  </TableCell>
-                                </TableRow>
-                              );
+                                </TableCell>
+                              </TableRow>
+                            );
                             })}
                           </TableBody>
                         </Table>

@@ -13,7 +13,7 @@ export function UserLayout({ children, title, subtitle, onRefresh }: UserLayoutP
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-[#F9FAFB]">
       {/* Top Navigation - Full Width */}
       <UserTopNav 
         onMenuToggle={() => setSidebarOpen(!sidebarOpen)} 
@@ -31,18 +31,18 @@ export function UserLayout({ children, title, subtitle, onRefresh }: UserLayoutP
         <UserSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       </div>
 
-      {/* Main Content */}
-      <div className="flex flex-col min-w-0 lg:ml-72 pt-16">
-        <main className="flex-1 overflow-y-auto bg-white">
+      {/* Main Content - Updated margins and padding */}
+      <div className="flex flex-col min-w-0 lg:ml-[280px] pt-16 transition-all duration-300">
+        <main className="flex-1 overflow-y-auto bg-[#F9FAFB] min-h-[calc(100vh-4rem)]">
           {title && (
-            <div className="border-b bg-white px-6 py-4">
-              <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
+            <div className="border-b border-[#E5E7EB] bg-white px-6 lg:px-8 py-6">
+              <h1 className="text-3xl font-bold text-[#111827]">{title}</h1>
               {subtitle && (
-                <p className="text-sm text-gray-600 mt-1">{subtitle}</p>
+                <p className="text-base text-[#6B7280] mt-2">{subtitle}</p>
               )}
             </div>
           )}
-          <div className="p-6 lg:p-8">
+          <div className="p-6 lg:p-8 max-w-[1400px] mx-auto">
             {children}
           </div>
         </main>

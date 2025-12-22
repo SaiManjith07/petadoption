@@ -8,33 +8,39 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* New Design System - Pet Community Platform */
-    /* Primary Colors */
-    --primary: 175 70% 42%; /* Teal #2BB6AF */
+    /* PetReunite Platform Redesign - New Design System */
+    /* Primary Colors - Cyan/Blue Gradient */
+    --primary: 188 94% 43%; /* Cyan #06B6D4 */
     --primary-foreground: 0 0% 100%;
+    --primary-light: 188 96% 50%; /* #22D3EE */
+    --primary-dark: 188 85% 37%; /* #0891B2 */
     
-    --secondary: 20 100% 64%; /* Orange #FF8F47 */
+    --secondary: 258 90% 66%; /* Purple #8B5CF6 */
     --secondary-foreground: 0 0% 100%;
+    --secondary-light: 258 95% 71%; /* #A78BFA */
+    --secondary-dark: 258 83% 58%; /* #7C3AED */
     
-    --success: 142 52% 55%; /* Green #42C77A */
+    --success: 142 71% 45%; /* Green #10B981 */
     --success-foreground: 0 0% 100%;
     
-    --warning: 45 97% 61%; /* Yellow #FDCB3C */
-    --warning-foreground: 0 0% 17%;
+    --warning: 38 92% 50%; /* Orange #F59E0B */
+    --warning-foreground: 0 0% 100%;
     
-    --error: 0 100% 68%; /* Red #FF5757 */
+    --error: 0 84% 60%; /* Red #EF4444 */
     --error-foreground: 0 0% 100%;
 
     /* Neutral Palette */
-    --background: 210 20% 98%; /* #F7F9FA */
-    --foreground: 0 0% 7%; /* #111111 - Title */
+    --background: 210 20% 99%; /* #F9FAFB */
+    --background-secondary: 210 20% 97%; /* #F3F4F6 */
+    --background-tertiary: 210 20% 95%; /* #E5E7EB */
+    --foreground: 222 47% 11%; /* #111827 - Title */
     
     --card: 0 0% 100%; /* #FFFFFF */
-    --card-foreground: 0 0% 7%; /* #111111 */
+    --card-foreground: 222 47% 11%; /* #111827 */
     
-    --text-body: 0 0% 29%; /* #4B4B4B - Body text */
-    --text-muted: 0 0% 55%; /* #8C8C8C - Muted text */
-    --border: 0 0% 88%; /* #E0E0E0 */
+    --text-body: 215 16% 47%; /* #374151 - Body text */
+    --text-muted: 215 16% 56%; /* #6B7280 - Muted text */
+    --border: 214 32% 91%; /* #E5E7EB */
     
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 7%;
@@ -56,8 +62,14 @@ All colors MUST be HSL.
 
     /* Border Radius */
     --radius: 0.5rem; /* 8px - Inputs */
-    --radius-card: 0.75rem; /* 12px - Cards */
-    --radius-button: 0.625rem; /* 10px - Buttons */
+    --radius-sm: 0.375rem; /* 6px */
+    --radius-md: 0.5rem; /* 8px */
+    --radius-lg: 0.75rem; /* 12px */
+    --radius-xl: 1rem; /* 16px */
+    --radius-2xl: 1.5rem; /* 24px */
+    --radius-full: 9999px; /* Full circle */
+    --radius-card: 1rem; /* 16px - Cards */
+    --radius-button: 0.75rem; /* 12px - Buttons */
     
     /* Shadows */
     --shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.06);
@@ -65,13 +77,13 @@ All colors MUST be HSL.
     --shadow-strong: 0 8px 24px rgba(0, 0, 0, 0.15);
     
     /* Gradients */
-    --gradient-warm: linear-gradient(135deg, hsl(175 70% 42%), hsl(20 100% 64%));
-    --gradient-hero: linear-gradient(180deg, hsl(210 20% 98%), hsl(175 70% 95%));
+    --gradient-primary: linear-gradient(135deg, hsl(188 94% 43%), hsl(217 91% 60%)); /* Cyan to Blue */
+    --gradient-hero: linear-gradient(180deg, hsl(210 20% 99%), hsl(188 94% 95%));
     
     /* Custom color variables for buttons */
-    --button-primary: 175 70% 42%;
+    --button-primary: 188 94% 43%;
     --button-primary-foreground: 0 0% 100%;
-    --button-primary-hover: 175 70% 38%;
+    --button-primary-hover: 188 85% 37%;
     
     /* Spacing System */
     --spacing-xs: 0.25rem; /* 4px */
