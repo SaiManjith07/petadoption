@@ -20,7 +20,7 @@ import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { UserPetMedicalRecords } from '@/components/pets/UserPetMedicalRecords';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Skeleton } from '@/components/ui/skeletons';
 
 // Helper functions
 const getEstimatedAge = (pet: any): string => {

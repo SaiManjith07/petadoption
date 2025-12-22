@@ -1,8 +1,8 @@
-import { Skeleton } from './skeleton';
+import { Skeleton as BaseSkeleton } from './skeleton';
 import { Card, CardContent, CardHeader } from './card';
 
 // Re-export Skeleton for convenience
-export { Skeleton };
+export const Skeleton = BaseSkeleton;
 
 // Pet Card Skeleton
 export function PetCardSkeleton() {
