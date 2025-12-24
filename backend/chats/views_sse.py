@@ -64,16 +64,28 @@ def stream_messages(request, room_id):
         
         # Get room by room_id (string like "3_6")
         try:
-            room = ChatRoom.objects.get(room_id=room_id)
+            # Check for numeric ID first (if passed as string but is number)
+            if str(room_id).isdigit():
+                try:
+                    room = ChatRoom.objects.get(id=int(room_id))
+                except ChatRoom.DoesNotExist:
+                    # If not found by ID, try as room_id field
+                    room = ChatRoom.objects.get(room_id=room_id)
+            else:
+                try:
+                    room = ChatRoom.objects.get(room_id=room_id)
+                except ChatRoom.MultipleObjectsReturned:
+                    print(f"Warning: Multiple rooms found for room_id {room_id}")
+                    rooms = ChatRoom.objects.filter(room_id=room_id)
+                    # Try to find one where user is participant
+                    room = rooms.filter(participants=user).first()
+                    if not room:
+                        room = rooms.first()
         except ChatRoom.DoesNotExist:
-            # Fallback to integer ID
-            try:
-                room = ChatRoom.objects.get(id=int(room_id))
-            except (ValueError, ChatRoom.DoesNotExist):
-                return JsonResponse(
-                    {'error': 'Room not found'},
-                    status=status.HTTP_404_NOT_FOUND
-                )
+            return JsonResponse(
+                {'error': 'Room not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
         
         # Verify user has access
         try:
@@ -189,7 +201,7 @@ def stream_messages(request, room_id):
                         break
                     
                     # Small delay to prevent excessive database queries
-                    time.sleep(1)
+                    time.sleep(3)
                     
                 except (BrokenPipeError, ConnectionResetError, OSError) as conn_error:
                     # Client disconnected

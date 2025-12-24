@@ -87,7 +87,7 @@ export default function Chat() {
         timestamp: message.created_at || message.timestamp,
         read_status: message.read_status || false,
       };
-      
+
       setMessages(prev => {
         // Avoid duplicates
         if (prev.some(m => m.id === formattedMessage.id)) {
@@ -125,17 +125,17 @@ export default function Chat() {
           throw new Error('Room not found');
         }
       }
-      
+
       if (!roomData) {
         throw new Error('Room not found');
       }
-      
+
       setRoom(roomData);
-      
+
       // Log room data for debugging
       console.log('Room data:', roomData);
       console.log('Pet ID from room:', roomData.pet_id || roomData.petId);
-      
+
       // Get other participant
       if (roomData.other_participant) {
         setOtherUser(roomData.other_participant);
@@ -143,7 +143,7 @@ export default function Chat() {
         const other = roomData.participants.find((p: any) => p.id !== user?.id);
         if (other) setOtherUser(other);
       }
-      
+
       // Load messages
       const actualRoomId = roomData.room_id || roomData.roomId || roomData.id;
       const messagesData = await chatApi.getRoomMessages(actualRoomId.toString());
@@ -154,7 +154,7 @@ export default function Chat() {
         description: error?.message || 'Could not load chat room',
         variant: 'destructive',
       });
-      navigate('/chats');
+      navigate(isAdmin ? '/admin/chats' : '/chats');
     } finally {
       setLoading(false);
     }
@@ -202,16 +202,16 @@ export default function Chat() {
 
     // Send via REST API (supports images)
     const actualRoomId = room?.room_id || room?.roomId || room?.id || roomId;
-      try {
+    try {
       const message = await chatApi.sendMessage(actualRoomId.toString(), messageContent, imageToSend || undefined);
-        setMessages(prev => [...prev, message]);
-      } catch (error) {
-        toast({
-          title: 'Error',
-          description: 'Could not send message',
-          variant: 'destructive',
-        });
-        setNewMessage(messageContent); // Restore message on error
+      setMessages(prev => [...prev, message]);
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Could not send message',
+        variant: 'destructive',
+      });
+      setNewMessage(messageContent); // Restore message on error
       if (imageToSend) {
         setSelectedImage(imageToSend);
         const reader = new FileReader();
@@ -226,8 +226,8 @@ export default function Chat() {
   const handleDeleteImage = async (messageId: number) => {
     try {
       await chatApi.deleteMessageImage(messageId);
-      setMessages(prev => prev.map(msg => 
-        msg.id === messageId 
+      setMessages(prev => prev.map(msg =>
+        msg.id === messageId
           ? { ...msg, is_deleted: true, image: undefined, image_url: undefined }
           : msg
       ));
@@ -259,17 +259,17 @@ export default function Chat() {
       if (!actualRoomId) {
         throw new Error('Room ID not found');
       }
-      
+
       const result = await chatApi.markReunified(actualRoomId);
-      
+
       toast({
         title: 'Success!',
         description: 'Pet marked as reunited. Chat has been closed.',
       });
-      
+
       // Update room status locally
       setRoom({ ...room, is_active: false });
-      
+
       // Navigate back to chats after a short delay
       setTimeout(() => {
         if (isAdmin) {
@@ -280,11 +280,11 @@ export default function Chat() {
       }, 2000);
     } catch (error: any) {
       console.error('Error marking pet as reunited:', error);
-    toast({
+      toast({
         title: 'Error',
         description: error?.response?.data?.error || error?.message || 'Failed to mark pet as reunited',
         variant: 'destructive',
-    });
+      });
     }
   };
 
@@ -324,10 +324,10 @@ export default function Chat() {
               <CardHeader className="border-b">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <Button variant="ghost" size="icon" onClick={() => navigate('/chats')}>
+                    <Button variant="ghost" size="icon" onClick={() => navigate(isAdmin ? '/admin/chats' : '/chats')}>
                       <ArrowLeft className="h-4 w-4" />
                     </Button>
-                  <div>
+                    <div>
                       <CardTitle className="flex items-center gap-2">
                         {otherUser?.name || 'Chat'}
                         {isOnline ? (
@@ -388,24 +388,23 @@ export default function Chat() {
                           </span>
                         </div>
                         <div
-                          className={`rounded-lg px-4 py-2 max-w-md ${
-                            isOwn
+                          className={`rounded-lg px-4 py-2 max-w-md ${isOwn
                               ? 'bg-primary text-primary-foreground'
                               : 'bg-muted'
-                          }`}
+                            }`}
                         >
                           {message.message_type === 'image' && (message.cloudinary_url || message.image_url || message.image) && !message.is_deleted ? (
                             <div className="relative group">
-                              <img 
+                              <img
                                 src={
                                   // Priority: Cloudinary URL > image_url > local image
-                                  message.cloudinary_url 
+                                  message.cloudinary_url
                                     ? message.cloudinary_url
-                                    : (message.image_url 
-                                    ? (message.image_url.startsWith('http') ? message.image_url : getImageUrl(message.image_url) || message.image_url)
+                                    : (message.image_url
+                                      ? (message.image_url.startsWith('http') ? message.image_url : getImageUrl(message.image_url) || message.image_url)
                                       : (message.image ? (message.image.startsWith('http') ? message.image : getImageUrl(message.image) || message.image) : ''))
-                                } 
-                                alt="Chat image" 
+                                }
+                                alt="Chat image"
                                 className="max-w-full h-auto rounded-lg mb-2"
                                 onError={(e) => {
                                   // Fallback if image fails to load
@@ -460,9 +459,9 @@ export default function Chat() {
               <div className="border-t p-4">
                 {imagePreview && (
                   <div className="mb-2 relative inline-block">
-                    <img 
-                      src={imagePreview} 
-                      alt="Preview" 
+                    <img
+                      src={imagePreview}
+                      alt="Preview"
                       className="max-w-xs h-auto rounded-lg border-2 border-primary"
                     />
                     <Button
@@ -483,8 +482,8 @@ export default function Chat() {
                     onChange={handleImageSelect}
                     className="hidden"
                   />
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     size="icon"
                     onClick={() => fileInputRef.current?.click()}
                   >
@@ -496,7 +495,7 @@ export default function Chat() {
                     onChange={(e) => setNewMessage(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
                   />
-                  <Button 
+                  <Button
                     onClick={handleSendMessage}
                     disabled={!newMessage.trim() && !selectedImage}
                   >

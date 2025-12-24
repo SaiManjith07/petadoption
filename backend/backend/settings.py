@@ -111,7 +111,7 @@ db_config = dj_database_url.parse(DATABASE_URL, conn_max_age=600)
 # Note: Neon pooled connections don't support statement_timeout in options
 # Only use connect_timeout for pooled connections
 db_config['OPTIONS'] = {
-    'connect_timeout': 10,  # 10 second connection timeout
+    'connect_timeout': 30,  # 30 second connection timeout
     # Removed statement_timeout as it's not supported by Neon pooled connections
 }
 

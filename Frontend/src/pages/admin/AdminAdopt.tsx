@@ -55,44 +55,44 @@ export default function AdminAdopt() {
       } else {
         setIsRefreshing(true);
       }
-      
+
       // Try to get pending adoption requests first
       let requests: any[] = [];
       try {
         const pendingRequests = await adminApi.getPendingAdoptionRequests();
-        requests = Array.isArray(pendingRequests) 
-          ? pendingRequests 
+        requests = Array.isArray(pendingRequests)
+          ? pendingRequests
           : pendingRequests?.data || pendingRequests?.results || [];
       } catch (pendingError: any) {
         console.warn('Pending adoption requests endpoint failed, trying alternative:', pendingError);
       }
-      
+
       // If no requests found, try getting all pets and filter for adoption status
       if (requests.length === 0) {
         try {
           const allPets = await adminApi.getAllPets();
           const petsArray = Array.isArray(allPets) ? allPets : allPets?.data || allPets?.results || [];
-          
+
           // Filter for adoption-related pets
           requests = petsArray.filter((p: any) => {
             const status = p.status || p.adoption_status || '';
-            return status === 'Pending Adoption' || 
-                   status === 'Available for Adoption' ||
-                   status === 'Adopted' ||
-                   status.toLowerCase().includes('adoption') ||
-                   status.toLowerCase().includes('adopt');
+            return status === 'Pending Adoption' ||
+              status === 'Available for Adoption' ||
+              status === 'Adopted' ||
+              status.toLowerCase().includes('adoption') ||
+              status.toLowerCase().includes('adopt');
           });
         } catch (allPetsError: any) {
           console.error('Error loading all pets for adoption:', allPetsError);
         }
       }
-      
+
       console.log('Adoption requests loaded:', requests.length);
       if (requests.length > 0) {
         console.log('Sample request (full object):', JSON.stringify(requests[0], null, 2));
         console.log('Sample request keys:', Object.keys(requests[0]));
       }
-      
+
       setAdoptionRequests(requests);
     } catch (error: any) {
       console.error('Error loading adoption requests:', error);
@@ -204,55 +204,55 @@ export default function AdminAdopt() {
   return (
     <AdminLayout onRefresh={() => loadAdoptionRequests(false)} isRefreshing={isRefreshing}>
       <div className="space-y-8">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-3xl font-bold flex items-center gap-2 text-gray-900">
-                  <Home className="h-8 w-8 text-[#2BB6AF]" />
-                  Adoption Requests Management
-                </h1>
-                <p className="text-gray-600 mt-1">Verify and approve adoption requests</p>
-              </div>
-              <Badge variant="default" className="text-base px-3 py-1 bg-[#2BB6AF]">
-                {filteredRequests.length} Adoption Request{filteredRequests.length !== 1 ? 's' : ''}
-              </Badge>
-            </div>
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold flex items-center gap-2 text-gray-900">
+              <Home className="h-8 w-8 text-[#2BB6AF]" />
+              Adoption Requests Management
+            </h1>
+            <p className="text-gray-600 mt-1">Verify and approve adoption requests</p>
+          </div>
+          <Badge variant="default" className="text-base px-3 py-1 bg-[#2BB6AF]">
+            {filteredRequests.length} Adoption Request{filteredRequests.length !== 1 ? 's' : ''}
+          </Badge>
+        </div>
 
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium text-gray-600">Total Requests</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-gray-900">{stats.total}</div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium text-gray-600">Pending Adoption</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-yellow-600">{stats.pending}</div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium text-gray-600">Available</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-green-600">{stats.available}</div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium text-gray-600">Adopted</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-blue-600">{stats.adopted}</div>
-                </CardContent>
-              </Card>
-            </div>
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-gray-600">Total Requests</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-gray-900">{stats.total}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-gray-600">Pending Adoption</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-yellow-600">{stats.pending}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-gray-600">Available</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-green-600">{stats.available}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-gray-600">Adopted</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-blue-600">{stats.adopted}</div>
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Filters */}
         <Card>
@@ -310,29 +310,29 @@ export default function AdminAdopt() {
             </Card>
           ) : (
             filteredRequests.map((request: any) => (
-              <Card key={request._id} className="hover:shadow-md transition-shadow">
+              <Card key={request.id || request._id || Math.random().toString()} className="hover:shadow-md transition-shadow">
                 <CardContent className="pt-6">
                   <div className="flex flex-col md:flex-row gap-6">
                     {/* Pet Images */}
-                    {(request.photos || request.images || request.photo_urls || request.image_urls) && 
-                     (request.photos?.length > 0 || request.images?.length > 0 || request.photo_urls?.length > 0 || request.image_urls?.length > 0) && (
-                      <div className="flex gap-2">
-                        {(request.photos || request.images || request.photo_urls || request.image_urls || []).slice(0, 3).map((photo: any, idx: number) => {
-                          const photoUrl = typeof photo === 'string' ? photo : (photo.url || photo.image_url || photo.photo_url);
-                          return photoUrl ? (
-                            <img
-                              key={idx}
-                              src={photoUrl}
-                              alt={`Pet ${idx + 1}`}
-                              className="h-32 w-32 rounded-lg object-cover"
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).style.display = 'none';
-                              }}
-                            />
-                          ) : null;
-                        })}
-                      </div>
-                    )}
+                    {(request.photos || request.images || request.photo_urls || request.image_urls) &&
+                      (request.photos?.length > 0 || request.images?.length > 0 || request.photo_urls?.length > 0 || request.image_urls?.length > 0) && (
+                        <div className="flex gap-2">
+                          {(request.photos || request.images || request.photo_urls || request.image_urls || []).slice(0, 3).map((photo: any, idx: number) => {
+                            const photoUrl = typeof photo === 'string' ? photo : (photo.url || photo.image_url || photo.photo_url);
+                            return photoUrl ? (
+                              <img
+                                key={idx}
+                                src={photoUrl}
+                                alt={`Pet ${idx + 1}`}
+                                className="h-32 w-32 rounded-lg object-cover"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).style.display = 'none';
+                                }}
+                              />
+                            ) : null;
+                          })}
+                        </div>
+                      )}
 
                     {/* Pet Details */}
                     <div className="flex-1 space-y-3">
@@ -346,26 +346,26 @@ export default function AdminAdopt() {
                           </div>
                           <h3 className="text-xl font-semibold">
                             {(() => {
-                              const species = request.species || 
-                                            request.pet_type || 
-                                            request.type || 
-                                            request.animal_type || 
-                                            request.category ||
-                                            request.name?.split(' ')[0] ||
-                                            'Unknown';
-                              const breed = request.breed || 
-                                           request.breed_name || 
-                                           request.breed_type ||
-                                           request.name?.split(' ').slice(1).join(' ') ||
-                                           'Mixed Breed';
+                              const species = request.species ||
+                                request.pet_type ||
+                                request.type ||
+                                request.animal_type ||
+                                request.category ||
+                                request.name?.split(' ')[0] ||
+                                'Unknown';
+                              const breed = request.breed ||
+                                request.breed_name ||
+                                request.breed_type ||
+                                request.name?.split(' ').slice(1).join(' ') ||
+                                'Mixed Breed';
                               return `${species} - ${breed}`;
                             })()}
                           </h3>
                           <p className="text-sm text-muted-foreground">
                             <strong>Color:</strong> {
-                              request.color_primary || 
-                              request.color || 
-                              request.primary_color || 
+                              request.color_primary ||
+                              request.color ||
+                              request.primary_color ||
                               request.color_name ||
                               request.body_color ||
                               (request.description && request.description.match(/color[:\s]+([^,\n]+)/i)?.[1]?.trim()) ||
@@ -379,54 +379,54 @@ export default function AdminAdopt() {
                         <div>
                           <strong>Description:</strong>
                           <p className="text-muted-foreground">
-                            {request.distinguishing_marks || 
-                             request.description || 
-                             request.notes || 
-                             request.details ||
-                             request.physical_description ||
-                             request.appearance ||
-                             request.characteristics ||
-                             'N/A'}
+                            {request.distinguishing_marks ||
+                              request.description ||
+                              request.notes ||
+                              request.details ||
+                              request.physical_description ||
+                              request.appearance ||
+                              request.characteristics ||
+                              'N/A'}
                           </p>
                         </div>
                         <div>
                           <strong>Location:</strong>
                           <p className="text-muted-foreground">
-                            {request.last_seen_or_found_location_text || 
-                             request.location || 
-                             request.location_text || 
-                             request.address ||
-                             request.found_location ||
-                             request.last_seen_location ||
-                             request.city ||
-                             request.area ||
-                             request.pincode ||
-                             'N/A'}
+                            {request.last_seen_or_found_location_text ||
+                              request.location ||
+                              request.location_text ||
+                              request.address ||
+                              request.found_location ||
+                              request.last_seen_location ||
+                              request.city ||
+                              request.area ||
+                              request.pincode ||
+                              'N/A'}
                           </p>
                         </div>
                         <div>
                           <strong>Requested by:</strong>
                           <p className="text-muted-foreground">
                             {(() => {
-                              const requesterName = request.submitted_by?.name || 
-                                                   request.owner?.name || 
-                                                   request.user?.name || 
-                                                   request.created_by?.name ||
-                                                   request.requester?.name ||
-                                                   request.adopter?.name ||
-                                                   request.requested_by?.name ||
-                                                   request.contact_name ||
-                                                   'N/A';
-                              const requesterEmail = request.submitted_by?.email || 
-                                                    request.owner?.email || 
-                                                    request.user?.email || 
-                                                    request.created_by?.email ||
-                                                    request.requester?.email ||
-                                                    request.adopter?.email ||
-                                                    request.requested_by?.email ||
-                                                    request.contact_email ||
-                                                    request.email;
-                              return requesterEmail && requesterEmail !== 'N/A' 
+                              const requesterName = request.submitted_by?.name ||
+                                request.owner?.name ||
+                                request.user?.name ||
+                                request.created_by?.name ||
+                                request.requester?.name ||
+                                request.adopter?.name ||
+                                request.requested_by?.name ||
+                                request.contact_name ||
+                                'N/A';
+                              const requesterEmail = request.submitted_by?.email ||
+                                request.owner?.email ||
+                                request.user?.email ||
+                                request.created_by?.email ||
+                                request.requester?.email ||
+                                request.adopter?.email ||
+                                request.requested_by?.email ||
+                                request.contact_email ||
+                                request.email;
+                              return requesterEmail && requesterEmail !== 'N/A'
                                 ? `${requesterName} (${requesterEmail})`
                                 : requesterName;
                             })()}
@@ -435,32 +435,32 @@ export default function AdminAdopt() {
                         <div>
                           <strong>Contact Preference:</strong>
                           <p className="text-muted-foreground">
-                            {request.contact_preference || 
-                             request.preferred_contact || 
-                             request.contact_method ||
-                             request.contact_way ||
-                             request.communication_preference ||
-                             (request.phone ? 'Phone' : null) ||
-                             (request.email ? 'Email' : null) ||
-                             'N/A'}
+                            {request.contact_preference ||
+                              request.preferred_contact ||
+                              request.contact_method ||
+                              request.contact_way ||
+                              request.communication_preference ||
+                              (request.phone ? 'Phone' : null) ||
+                              (request.email ? 'Email' : null) ||
+                              'N/A'}
                           </p>
                         </div>
                       </div>
 
                       {/* Actions */}
-                      {((request.status || request.adoption_status) === 'Pending Adoption' || 
+                      {((request.status || request.adoption_status) === 'Pending Adoption' ||
                         (request.status || request.adoption_status) === 'Pending') && (
-                        <div className="flex gap-2 pt-2">
-                          <Button
-                            size="sm"
-                            className="bg-green-600 hover:bg-green-700 gap-1"
-                            onClick={() => handleAccept(request._id || request.id)}
-                          >
-                            <CheckCircle className="h-4 w-4" />
-                            Accept & Verify Adoption
-                          </Button>
-                        </div>
-                      )}
+                          <div className="flex gap-2 pt-2">
+                            <Button
+                              size="sm"
+                              className="bg-green-600 hover:bg-green-700 gap-1"
+                              onClick={() => handleAccept(request._id || request.id)}
+                            >
+                              <CheckCircle className="h-4 w-4" />
+                              Accept & Verify Adoption
+                            </Button>
+                          </div>
+                        )}
                     </div>
                   </div>
                 </CardContent>

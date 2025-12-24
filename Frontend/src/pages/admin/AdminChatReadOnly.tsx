@@ -73,11 +73,11 @@ export default function AdminChatReadOnly() {
 
   const loadChatData = async () => {
     if (!roomId) return;
-    
+
     try {
       setLoading(true);
       const data = await adminApi.viewChatReadOnly(roomId);
-      
+
       setRoom(data.room);
       setMessages(data.messages || []);
       setParticipants(data.participants || []);
@@ -112,7 +112,7 @@ export default function AdminChatReadOnly() {
         <div className="hidden lg:block">
           <AdminSidebar isOpen={true} onClose={() => setSidebarOpen(false)} />
         </div>
-        
+
         {/* Mobile Sidebar */}
         <div className="lg:hidden">
           <AdminSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
@@ -120,8 +120,8 @@ export default function AdminChatReadOnly() {
 
         {/* Main Content */}
         <div className="flex flex-col min-w-0 lg:ml-64">
-          <AdminTopNav 
-            onMenuToggle={() => setSidebarOpen(!sidebarOpen)} 
+          <AdminTopNav
+            onMenuToggle={() => setSidebarOpen(!sidebarOpen)}
             sidebarOpen={sidebarOpen}
           />
           <div className="flex-1 flex items-center justify-center min-h-[calc(100vh-64px)]">
@@ -141,7 +141,7 @@ export default function AdminChatReadOnly() {
       <div className="hidden lg:block">
         <AdminSidebar isOpen={true} onClose={() => setSidebarOpen(false)} />
       </div>
-      
+
       {/* Mobile Sidebar */}
       <div className="lg:hidden">
         <AdminSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
@@ -149,12 +149,12 @@ export default function AdminChatReadOnly() {
 
       {/* Main Content */}
       <div className="flex flex-col min-w-0 lg:ml-64">
-        <AdminTopNav 
-          onMenuToggle={() => setSidebarOpen(!sidebarOpen)} 
+        <AdminTopNav
+          onMenuToggle={() => setSidebarOpen(!sidebarOpen)}
           sidebarOpen={sidebarOpen}
         />
-        
-        <div className="flex-1 flex overflow-hidden" style={{ height: 'calc(100vh - 64px)' }}>
+
+        <div className="flex-1 flex overflow-hidden gap-6" style={{ height: 'calc(100vh - 64px)' }}>
           {/* Main Chat Area */}
           <div className="flex-1 flex flex-col bg-white overflow-hidden">
             {/* Header */}
@@ -163,10 +163,11 @@ export default function AdminChatReadOnly() {
                 <div className="flex items-center gap-3">
                   <Button
                     variant="ghost"
-                    size="icon"
+                    className="gap-2"
                     onClick={() => navigate('/admin/chats')}
                   >
-                    <ArrowLeft className="h-5 w-5" />
+                    <ArrowLeft className="h-4 w-4" />
+                    Back
                   </Button>
                   <div>
                     <h1 className="text-xl font-semibold flex items-center gap-2">
@@ -177,8 +178,8 @@ export default function AdminChatReadOnly() {
                       </Badge>
                     </h1>
                     <p className="text-sm text-muted-foreground mt-1">
-                      {isVerifyingAdmin 
-                        ? 'You are the verifying admin (can send messages)' 
+                      {isVerifyingAdmin
+                        ? 'You are the verifying admin (can send messages)'
                         : 'You are viewing this chat in read-only mode'}
                     </p>
                   </div>
@@ -212,7 +213,7 @@ export default function AdminChatReadOnly() {
                 messages.map((message) => {
                   const isOwn = message.sender.id === (chatRequest?.verified_by_admin?.id || null);
                   const imageUrl = getImageUrl(message.image, message.image_url);
-                  
+
                   return (
                     <div
                       key={message.id}
@@ -231,11 +232,10 @@ export default function AdminChatReadOnly() {
                             </p>
                           )}
                           <div
-                            className={`rounded-lg px-4 py-2 ${
-                              isOwn
-                                ? 'bg-primary text-primary-foreground'
-                                : 'bg-muted'
-                            }`}
+                            className={`rounded-lg px-4 py-2 ${isOwn
+                              ? 'bg-primary text-primary-foreground'
+                              : 'bg-muted'
+                              }`}
                           >
                             {message.is_deleted ? (
                               <p className="italic text-muted-foreground">Message deleted</p>
@@ -276,7 +276,7 @@ export default function AdminChatReadOnly() {
           </div>
 
           {/* Participants Sidebar */}
-          <div className="w-80 border-l bg-white overflow-hidden flex flex-col shadow-sm">
+          <div className="w-80 bg-white overflow-hidden flex flex-col shadow-sm rounded-l-lg border-l-0">
             <div className="p-6 border-b bg-white flex-shrink-0">
               <h3 className="font-semibold text-lg flex items-center gap-2">
                 <User className="h-5 w-5" />

@@ -77,48 +77,70 @@ def dashboard_stats(request):
                 from users.models import User
                 from pets.models import AdoptionApplication
                 
-                print("DashboardStats model not available, calculating stats directly from database")
-                total_pets = Pet.objects.count()
-                pending_pets = Pet.objects.filter(adoption_status='Pending', is_verified=False).count()
-                found_pets = Pet.objects.filter(adoption_status='Found', is_verified=True).count()
-                lost_pets = Pet.objects.filter(adoption_status='Lost', is_verified=True).count()
-                available_pets = Pet.objects.filter(adoption_status='Available for Adoption').count()
-                adopted_pets = Pet.objects.filter(adoption_status='Adopted').count()
-                total_users = User.objects.count()
-                active_users = User.objects.filter(is_active=True).count()
-                total_applications = AdoptionApplication.objects.count()
-                pending_applications = AdoptionApplication.objects.filter(status='Pending').count()
+                # Optimize aggregations using one query where possible
+                from django.db.models import Count, Q
                 
-                # Try to get chat stats
-                total_chats = 0
-                active_chats = 0
-                pending_chat_requests = 0
+                # Pet Stats
+                pet_agg = Pet.objects.aggregate(
+                    total=Count('id'),
+                    pending=Count('id', filter=Q(adoption_status='Pending', is_verified=False)),
+                    found=Count('id', filter=Q(adoption_status='Found', is_verified=True)),
+                    lost=Count('id', filter=Q(adoption_status='Lost', is_verified=True)),
+                    available=Count('id', filter=Q(adoption_status='Available for Adoption')),
+                    adopted=Count('id', filter=Q(adoption_status='Adopted')),
+                    pending_found_reports=Count('id', filter=Q(adoption_status='Pending', is_verified=False, found_date__isnull=False)),
+                    pending_lost_reports=Count('id', filter=Q(adoption_status='Pending', is_verified=False, found_date__isnull=True))
+                )
+                
+                # User Stats
+                user_agg = User.objects.aggregate(
+                    total=Count('id'),
+                    active=Count('id', filter=Q(is_active=True))
+                )
+                
+                # Application Stats
+                app_agg = AdoptionApplication.objects.aggregate(
+                    total=Count('id'),
+                    pending=Count('id', filter=Q(status='Pending'))
+                )
+                
+                # Chat Stats
                 try:
                     from chats.models import ChatRoom, ChatRequest
-                    total_chats = ChatRoom.objects.count()
-                    active_chats = ChatRoom.objects.filter(is_active=True).count()
-                    pending_chat_requests = ChatRequest.objects.filter(status='pending').count()
+                    chat_stats = ChatRoom.objects.aggregate(
+                        total=Count('id'),
+                        active=Count('id', filter=Q(is_active=True))
+                    )
+                    request_stats = ChatRequest.objects.aggregate(
+                        pending=Count('id', filter=Q(status='pending'))
+                    )
+                    
+                    total_chats = chat_stats['total']
+                    active_chats = chat_stats['active']
+                    pending_chat_requests = request_stats['pending']
                 except Exception:
-                    pass  # Chat models might not exist
+                    total_chats = 0
+                    active_chats = 0
+                    pending_chat_requests = 0
                 
                 stats_dict = {
                     'pets': {
-                        'total': total_pets,
-                        'pending': pending_pets,
-                        'found': found_pets,
-                        'lost': lost_pets,
-                        'available': available_pets,
-                        'adopted': adopted_pets,
+                        'total': pet_agg['total'],
+                        'pending': pet_agg['pending'],  # Total pending
+                        'found': pet_agg['found'],
+                        'lost': pet_agg['lost'],
+                        'available': pet_agg['available'],
+                        'adopted': pet_agg['adopted'],
                     },
                     'users': {
-                        'total': total_users,
-                        'active': active_users,
-                        'regular': total_users - active_users,
+                        'total': user_agg['total'],
+                        'active': user_agg['active'],
+                        'regular': user_agg['total'] - user_agg['active'],
                         'rescuers': 0,
                     },
                     'applications': {
-                        'total': total_applications,
-                        'pending': pending_applications,
+                        'total': app_agg['total'],
+                        'pending': app_agg['pending'],
                     },
                     'chats': {
                         'total': total_chats,
@@ -126,14 +148,14 @@ def dashboard_stats(request):
                         'pending_requests': pending_chat_requests,
                     },
                     'pending': {
-                        'total': pending_pets,
-                        'found': 0,  # Will be calculated by frontend
-                        'lost': 0,   # Will be calculated by frontend
+                        'total': pet_agg['pending'],
+                        'found': pet_agg['pending_found_reports'],
+                        'lost': pet_agg['pending_lost_reports'],
                     },
                     'active': {
-                        'total': found_pets + lost_pets,
-                        'found': found_pets,
-                        'lost': lost_pets,
+                        'total': pet_agg['found'] + pet_agg['lost'],
+                        'found': pet_agg['found'],
+                        'lost': pet_agg['lost'],
                     },
                     'matched': 0,
                     'recent_activity': {
@@ -241,6 +263,10 @@ def pending_reports(request):
         ).exclude(
             # Exclude lost pets
             adoption_status='Lost'
+        ).select_related(
+            'category', 'owner', 'posted_by'
+        ).prefetch_related(
+            'images'
         ).order_by('-created_at')
         
         # Debug logging
@@ -265,6 +291,10 @@ def pending_reports(request):
         ).exclude(
             # Exclude found pets
             adoption_status='Found'
+        ).select_related(
+            'category', 'owner', 'posted_by'
+        ).prefetch_related(
+            'images'
         ).order_by('-created_at')
         
         # Debug logging
@@ -283,6 +313,10 @@ def pending_reports(request):
             Q(adoption_status='Pending', is_verified=False) | 
             Q(adoption_status='Found', is_verified=False) | 
             Q(adoption_status='Lost', is_verified=False)
+        ).select_related(
+            'category', 'owner', 'posted_by'
+        ).prefetch_related(
+            'images'
         ).order_by('-created_at')
     
     from pets.serializers import PetListSerializer
@@ -447,11 +481,19 @@ def all_chats(request):
         from django.db.models import Q
         
         # Get ALL rooms first to see what we have
-        # Don't prefetch messages to avoid accessing fields that might not exist
+        # Optimize with select_related and prefetch_related
+        # Include messages prefetch to avoid N+1 in serializer get_unread_count and get_last_message
+        from django.db.models import Prefetch, OuterRef, Subquery, Max, Count
+        
+        # We need to optimize getting last message content and unread count
+        # Prefetching messages is one way, but for large chats it loads too much
+        # Better to just prefetch the last few messages or use prefetch_related for basic optimization
         all_rooms = ChatRoom.objects.all().select_related(
             'user_a', 'user_b', 'chat_request', 'chat_request__pet', 'chat_request__verified_by_admin'
         ).prefetch_related(
-            'participants'
+            'participants',
+            'messages',         # Prefetch all messages to avoid N+1 in simple lookups
+            'messages__sender'  # Prefetch sender for messages
         ).order_by('-created_at')
         
         print(f"✓ Total rooms in database: {all_rooms.count()}")

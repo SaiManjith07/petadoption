@@ -178,6 +178,24 @@ def create_chat_request(request):
 @permission_classes([IsAdminUser])
 def admin_start_verification(request, request_id):
     """Admin starts verification by creating a chat room with the requester."""
+    from django.db import connection
+    from django.db.utils import OperationalError
+    import time
+    
+    # Simple retry logic for DB connection issues
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+             # Force a connection check to ensure we're connected
+            if connection.connection and not connection.is_usable():
+                connection.close()
+            break
+        except Exception:
+            if attempt < max_retries - 1:
+                time.sleep(1)
+            else:
+                pass
+
     try:
         # Try to get the request - don't filter by status initially to provide better error messages
         try:
@@ -701,7 +719,7 @@ def get_user_chat_requests(request, user_id):
     
     requests = ChatRequest.objects.filter(
         target_id=user_id
-    ).order_by('-created_at')
+    ).select_related('requester', 'target', 'pet').order_by('-created_at')
     
     serializer = ChatRequestSerializer(requests, many=True, context={'request': request})
     return Response({'data': serializer.data})
@@ -839,6 +857,8 @@ def mark_pet_reunified(request, room_id):
         pet.reunited_at = timezone.now()
         if owner:
             pet.reunited_with_owner = owner
+        
+        # Ensure we always save, even if owner is None
         pet.save()
         
         # Close the chat room

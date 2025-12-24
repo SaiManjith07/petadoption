@@ -304,7 +304,25 @@ class ChatRoomDetailView(generics.RetrieveAPIView):
 def get_room_messages(request, room_id):
     """Get messages for a room by room_id."""
     try:
-        room = ChatRoom.objects.get(room_id=room_id)
+        # Check for numeric ID first (if passed as string but is number)
+        if str(room_id).isdigit():
+            try:
+                room = ChatRoom.objects.get(id=int(room_id))
+            except ChatRoom.DoesNotExist:
+                # If not found by ID, try as room_id field
+                room = ChatRoom.objects.get(room_id=room_id)
+        else:
+            try:
+                room = ChatRoom.objects.get(room_id=room_id)
+            except ChatRoom.MultipleObjectsReturned:
+                # Handle duplicate room_ids
+                print(f"Warning: Multiple rooms found for room_id {room_id}")
+                rooms = ChatRoom.objects.filter(room_id=room_id)
+                # Try to find one where user is participant
+                room = rooms.filter(participants=request.user).first()
+                if not room:
+                    room = rooms.first()
+
         # Verify user has access
         if request.user not in room.participants.all() and not request.user.is_staff:
             return Response(
@@ -315,10 +333,19 @@ def get_room_messages(request, room_id):
         messages = Message.objects.filter(room=room).select_related('sender').order_by('created_at')
         serializer = MessageSerializer(messages, many=True, context={'request': request})
         return Response({'data': serializer.data})
+
     except ChatRoom.DoesNotExist:
         return Response(
             {'error': 'Room not found'},
             status=status.HTTP_404_NOT_FOUND
+        )
+    except Exception as e:
+        import traceback
+        print(f"Error in get_room_messages: {e}")
+        print(traceback.format_exc())
+        return Response(
+            {'error': f'Server error: {str(e)}'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
 
@@ -421,9 +448,26 @@ def send_message(request, room_id):
 def send_message_by_room_id(request, room_id):
     """Send a message to a chat room by room_id (string like '3_6'). Supports text and images."""
     try:
-        room = ChatRoom.objects.get(room_id=room_id)
+        # Check for numeric ID first (if passed as string but is number)
+        if str(room_id).isdigit():
+            try:
+                room = ChatRoom.objects.get(id=int(room_id))
+            except ChatRoom.DoesNotExist:
+                # If not found by ID, try as room_id field
+                room = ChatRoom.objects.get(room_id=room_id)
+        else:
+            try:
+                room = ChatRoom.objects.get(room_id=room_id)
+            except ChatRoom.MultipleObjectsReturned:
+                print(f"Warning: Multiple rooms found for room_id {room_id}")
+                rooms = ChatRoom.objects.filter(room_id=room_id)
+                # Try to find one where user is participant
+                room = rooms.filter(participants=request.user).first()
+                if not room:
+                    room = rooms.first()
+
         # Verify user has access
-        if request.user not in room.participants.all():
+        if request.user not in room.participants.all() and not request.user.is_staff:
             return Response(
                 {'error': 'Room not found or access denied'},
                 status=status.HTTP_404_NOT_FOUND
@@ -432,6 +476,14 @@ def send_message_by_room_id(request, room_id):
         return Response(
             {'error': 'Room not found'},
             status=status.HTTP_404_NOT_FOUND
+        )
+    except Exception as e:
+        import traceback
+        print(f"Error in send_message_by_room_id: {e}")
+        print(traceback.format_exc())
+        return Response(
+            {'error': f'Server error: {str(e)}'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
     content = request.data.get('content', '').strip()
@@ -518,7 +570,25 @@ def mark_messages_read(request, room_id):
 def mark_messages_read_by_room_id(request, room_id):
     """Mark all messages in a room as read by room_id (string like '3_6')."""
     try:
-        room = ChatRoom.objects.get(room_id=room_id)
+        # Check for numeric ID first (if passed as string but is number)
+        if str(room_id).isdigit():
+            try:
+                room = ChatRoom.objects.get(id=int(room_id))
+            except ChatRoom.DoesNotExist:
+                # If not found by ID, try as room_id field
+                room = ChatRoom.objects.get(room_id=room_id)
+        else:
+            try:
+                room = ChatRoom.objects.get(room_id=room_id)
+            except ChatRoom.MultipleObjectsReturned:
+                # Handle duplicate room_ids
+                print(f"Warning: Multiple rooms found for room_id {room_id}")
+                rooms = ChatRoom.objects.filter(room_id=room_id)
+                # Try to find one where user is participant
+                room = rooms.filter(participants=request.user).first()
+                if not room:
+                    room = rooms.first()
+
         # Verify user has access
         if request.user not in room.participants.all():
             return Response(
@@ -529,6 +599,14 @@ def mark_messages_read_by_room_id(request, room_id):
         return Response(
             {'error': 'Room not found'},
             status=status.HTTP_404_NOT_FOUND
+        )
+    except Exception as e:
+        import traceback
+        print(f"Error in mark_messages_read_by_room_id: {e}")
+        print(traceback.format_exc())
+        return Response(
+            {'error': f'Server error: {str(e)}'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
     Message.objects.filter(

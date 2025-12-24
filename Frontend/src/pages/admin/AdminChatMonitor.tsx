@@ -46,6 +46,8 @@ interface Message {
   created_at: string;
   timestamp?: string;
   read_status: boolean;
+  text?: string;
+  message?: string;
 }
 
 interface ChatRoom {
@@ -55,6 +57,11 @@ interface ChatRoom {
   participants?: any[];
   pet?: any;
   created_at?: string;
+  status?: string;
+  roomId?: string;
+  chat_type?: string;
+  pet_id?: number | string;
+  createdAt?: string;
 }
 
 export default function AdminChatMonitor() {
@@ -93,7 +100,7 @@ export default function AdminChatMonitor() {
         timestamp: message.created_at || message.timestamp,
         read_status: message.read_status || false,
       };
-      
+
       setMessages(prev => {
         // Avoid duplicates
         if (prev.some(m => m.id === formattedMessage.id)) {
@@ -108,7 +115,7 @@ export default function AdminChatMonitor() {
       console.error('[SSE] Error in chat monitor:', error);
       const errorMsg = error.message || 'Failed to connect to real-time updates';
       setSseError(errorMsg);
-      
+
       // If it's a 500 error or connection failed, disable SSE after a few attempts
       if (errorMsg.includes('500') || errorMsg.includes('ERR_FAILED')) {
         console.warn('[SSE] Backend error detected, disabling SSE connection');
@@ -131,11 +138,11 @@ export default function AdminChatMonitor() {
   const loadChatRoom = async () => {
     try {
       setLoading(true);
-      
+
       // Load room details - try multiple approaches
       let roomData: any = null;
       let room: any = {};
-      
+
       try {
         roomData = await adminApi.getChatRoom(roomId!);
         room = roomData?.data || roomData || {};
@@ -170,9 +177,9 @@ export default function AdminChatMonitor() {
           throw error;
         }
       }
-      
+
       setRoom(room);
-      
+
       // Extract participants - try multiple formats
       let extractedParticipants: any[] = [];
       if (room.participants && Array.isArray(room.participants)) {
@@ -194,7 +201,7 @@ export default function AdminChatMonitor() {
           extractedParticipants = room.participant_ids.map((id: any) => ({ id, name: `User ${id}`, email: '' }));
         }
       }
-      
+
       // If no participants found and room ID is in format "3_6", try to parse it
       if (extractedParticipants.length === 0 && roomId && typeof roomId === 'string' && roomId.includes('_')) {
         const userIds = roomId.split('_').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
@@ -213,7 +220,7 @@ export default function AdminChatMonitor() {
           }
         }
       }
-      
+
       // Ensure all participants have IDs - extract from room ID if missing
       if (extractedParticipants.length > 0) {
         extractedParticipants = extractedParticipants.map((p, index) => {
@@ -226,16 +233,16 @@ export default function AdminChatMonitor() {
           return p;
         });
       }
-      
+
       setParticipants(extractedParticipants);
-      
+
       // Determine the actual room ID for SSE and messages
       // Priority: room_id (string like "3_6") > roomId > id > roomId from URL
       const actualRoomIdForMessages = room?.room_id || room?.roomId || room?.id?.toString() || roomId;
-      
+
       // Set the actual room ID for SSE connection
       setActualRoomId(actualRoomIdForMessages?.toString() || null);
-      
+
       // Load existing messages - try multiple approaches
       if (actualRoomIdForMessages) {
         try {
@@ -243,8 +250,8 @@ export default function AdminChatMonitor() {
           const { chatApi } = await import('@/api/chatApi');
           const messagesData = await chatApi.getRoomMessages(actualRoomIdForMessages.toString());
           // Handle different message response formats
-          const messages = Array.isArray(messagesData) 
-            ? messagesData 
+          const messages = Array.isArray(messagesData)
+            ? messagesData
             : messagesData?.data || messagesData?.messages || [];
           setMessages(messages);
         } catch (error: any) {
@@ -252,8 +259,8 @@ export default function AdminChatMonitor() {
           try {
             const { chatApi } = await import('@/api/chatApi');
             const messagesData = await chatApi.getMessages(actualRoomIdForMessages.toString());
-            const messages = Array.isArray(messagesData) 
-              ? messagesData 
+            const messages = Array.isArray(messagesData)
+              ? messagesData
               : messagesData?.data || messagesData?.messages || [];
             setMessages(messages);
           } catch (msgError: any) {
@@ -264,7 +271,7 @@ export default function AdminChatMonitor() {
       } else {
         setMessages([]);
       }
-      
+
     } catch (error: any) {
       // Show warning but don't prevent the page from loading
       toast({
@@ -293,7 +300,7 @@ export default function AdminChatMonitor() {
 
   const handleTerminateChat = async () => {
     if (!roomId) return;
-    
+
     try {
       setIsTerminating(true);
       await adminApi.closeChat(roomId);
@@ -316,7 +323,7 @@ export default function AdminChatMonitor() {
 
   const handleDeleteChat = async () => {
     if (!roomId) return;
-    
+
     try {
       setIsDeleting(true);
       await adminApi.deleteChat(roomId);
@@ -344,7 +351,7 @@ export default function AdminChatMonitor() {
         <div className="hidden lg:block">
           <AdminSidebar isOpen={true} onClose={() => setSidebarOpen(false)} />
         </div>
-        
+
         {/* Mobile Sidebar */}
         <div className="lg:hidden">
           <AdminSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
@@ -352,8 +359,8 @@ export default function AdminChatMonitor() {
 
         {/* Main Content */}
         <div className="flex flex-col min-w-0 lg:ml-64">
-          <AdminTopNav 
-            onMenuToggle={() => setSidebarOpen(!sidebarOpen)} 
+          <AdminTopNav
+            onMenuToggle={() => setSidebarOpen(!sidebarOpen)}
             sidebarOpen={sidebarOpen}
           />
           <div className="flex-1 flex items-center justify-center">
@@ -373,7 +380,7 @@ export default function AdminChatMonitor() {
       <div className="hidden lg:block">
         <AdminSidebar isOpen={true} onClose={() => setSidebarOpen(false)} />
       </div>
-      
+
       {/* Mobile Sidebar */}
       <div className="lg:hidden">
         <AdminSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
@@ -381,11 +388,11 @@ export default function AdminChatMonitor() {
 
       {/* Main Content */}
       <div className="flex flex-col min-w-0 lg:ml-64">
-        <AdminTopNav 
-          onMenuToggle={() => setSidebarOpen(!sidebarOpen)} 
+        <AdminTopNav
+          onMenuToggle={() => setSidebarOpen(!sidebarOpen)}
           sidebarOpen={sidebarOpen}
         />
-        
+
         {/* Main Content Area - Scrollable */}
         <main className="flex-1 overflow-y-auto">
           <div className="p-6 space-y-6">
@@ -394,11 +401,11 @@ export default function AdminChatMonitor() {
               <div className="flex items-center gap-4">
                 <Button
                   variant="ghost"
-                  size="icon"
                   onClick={() => navigate('/admin/chats')}
-                  className="hover:bg-gray-100"
+                  className="hover:bg-gray-100 gap-2"
                 >
-                  <ArrowLeft className="h-5 w-5" />
+                  <ArrowLeft className="h-4 w-4" />
+                  Back
                 </Button>
                 <div>
                   <div className="flex items-center gap-3">
@@ -444,17 +451,17 @@ export default function AdminChatMonitor() {
                   <RefreshCw className="h-4 w-4" />
                   Refresh
                 </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={() => setTerminateDialogOpen(true)} 
+                <Button
+                  variant="outline"
+                  onClick={() => setTerminateDialogOpen(true)}
                   className="gap-2 text-orange-600 border-orange-200 hover:bg-orange-50"
                 >
                   <XCircle className="h-4 w-4" />
                   Terminate Chat
                 </Button>
-                <Button 
-                  variant="destructive" 
-                  onClick={() => setDeleteDialogOpen(true)} 
+                <Button
+                  variant="destructive"
+                  onClick={() => setDeleteDialogOpen(true)}
                   className="gap-2"
                 >
                   <Trash2 className="h-4 w-4" />
@@ -476,7 +483,7 @@ export default function AdminChatMonitor() {
                           Conversation
                         </CardTitle>
                         <CardDescription>
-                          {messages.length} message{messages.length !== 1 ? 's' : ''} • 
+                          {messages.length} message{messages.length !== 1 ? 's' : ''} •
                           {room?.type && (
                             <Badge variant={room.type === 'adoption' ? 'default' : 'secondary'} className="ml-2">
                               {room.type.toUpperCase()}
@@ -537,7 +544,7 @@ export default function AdminChatMonitor() {
                           const prevMessage = index > 0 ? messages[index - 1] : null;
                           const isSameSender = prevMessage && prevMessage.sender.id === message.sender.id;
                           const showSenderInfo = !isSameSender;
-                          
+
                           return (
                             <div
                               key={message.id}
@@ -693,7 +700,7 @@ export default function AdminChatMonitor() {
                   </CardHeader>
                   <CardContent className="space-y-2">
                     <p className="text-sm text-blue-800">
-                      You are viewing this chat in <strong>read-only</strong> mode. 
+                      You are viewing this chat in <strong>read-only</strong> mode.
                       You cannot send messages or interact with participants.
                     </p>
                     <Separator className="bg-blue-200" />

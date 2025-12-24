@@ -395,7 +395,7 @@ class ChatRequestSerializer(serializers.ModelSerializer):
     target = UserSerializer(read_only=True, allow_null=True)
     verified_by_admin = UserSerializer(read_only=True, allow_null=True)
     pet = serializers.SerializerMethodField()
-    pet_id = serializers.IntegerField(read_only=True, source='pet_id', allow_null=True)
+    pet_id = serializers.IntegerField(read_only=True, allow_null=True)
     target_id = serializers.SerializerMethodField()
     requester_id = serializers.IntegerField(write_only=True, required=False)
     room_id = serializers.SerializerMethodField()

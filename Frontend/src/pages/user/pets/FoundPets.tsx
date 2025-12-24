@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { PlusCircle, ArrowLeft, Heart, Sparkles, ShieldCheck, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ToastAction } from '@/components/ui/toast';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { PetGallery } from '@/components/pets/PetGallery';
@@ -28,7 +29,7 @@ export default function FoundPets() {
   const loadPets = async () => {
     try {
       setLoading(true);
-      const data = await petsApi.getAll({ 
+      const data = await petsApi.getAll({
         status: 'Found'
       });
       // Handle both paginated and direct array responses
@@ -83,16 +84,16 @@ export default function FoundPets() {
     try {
       const petId = selectedPet.id || selectedPet._id;
       const requesterId = user?.id || user?._id;
-      
+
       if (!petId) {
         toast({
           title: 'Error',
           description: 'Pet ID is missing',
           variant: 'destructive',
-      });
+        });
         return;
       }
-      
+
       if (!requesterId) {
         toast({
           title: 'Error',
@@ -101,7 +102,7 @@ export default function FoundPets() {
         });
         return;
       }
-      
+
       await chatApi.requestChat(
         petId,
         requesterId,
@@ -124,18 +125,33 @@ export default function FoundPets() {
         type: 'claim',
         message: claimMessage
       });
-      
-      const errorMessage = error?.response?.data?.detail || 
-                          error?.response?.data?.error || 
-                          error?.message || 
-                          'Could not send chat request';
-      
+
+      const errorMessage = error?.response?.data?.detail ||
+        error?.response?.data?.error ||
+        error?.message ||
+        'Could not send chat request';
+
       // Show detailed error if available
       const debugInfo = error?.response?.data?.debug_info;
-      const fullMessage = debugInfo 
+      const fullMessage = debugInfo
         ? `${errorMessage}\n\nDebug: Pet ID: ${debugInfo.pet_id}, Target ID: ${debugInfo.target_id}`
         : errorMessage;
-      
+
+      // Check for duplicate request error
+      if (errorMessage.toLowerCase().includes('pending request') ||
+        errorMessage.toLowerCase().includes('already have a pending request')) {
+        toast({
+          title: 'Request Already Sent',
+          description: 'You have already sent a request for this pet. Please check your chat messages for updates.',
+          variant: 'default',
+          className: "bg-[#2BB6AF] text-white border-none"
+        });
+        setShowClaimDialog(false);
+        setClaimMessage('');
+        setSelectedPet(null);
+        return;
+      }
+
       toast({
         title: 'Error',
         description: fullMessage,
@@ -159,15 +175,15 @@ export default function FoundPets() {
           </div>
           <div className="relative px-8 py-6">
             {/* Back Button */}
-            <Button 
-              variant="ghost" 
-              onClick={() => navigate('/home')} 
+            <Button
+              variant="ghost"
+              onClick={() => navigate('/home')}
               className="mb-4 text-gray-900 hover:text-black hover:bg-white/50 backdrop-blur-sm"
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Home
             </Button>
-            
+
             {/* Title and Icon */}
             <div className="flex items-start gap-4 mb-6">
               <div className="h-14 w-14 rounded-xl bg-white/80 backdrop-blur-md flex items-center justify-center border-2 border-[#2BB6AF] shadow-lg flex-shrink-0">
@@ -185,7 +201,7 @@ export default function FoundPets() {
                 </div>
               </div>
             </div>
-            
+
             {/* Stats and Button Row */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div className="flex flex-wrap items-center gap-4">
@@ -198,8 +214,8 @@ export default function FoundPets() {
                   <span className="text-sm">Active Reports</span>
                 </div>
               </div>
-              
-              <Button 
+
+              <Button
                 className="bg-white text-[#2BB6AF] hover:bg-[#E0F7F5] shadow-lg hover:shadow-[#2BB6AF]/20 border-2 border-white/50 font-semibold px-5 py-2.5 text-sm whitespace-nowrap"
                 onClick={() => navigate('/pets/new/found')}
               >
