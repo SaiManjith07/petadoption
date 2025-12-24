@@ -99,10 +99,10 @@ TEMPLATES = [
 WSGI_APPLICATION = 'backend.wsgi.application'
 
 # Database
-DATABASE_URL = os.getenv(
-    'DATABASE_URL',
-    'postgresql://neondb_owner:npg_vlOmWHKNQ45B@ep-empty-bush-a1ovrzm3-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require'
-)
+    # 'DATABASE_URL',
+    # 'postgresql://neondb_owner:npg_vlOmWHKNQ45B@ep-empty-bush-a1ovrzm3-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require'
+    # )
+DATABASE_URL = 'postgresql://neondb_owner:npg_vlOmWHKNQ45B@ep-raspy-bread-a1lty93k-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require'
 
 # Parse database URL with connection pooling settings
 db_config = dj_database_url.parse(DATABASE_URL, conn_max_age=600)
@@ -122,8 +122,22 @@ if 'sslmode' not in str(DATABASE_URL).lower():
     # Force SSL mode if not in URL
     db_config['OPTIONS']['sslmode'] = 'require'
 
+# DATABASES = {
+#     'default': db_config
+# }
 DATABASES = {
-    'default': db_config
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'neondb',
+        'USER': 'neondb_owner',
+        'PASSWORD': 'npg_vlOmWHKNQ45B',
+        'HOST': 'ep-raspy-bread-a1lty93k-pooler.ap-southeast-1.aws.neon.tech',
+        'PORT': '5432',
+        'OPTIONS': {
+            'sslmode': 'require',
+            'connect_timeout': 30,
+        },
+    }
 }
 
 # Password validation
