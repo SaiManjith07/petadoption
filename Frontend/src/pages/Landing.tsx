@@ -170,7 +170,7 @@ const HeroSection: React.FC = () => {
       </div>
 
       {/* Content Overlay - Text and CTA */}
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-white w-full">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-white w-full pb-32 sm:pb-0">
         <div
           key={currentIndex}
           className="max-w-4xl mx-auto"
@@ -207,8 +207,8 @@ const HeroSection: React.FC = () => {
           {/* CTA Buttons - All in One Line */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-6">
             <Link to="/auth/login">
-              <Button 
-                size="lg" 
+              <Button
+                size="lg"
                 className="group bg-[#2BB6AF] hover:bg-[#239a94] text-white px-8 py-6 text-lg font-semibold transition-all duration-300 transform hover:scale-110 hover:shadow-2xl hover:shadow-[#2BB6AF]/50 active:scale-95"
               >
                 Get Started
@@ -216,9 +216,9 @@ const HeroSection: React.FC = () => {
               </Button>
             </Link>
             <Link to="/pets/report-lost">
-              <Button 
-                size="lg" 
-                variant="outline" 
+              <Button
+                size="lg"
+                variant="outline"
                 className="group border-2 border-white text-white hover:bg-white hover:text-[#2BB6AF] px-8 py-6 text-lg font-semibold transition-all duration-300 transform hover:scale-110 hover:shadow-xl hover:shadow-white/30 active:scale-95 backdrop-blur-sm bg-white/5"
               >
                 Report
@@ -226,8 +226,8 @@ const HeroSection: React.FC = () => {
               </Button>
             </Link>
             <Link to="/pets/adopt">
-              <Button 
-                size="lg" 
+              <Button
+                size="lg"
                 className="group bg-white text-[#2BB6AF] hover:bg-gray-50 hover:text-[#239a94] px-8 py-6 text-lg font-semibold transition-all duration-300 transform hover:scale-110 hover:shadow-2xl hover:shadow-white/50 active:scale-95"
               >
                 <Heart className="mr-2 h-5 w-5 group-hover:fill-[#2BB6AF] group-hover:scale-110 transition-all" />
@@ -236,7 +236,7 @@ const HeroSection: React.FC = () => {
             </Link>
           </div>
         </div>
-        
+
       </div>
 
       {/* All Animals Grid Below Hero (Scroll Indicator) */}
@@ -247,24 +247,21 @@ const HeroSection: React.FC = () => {
               <button
                 key={index}
                 onClick={() => setCurrentIndex(index)}
-                className={`group relative flex-shrink-0 transition-all duration-300 flex flex-col items-center ${
-                  index === currentIndex
-                    ? 'scale-110'
-                    : 'hover:scale-110'
-                }`}
+                className={`group relative flex-shrink-0 transition-all duration-300 flex flex-col items-center ${index === currentIndex
+                  ? 'scale-110'
+                  : 'hover:scale-110'
+                  }`}
                 title={pet.type}
               >
-                <div className={`relative w-12 h-12 rounded-full overflow-hidden transition-all duration-300 ${
-                  index === currentIndex 
-                    ? 'border-[3px] border-[#2BB6AF] ring-2 ring-[#2BB6AF]/50 ring-offset-2 ring-offset-transparent shadow-lg shadow-[#2BB6AF]/30' 
-                    : 'border-2 border-white/30 group-hover:border-white/60 group-hover:shadow-md group-hover:shadow-white/20'
-                }`}>
+                <div className={`relative w-12 h-12 rounded-full overflow-hidden transition-all duration-300 ${index === currentIndex
+                  ? 'border-[3px] border-[#2BB6AF] ring-2 ring-[#2BB6AF]/50 ring-offset-2 ring-offset-transparent shadow-lg shadow-[#2BB6AF]/30'
+                  : 'border-2 border-white/30 group-hover:border-white/60 group-hover:shadow-md group-hover:shadow-white/20'
+                  }`}>
                   <img
                     src={pet.url}
                     alt={pet.type}
-                    className={`w-full h-full object-cover transition-transform duration-300 ${
-                      index === currentIndex ? 'scale-110' : 'group-hover:scale-110'
-                    }`}
+                    className={`w-full h-full object-cover transition-transform duration-300 ${index === currentIndex ? 'scale-110' : 'group-hover:scale-110'
+                      }`}
                     onError={(e) => {
                       (e.target as HTMLImageElement).src = 'https://via.placeholder.com/48x48?text=' + pet.type;
                     }}
@@ -275,7 +272,7 @@ const HeroSection: React.FC = () => {
                 </div>
                 {/* Circular indicator for selected */}
                 {index === currentIndex && (
-                  <motion.div 
+                  <motion.div
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
                     className="w-2 h-2 rounded-full bg-[#2BB6AF] mt-1.5 shadow-lg shadow-[#2BB6AF]/50"
@@ -350,11 +347,11 @@ const WhatWeDo: React.FC = () => {
   };
 
   return (
-    <section className="py-20 sm:py-24 lg:py-28 bg-transparent relative overflow-hidden">
+    <section className="py-12 sm:py-24 lg:py-28 bg-transparent relative overflow-hidden">
       {/* Subtle Background Pattern */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <motion.div
-          animate={{ 
+          animate={{
             x: [0, 100, 0],
             y: [0, 50, 0],
             scale: [1, 1.2, 1],
@@ -363,7 +360,7 @@ const WhatWeDo: React.FC = () => {
           className="absolute top-20 left-20 w-96 h-96 bg-teal-50 rounded-full blur-3xl"
         />
         <motion.div
-          animate={{ 
+          animate={{
             x: [0, -80, 0],
             y: [0, -60, 0],
             scale: [1, 1.3, 1],
@@ -386,7 +383,7 @@ const WhatWeDo: React.FC = () => {
             <Sparkles className="h-5 w-5 text-teal-600 animate-pulse" />
             <span className="text-sm font-bold text-teal-600">Our Services</span>
           </Badge>
-          <motion.h2 
+          <motion.h2
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -413,15 +410,15 @@ const WhatWeDo: React.FC = () => {
           {whatWeDoFeatures.map((feature, index) => {
             const isFlipped = flippedCardIndex === index;
             const isHovered = hoveredCard === index;
-            
+
             return (
               <motion.div
                 key={index}
                 initial={{ opacity: 0, y: 50 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ 
-                  duration: 0.6, 
+                transition={{
+                  duration: 0.6,
                   delay: index * 0.1,
                   type: "spring",
                   stiffness: 100
@@ -469,7 +466,7 @@ const WhatWeDo: React.FC = () => {
                       transition={{ duration: 0.6, type: "spring", stiffness: 200 }}
                       className="relative mb-6 flex-shrink-0"
                     >
-                      <div 
+                      <div
                         className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto relative bg-gradient-to-br from-teal-600 to-cyan-600 shadow-lg"
                       >
                         <motion.div
@@ -481,8 +478,8 @@ const WhatWeDo: React.FC = () => {
                           }}
                         />
                         <div className="relative z-10 text-white">
-                          {React.cloneElement(feature.icon as React.ReactElement, { 
-                            className: 'h-10 w-10' 
+                          {React.cloneElement(feature.icon as React.ReactElement, {
+                            className: 'h-10 w-10'
                           })}
                         </div>
                       </div>
@@ -703,9 +700,9 @@ const CommunityFeatures: React.FC = () => {
 
   return (
     <>
-      <section className="py-20 sm:py-24 lg:py-28 bg-gradient-to-br from-white via-slate-50 to-white relative overflow-hidden">
+      <section className="py-12 sm:py-24 lg:py-28 bg-gradient-to-br from-white via-slate-50 to-white relative overflow-hidden">
         {/* Spotlight Effect Background */}
-        <div 
+        <div
           className="absolute inset-0 opacity-0 transition-opacity duration-500 pointer-events-none"
           style={{
             opacity: hoveredCard !== null ? 0.1 : 0,
@@ -722,17 +719,17 @@ const CommunityFeatures: React.FC = () => {
             transition={{ duration: 0.8 }}
             className="text-center mb-16"
           >
-          <motion.h2 
+            <motion.h2
               initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
               transition={{ duration: 0.8, delay: 0.2 }}
               className="text-4xl md:text-5xl lg:text-6xl font-extrabold mb-6"
-          >
+            >
               <span className="bg-gradient-to-r from-teal-600 via-cyan-600 to-blue-600 bg-clip-text text-transparent">
-            Community Features
+                Community Features
               </span>
-          </motion.h2>
+            </motion.h2>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
               Connect, collaborate, and make a difference together
             </p>
@@ -750,22 +747,22 @@ const CommunityFeatures: React.FC = () => {
                 {[...communityFeatures, ...communityFeatures].map((feature, index) => {
                   const actualIndex = index % communityFeatures.length;
                   const isHovered = hoveredCard === index;
-                  
+
                   return (
-              <motion.div
+                    <motion.div
                       key={`${feature.id}-${index}`}
                       initial={{ opacity: 0, scale: 0.8 }}
                       whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                      transition={{ 
-                        duration: 0.5, 
+                      viewport={{ once: true }}
+                      transition={{
+                        duration: 0.5,
                         delay: actualIndex * 0.1,
                         type: "spring",
                         stiffness: 100
                       }}
                       onMouseMove={(e) => handleMouseMove(e, index)}
                       onMouseLeave={() => setHoveredCard(null)}
-                onClick={() => handleFeatureClick(feature)}
+                      onClick={() => handleFeatureClick(feature)}
                       className="group relative flex-shrink-0 w-[380px] snap-center cursor-pointer"
                       style={{
                         perspective: '1000px',
@@ -795,7 +792,7 @@ const CommunityFeatures: React.FC = () => {
                         }}
                       >
                         {/* Gradient Border */}
-                        <div 
+                        <div
                           className="absolute inset-0 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"
                           style={{
                             background: 'linear-gradient(135deg, #14b8a6, #0891b2, #a855f7)',
@@ -821,7 +818,7 @@ const CommunityFeatures: React.FC = () => {
                             transition={{ duration: 0.5, type: "spring" }}
                             className="mb-6"
                           >
-                            <div 
+                            <div
                               className="w-20 h-20 rounded-full flex items-center justify-center mx-auto relative"
                               style={{
                                 background: 'linear-gradient(135deg, #14b8a6, #0891b2)',
@@ -843,7 +840,7 @@ const CommunityFeatures: React.FC = () => {
                                 {React.cloneElement(feature.icon as React.ReactElement, { className: 'h-10 w-10' })}
                               </div>
                             </div>
-              </motion.div>
+                          </motion.div>
 
                           <h3 className="text-2xl font-bold mb-4 text-gray-900 group-hover:bg-gradient-to-r group-hover:from-teal-600 group-hover:to-cyan-600 group-hover:bg-clip-text group-hover:text-transparent transition-all duration-300">
                             {feature.title}
@@ -860,12 +857,12 @@ const CommunityFeatures: React.FC = () => {
                             <span className="text-sm">Explore</span>
                             <ArrowRight className="ml-2 h-4 w-4" />
                           </motion.div>
-          </div>
+                        </div>
                       </motion.div>
                     </motion.div>
                   );
                 })}
-        </div>
+              </div>
             </div>
           </div>
         </div>
@@ -994,7 +991,7 @@ const HowItWorks: React.FC = () => {
     <section id="how-it-works-section" className="py-20 sm:py-24 lg:py-28 relative overflow-hidden">
       {/* Background gradient */}
       <div className="absolute inset-0 bg-gradient-to-b from-gray-50 via-white to-gray-50" />
-      
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         {/* Section Header */}
         <motion.div
@@ -1008,7 +1005,7 @@ const HowItWorks: React.FC = () => {
             <Activity className="h-5 w-5 text-teal-600 animate-pulse" />
             <span className="text-sm font-bold text-teal-700">Simple Process</span>
           </Badge>
-          <motion.h2 
+          <motion.h2
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -1027,7 +1024,7 @@ const HowItWorks: React.FC = () => {
         {/* Connected Circles Design - TCS iON Style */}
         <div className="relative">
           {/* SVG Curved Connection Lines - Desktop */}
-          <svg 
+          <svg
             className="hidden lg:block absolute top-1/2 left-0 w-full h-32 -translate-y-1/2 z-0"
             viewBox="0 0 1200 120"
             preserveAspectRatio="none"
@@ -1057,15 +1054,15 @@ const HowItWorks: React.FC = () => {
               const isActive = activeStep === index;
               const stepDetail = stepDetails[index];
               const IconComponent = stepDetail.icon;
-              
+
               return (
                 <motion.div
                   key={index}
                   initial={{ opacity: 0, scale: 0.5 }}
                   whileInView={{ opacity: 1, scale: 1 }}
                   viewport={{ once: true }}
-                  transition={{ 
-                    duration: 0.5, 
+                  transition={{
+                    duration: 0.5,
                     delay: index * 0.15,
                     type: "spring",
                     stiffness: 150
@@ -1077,7 +1074,7 @@ const HowItWorks: React.FC = () => {
                   {/* Outer Ring with Arc */}
                   <div className="relative">
                     {/* Decorative Arc - Left side */}
-                    <svg 
+                    <svg
                       className="absolute -left-4 top-1/2 -translate-y-1/2 w-8 h-24"
                       viewBox="0 0 30 80"
                     >
@@ -1092,27 +1089,27 @@ const HowItWorks: React.FC = () => {
                     </svg>
 
                     {/* Main Circle */}
-                  <motion.div
+                    <motion.div
                       animate={isActive ? { scale: 1.1, y: -5 } : { scale: 1, y: 0 }}
                       transition={{ type: "spring", stiffness: 300 }}
                       className={`relative w-28 h-28 md:w-32 md:h-32 rounded-full ${stepDetail.bgColor} border-4 ${stepDetail.borderColor} flex items-center justify-center shadow-xl cursor-pointer`}
-                    style={{
-                      boxShadow: isActive
+                      style={{
+                        boxShadow: isActive
                           ? `0 20px 40px ${stepDetail.color}40, 0 0 0 8px ${stepDetail.color}15`
                           : `0 10px 30px rgba(0,0,0,0.1)`,
-                    }}
-                  >
+                      }}
+                    >
                       {/* Inner white circle */}
                       <div className="w-20 h-20 md:w-24 md:h-24 rounded-full bg-white flex items-center justify-center shadow-inner">
-                        <IconComponent 
-                          className="h-10 w-10 md:h-12 md:w-12 transition-transform duration-300 group-hover:scale-110" 
+                        <IconComponent
+                          className="h-10 w-10 md:h-12 md:w-12 transition-transform duration-300 group-hover:scale-110"
                           style={{ color: stepDetail.color }}
                         />
                       </div>
                     </motion.div>
 
                     {/* Decorative Arc - Right side */}
-                    <svg 
+                    <svg
                       className="absolute -right-4 top-1/2 -translate-y-1/2 w-8 h-24"
                       viewBox="0 0 30 80"
                     >
@@ -1128,29 +1125,29 @@ const HowItWorks: React.FC = () => {
                   </div>
 
                   {/* Step Number Badge */}
-                  <div 
+                  <div
                     className="absolute -top-2 -right-2 w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg"
                     style={{ backgroundColor: stepDetail.color }}
                   >
                     {index + 1}
-                    </div>
+                  </div>
 
-                    {/* Title */}
-                  <motion.h3 
+                  {/* Title */}
+                  <motion.h3
                     animate={isActive ? { scale: 1.05 } : { scale: 1 }}
                     className="mt-6 text-lg md:text-xl font-bold text-gray-800 text-center max-w-[160px]"
                   >
-                      {step.title}
+                    {step.title}
                   </motion.h3>
 
                   {/* Description - Shows on hover */}
-                  <motion.p 
+                  <motion.p
                     initial={{ opacity: 0, height: 0 }}
                     animate={isActive ? { opacity: 1, height: 'auto' } : { opacity: 0, height: 0 }}
                     transition={{ duration: 0.3 }}
                     className="mt-2 text-sm text-gray-600 text-center max-w-[180px] overflow-hidden"
                   >
-                      {step.description}
+                    {step.description}
                   </motion.p>
 
                   {/* Mobile connector line */}
@@ -1392,7 +1389,7 @@ const MedicalSection: React.FC = () => {
       } catch (error: any) {
         // Only log non-connection errors to avoid console spam
         if (error?.code !== 'ERR_NETWORK' && error?.code !== 'ECONNREFUSED' && error?.message?.includes('Network Error') === false) {
-        console.error('Error loading vaccination camps:', error);
+          console.error('Error loading vaccination camps:', error);
         }
         // Set empty array on error (backend might be offline)
         setVaccinationCamps([]);
@@ -1406,7 +1403,7 @@ const MedicalSection: React.FC = () => {
   return (
     <section className="py-20 bg-gradient-to-br from-gray-50 to-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: -20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
@@ -1422,7 +1419,7 @@ const MedicalSection: React.FC = () => {
             Keep your pets healthy with our vaccination camps and health resources
           </p>
         </motion.div>
-        
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           {/* Left Column - Upcoming Camps */}
           <div>
@@ -1651,7 +1648,7 @@ const NGOCollaboration: React.FC = () => {
               >
                 <div className={`w-20 h-20 rounded-full bg-gradient-to-br ${benefit.gradient} flex items-center justify-center mb-6 mx-auto shadow-lg group-hover:scale-110 group-hover:rotate-6 transition-all duration-300`}>
                   <IconComponent className="h-10 w-10 text-white" />
-            </div>
+                </div>
                 <h3 className={`text-2xl font-bold text-gray-900 mb-3 group-hover:text-[#2BB6AF] transition-colors text-center`}>
                   {benefit.title}
                 </h3>
@@ -1661,7 +1658,7 @@ const NGOCollaboration: React.FC = () => {
               </motion.div>
             );
           })}
-          </div>
+        </div>
 
         {/* Partner Showcase */}
         <div className="mb-16">
@@ -1685,8 +1682,8 @@ const NGOCollaboration: React.FC = () => {
                     <IconComponent className="h-12 w-12 text-[#2BB6AF]" />
                     <div className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center border-2 border-white shadow-lg">
                       <CheckCircle2 className="h-5 w-5 text-white" />
-          </div>
-          </div>
+                    </div>
+                  </div>
                   <h4 className="text-sm font-bold text-gray-900 mb-2 group-hover:text-[#2BB6AF] transition-colors">
                     {partner.name}
                   </h4>
@@ -1726,7 +1723,7 @@ const NGOCollaboration: React.FC = () => {
             <Heart className="absolute top-1/2 left-1/2 w-24 h-24" />
           </div>
           <div className="grid md:grid-cols-2 gap-12 items-center relative z-10">
-          <div>
+            <div>
               <Badge className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 mb-6">
                 <TrendingUp className="h-4 w-4" />
                 <span>Growing Impact</span>
@@ -1755,11 +1752,11 @@ const NGOCollaboration: React.FC = () => {
                     <IconComponent className="h-8 w-8 mx-auto mb-3" />
                     <div className="text-3xl font-bold mb-1">{stat.number}</div>
                     <div className="text-sm text-white/80">{stat.label}</div>
-          </div>
+                  </div>
                 );
               })}
-        </div>
-        </div>
+            </div>
+          </div>
         </motion.div>
       </div>
     </section>
@@ -2033,7 +2030,7 @@ const TestimonialsSection: React.FC = () => {
             <Quote className="h-5 w-5 text-teal-600 animate-pulse" />
             <span className="text-sm font-bold text-teal-700">Testimonials</span>
           </Badge>
-          <motion.h2 
+          <motion.h2
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -2057,8 +2054,8 @@ const TestimonialsSection: React.FC = () => {
               initial={{ opacity: 0, y: 50 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ 
-                duration: 0.6, 
+              transition={{
+                duration: 0.6,
                 delay: index * 0.1,
                 type: "spring",
                 stiffness: 100
@@ -2228,25 +2225,25 @@ const LandingPage: React.FC = () => {
     <div className="min-h-screen">
       {/* Section 1: Hero - Full-screen immersive experience with pet carousel */}
       <HeroSection />
-      
+
       {/* Section 2: What We Do - Bento box grid showcasing core services */}
       <WhatWeDo />
-      
+
       {/* Section 3: Community Features - Horizontal carousel with 3D tilt effects */}
       <CommunityFeatures />
-      
+
       {/* Section 4: How It Works - Timeline with animated path progression */}
       <HowItWorks />
-      
+
       {/* Section 6: Health & Vaccination - Two-column health information */}
       <MedicalSection />
-      
+
       {/* Section 7: Adoption Awareness - Image gallery with importance messaging */}
       <AdoptionAwareness />
-      
+
       {/* Section 8: NGO Collaboration - Partnership showcase with trust indicators */}
       <NGOCollaboration />
-      
+
       {/* Section 9: Testimonials - Social proof with star ratings */}
       <TestimonialsSection />
     </div>

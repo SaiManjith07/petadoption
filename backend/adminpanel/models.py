@@ -81,6 +81,7 @@ class DashboardStats(models.Model):
     lost_pets = models.IntegerField(default=0)
     available_pets = models.IntegerField(default=0)
     adopted_pets = models.IntegerField(default=0)
+    reunited_pets = models.IntegerField(default=0)
     
     # User statistics
     total_users = models.IntegerField(default=0)
@@ -140,25 +141,25 @@ class DashboardStats(models.Model):
             self.lost_pets = Pet.objects.filter(adoption_status='Lost').count()
             self.available_pets = Pet.objects.filter(adoption_status='Available for Adoption').count()
             self.adopted_pets = Pet.objects.filter(adoption_status='Adopted').count()
+            self.reunited_pets = Pet.objects.filter(adoption_status='Reunited').count()
         except Exception as pet_error:
-            print(f"Error getting pet stats: {pet_error}")
-            import traceback
-            print(traceback.format_exc())
+            self.reunited_pets = Pet.objects.filter(adoption_status='Reunited').count()
+        except Exception:
             self.total_pets = 0
             self.pending_pets = 0
             self.found_pets = 0
             self.lost_pets = 0
             self.available_pets = 0
             self.adopted_pets = 0
+            self.reunited_pets = 0
         
         # User statistics
         try:
             self.total_users = User.objects.count()
             self.active_users = User.objects.filter(is_active=True).count()
         except Exception as user_error:
-            print(f"Error getting user stats: {user_error}")
-            import traceback
-            print(traceback.format_exc())
+            self.active_users = User.objects.filter(is_active=True).count()
+        except Exception:
             self.total_users = 0
             self.active_users = 0
         
@@ -167,9 +168,8 @@ class DashboardStats(models.Model):
             self.total_applications = AdoptionApplication.objects.count()
             self.pending_applications = AdoptionApplication.objects.filter(status='Pending').count()
         except Exception as app_error:
-            print(f"Error getting application stats: {app_error}")
-            import traceback
-            print(traceback.format_exc())
+            self.pending_applications = AdoptionApplication.objects.filter(status='Pending').count()
+        except Exception:
             self.total_applications = 0
             self.pending_applications = 0
         
@@ -192,7 +192,8 @@ class DashboardStats(models.Model):
                     # Count pending chat requests
                     self.pending_chat_requests = ChatRequest.objects.filter(status='pending').count()
                 except Exception as chat_error:
-                    print(f"Error getting chat stats: {chat_error}")
+                    self.pending_chat_requests = ChatRequest.objects.filter(status='pending').count()
+                except Exception:
                     self.total_chats = 0
                     self.active_chats = 0
                     self.pending_chat_requests = 0
@@ -201,7 +202,9 @@ class DashboardStats(models.Model):
                 self.active_chats = 0
                 self.pending_chat_requests = 0
         except Exception as e:
-            print(f"Error checking chat tables: {e}")
+                self.active_chats = 0
+                self.pending_chat_requests = 0
+        except Exception:
             self.total_chats = 0
             self.active_chats = 0
             self.pending_chat_requests = 0
@@ -253,7 +256,7 @@ class DashboardStats(models.Model):
                 'found': self.found_pets,
                 'lost': self.lost_pets,
             },
-            'matched': 0,  # Can be calculated if needed
+            'matched': self.reunited_pets,
             'recent_activity': {
                 'pets_last_7_days': self.pets_last_7_days,
                 'users_last_7_days': self.users_last_7_days,

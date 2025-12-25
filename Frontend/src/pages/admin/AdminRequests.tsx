@@ -1,18 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  UserPlus, HandHeart, Droplet, Truck, MapPin, Radio, 
+import {
+  UserPlus, HandHeart, Droplet, Truck, MapPin, Radio,
   CheckCircle2, XCircle, Clock, AlertCircle, ShieldCheck,
-  BedDouble, ClipboardCheck, FileText, Menu, X
+  BedDouble
 } from 'lucide-react';
-import { AdminSidebar } from '@/components/layout/AdminSidebar';
+import { AdminLayout } from '@/components/layout/AdminLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/lib/auth';
-import { adminApi } from '@/api';
-import { roleRequestAPI, feedingPointAPI, alertAPI } from '@/services/api';
 import { useToast } from '@/hooks/use-toast';
 import { API_BASE_URL } from '@/config/api';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -34,7 +32,6 @@ export default function AdminRequests() {
   const [showDialog, setShowDialog] = useState(false);
   const [actionType, setActionType] = useState<'approve' | 'reject' | null>(null);
   const [adminNotes, setAdminNotes] = useState('');
-  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     if (isAuthenticated && isAdmin) {
@@ -52,7 +49,7 @@ export default function AdminRequests() {
       // Use apiClient for proper authentication
       const apiClient = (await import('@/api/apiClient')).default;
       const response = await apiClient.get('/admin/pending-requests/');
-      
+
       setAllRequests(response.data.data || response.data || {
         role_requests: [],
         shelter_registrations: [],
@@ -140,123 +137,102 @@ export default function AdminRequests() {
     }
   };
 
-  const totalPending = (allRequests.role_requests?.length || 0) + 
-                      (allRequests.feeding_points?.length || 0) + 
-                      (allRequests.alerts?.length || 0) +
-                      (allRequests.shelter_registrations?.length || 0);
+  const totalPending = (allRequests.role_requests?.length || 0) +
+    (allRequests.feeding_points?.length || 0) +
+    (allRequests.alerts?.length || 0) +
+    (allRequests.shelter_registrations?.length || 0);
 
   if (!isAuthenticated || !isAdmin) {
     return null;
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Fixed Sidebar - Desktop */}
-      <div className="hidden lg:block">
-        <AdminSidebar isOpen={true} onClose={() => setSidebarOpen(false)} />
-      </div>
-      
-      {/* Mobile Sidebar */}
-      <div className="lg:hidden">
-        <AdminSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      </div>
-
-      {/* Main Content */}
-      <div className="flex flex-col min-w-0 lg:ml-64">
-        {/* Mobile Menu Toggle */}
-        <div className="lg:hidden sticky top-0 z-30 bg-white border-b border-gray-200 p-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="text-gray-600 hover:text-gray-900"
-          >
-            {sidebarOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-          </Button>
+    <AdminLayout onRefresh={loadAllRequests} isRefreshing={loading}>
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex items-center gap-4">
+          <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-lg">
+            <ShieldCheck className="h-8 w-8 text-white" />
+          </div>
+          <div>
+            <h1 className="text-3xl sm:text-4xl font-bold text-gray-900">Manage Requests</h1>
+            <p className="text-gray-600 mt-1">Review and approve/reject all pending requests</p>
+          </div>
         </div>
 
-        {/* Main Content Area - Scrollable */}
-        <main className="flex-1 overflow-y-auto">
-          <div className="p-6 space-y-6">
-            <div className="max-w-7xl mx-auto">
-            {/* Header */}
-            <div className="mb-8">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-lg">
-                  <ShieldCheck className="h-8 w-8 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-3xl sm:text-4xl font-bold text-gray-900">Manage Requests</h1>
-                  <p className="text-gray-600 mt-1">Review and approve/reject all pending requests</p>
-                </div>
-              </div>
-            </div>
-
         {/* Summary Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
-          <Card className="border-2 border-blue-200 bg-blue-50">
-            <CardContent className="pt-6">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <Card className="bg-white shadow-md hover:shadow-lg transition-all duration-300 border-l-4 border-l-blue-500">
+            <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">Role Requests</p>
+                  <p className="text-sm font-medium text-gray-600">Role Requests</p>
                   <p className="text-2xl font-bold text-gray-900">{allRequests.role_requests?.length || 0}</p>
                 </div>
-                <UserPlus className="h-8 w-8 text-blue-600" />
+                <UserPlus className="h-8 w-8 text-blue-500" />
               </div>
             </CardContent>
           </Card>
-          <Card className="border-2 border-purple-200 bg-purple-50">
-            <CardContent className="pt-6">
+          <Card className="bg-white shadow-md hover:shadow-lg transition-all duration-300 border-l-4 border-l-purple-500">
+            <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">Shelter Reg.</p>
+                  <p className="text-sm font-medium text-gray-600">Shelter Reg.</p>
                   <p className="text-2xl font-bold text-gray-900">{allRequests.shelter_registrations?.length || 0}</p>
                 </div>
-                <BedDouble className="h-8 w-8 text-purple-600" />
+                <BedDouble className="h-8 w-8 text-purple-500" />
               </div>
             </CardContent>
           </Card>
-          <Card className="border-2 border-orange-200 bg-orange-50">
-            <CardContent className="pt-6">
+          <Card className="bg-white shadow-md hover:shadow-lg transition-all duration-300 border-l-4 border-l-orange-500">
+            <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">Feeding Points</p>
+                  <p className="text-sm font-medium text-gray-600">Feeding Points</p>
                   <p className="text-2xl font-bold text-gray-900">{allRequests.feeding_points?.length || 0}</p>
                 </div>
-                <MapPin className="h-8 w-8 text-orange-600" />
+                <MapPin className="h-8 w-8 text-orange-500" />
               </div>
             </CardContent>
           </Card>
-          <Card className="border-2 border-red-200 bg-red-50">
-            <CardContent className="pt-6">
+          <Card className="bg-white shadow-md hover:shadow-lg transition-all duration-300 border-l-4 border-l-red-500">
+            <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">Alerts</p>
+                  <p className="text-sm font-medium text-gray-600">Alerts</p>
                   <p className="text-2xl font-bold text-gray-900">{allRequests.alerts?.length || 0}</p>
                 </div>
-                <Radio className="h-8 w-8 text-red-600" />
+                <Radio className="h-8 w-8 text-red-500" />
               </div>
             </CardContent>
           </Card>
-          <Card className="border-2 border-green-200 bg-green-50">
-            <CardContent className="pt-6">
+          <Card className="bg-white shadow-md hover:shadow-lg transition-all duration-300 border-l-4 border-l-green-500">
+            <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">Total Pending</p>
+                  <p className="text-sm font-medium text-gray-600">Total Pending</p>
                   <p className="text-2xl font-bold text-gray-900">{totalPending}</p>
                 </div>
-                <AlertCircle className="h-8 w-8 text-green-600" />
+                <AlertCircle className="h-8 w-8 text-green-500" />
               </div>
             </CardContent>
           </Card>
         </div>
 
         <Tabs defaultValue="roles" className="space-y-6">
-          <TabsList>
-            <TabsTrigger value="roles">Role Requests ({allRequests.role_requests?.length || 0})</TabsTrigger>
-            <TabsTrigger value="shelters">Shelter Reg. ({allRequests.shelter_registrations?.length || 0})</TabsTrigger>
-            <TabsTrigger value="feeding">Feeding Points ({allRequests.feeding_points?.length || 0})</TabsTrigger>
-            <TabsTrigger value="alerts">Alerts ({allRequests.alerts?.length || 0})</TabsTrigger>
+          <TabsList className="flex flex-wrap h-auto gap-2 bg-transparent p-0">
+            <TabsTrigger value="roles" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">
+              Role Requests ({allRequests.role_requests?.length || 0})
+            </TabsTrigger>
+            <TabsTrigger value="shelters" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">
+              Shelter Reg. ({allRequests.shelter_registrations?.length || 0})
+            </TabsTrigger>
+            <TabsTrigger value="feeding" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">
+              Feeding Points ({allRequests.feeding_points?.length || 0})
+            </TabsTrigger>
+            <TabsTrigger value="alerts" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">
+              Alerts ({allRequests.alerts?.length || 0})
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="roles">
@@ -266,7 +242,7 @@ export default function AdminRequests() {
                 <p className="mt-4 text-gray-600">Loading...</p>
               </div>
             ) : (allRequests.role_requests?.length || 0) === 0 ? (
-              <Card>
+              <Card className="shadow-sm border-dashed">
                 <CardContent className="py-12 text-center">
                   <CheckCircle2 className="h-12 w-12 text-green-400 mx-auto mb-4" />
                   <h3 className="text-xl font-bold text-gray-900 mb-2">No Pending Role Requests</h3>
@@ -281,14 +257,14 @@ export default function AdminRequests() {
                     transporter: Truck,
                   };
                   const Icon = roleIcons[request.requested_role] || UserPlus;
-                  
+
                   return (
-                    <Card key={request._id || request.id}>
+                    <Card key={request._id || request.id} className="bg-white shadow-md hover:shadow-lg transition-all duration-300 border-l-4 border-l-blue-500">
                       <CardHeader>
-                        <div className="flex items-start justify-between">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                           <div className="flex items-center gap-3">
-                            <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
-                              <Icon className="h-6 w-6 text-white" />
+                            <div className="h-12 w-12 rounded-lg bg-blue-50 flex items-center justify-center border border-blue-100 flex-shrink-0">
+                              <Icon className="h-6 w-6 text-blue-600" />
                             </div>
                             <div>
                               <CardTitle className="text-lg">
@@ -299,7 +275,7 @@ export default function AdminRequests() {
                               </CardDescription>
                             </div>
                           </div>
-                          <Badge className="bg-yellow-100 text-yellow-700">
+                          <Badge className="bg-yellow-100 text-yellow-700 hover:bg-yellow-200 border-yellow-200">
                             <Clock className="h-3 w-3 mr-1" />
                             Pending
                           </Badge>
@@ -351,7 +327,7 @@ export default function AdminRequests() {
                 <p className="mt-4 text-gray-600">Loading...</p>
               </div>
             ) : (allRequests.shelter_registrations?.length || 0) === 0 ? (
-              <Card>
+              <Card className="shadow-sm border-dashed">
                 <CardContent className="py-12 text-center">
                   <CheckCircle2 className="h-12 w-12 text-green-400 mx-auto mb-4" />
                   <h3 className="text-xl font-bold text-gray-900 mb-2">No Pending Shelter Registrations</h3>
@@ -360,23 +336,23 @@ export default function AdminRequests() {
             ) : (
               <div className="space-y-4">
                 {allRequests.shelter_registrations.map((shelter: any) => (
-                  <Card key={shelter._id || shelter.id}>
+                  <Card key={shelter._id || shelter.id} className="bg-white shadow-md hover:shadow-lg transition-all duration-300 border-l-4 border-l-purple-500">
                     <CardHeader>
-                      <div className="flex items-start justify-between">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                         <div>
                           <CardTitle className="text-lg">{shelter.shelter_name}</CardTitle>
                           <CardDescription>
                             {shelter.user?.name || 'Unknown'} • {shelter.location?.city || ''}, {shelter.location?.state || ''} • {shelter.location?.pincode || ''}
                           </CardDescription>
                         </div>
-                        <Badge className="bg-yellow-100 text-yellow-700">
+                        <Badge className="bg-yellow-100 text-yellow-700 hover:bg-yellow-200 border-yellow-200">
                           <Clock className="h-3 w-3 mr-1" />
                           Pending
                         </Badge>
                       </div>
                     </CardHeader>
                     <CardContent>
-                      <div className="grid grid-cols-2 gap-4 mb-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                         <div>
                           <p className="text-sm font-semibold text-gray-700 mb-1">Capacity:</p>
                           <p className="text-sm text-gray-600">{shelter.capacity || 'N/A'} animals</p>
@@ -436,7 +412,7 @@ export default function AdminRequests() {
                 <p className="mt-4 text-gray-600">Loading...</p>
               </div>
             ) : (allRequests.feeding_points?.length || 0) === 0 ? (
-              <Card>
+              <Card className="shadow-sm border-dashed">
                 <CardContent className="py-12 text-center">
                   <CheckCircle2 className="h-12 w-12 text-green-400 mx-auto mb-4" />
                   <h3 className="text-xl font-bold text-gray-900 mb-2">No Pending Feeding Points</h3>
@@ -445,16 +421,16 @@ export default function AdminRequests() {
             ) : (
               <div className="space-y-4">
                 {allRequests.feeding_points.map((point: any) => (
-                  <Card key={point._id || point.id}>
+                  <Card key={point._id || point.id} className="bg-white shadow-md hover:shadow-lg transition-all duration-300 border-l-4 border-l-orange-500">
                     <CardHeader>
-                      <div className="flex items-start justify-between">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                         <div>
                           <CardTitle className="text-lg">{point.name}</CardTitle>
                           <CardDescription>
                             {point.location?.address}, {point.location?.city} • {point.location?.pincode}
                           </CardDescription>
                         </div>
-                        <Badge className="bg-yellow-100 text-yellow-700">
+                        <Badge className="bg-yellow-100 text-yellow-700 hover:bg-yellow-200 border-yellow-200">
                           <Clock className="h-3 w-3 mr-1" />
                           Pending
                         </Badge>
@@ -496,7 +472,7 @@ export default function AdminRequests() {
                 <p className="mt-4 text-gray-600">Loading...</p>
               </div>
             ) : (allRequests.alerts?.length || 0) === 0 ? (
-              <Card>
+              <Card className="shadow-sm border-dashed">
                 <CardContent className="py-12 text-center">
                   <CheckCircle2 className="h-12 w-12 text-green-400 mx-auto mb-4" />
                   <h3 className="text-xl font-bold text-gray-900 mb-2">No Pending Alerts</h3>
@@ -505,16 +481,16 @@ export default function AdminRequests() {
             ) : (
               <div className="space-y-4">
                 {allRequests.alerts.map((alert: any) => (
-                  <Card key={alert._id || alert.id}>
+                  <Card key={alert._id || alert.id} className="bg-white shadow-md hover:shadow-lg transition-all duration-300 border-l-4 border-l-red-500">
                     <CardHeader>
-                      <div className="flex items-start justify-between">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                         <div>
                           <CardTitle className="text-lg">{alert.title}</CardTitle>
                           <CardDescription>
                             Pincode: {alert.pincode} • Type: {alert.alert_type} • Priority: {alert.priority}
                           </CardDescription>
                         </div>
-                        <Badge className="bg-yellow-100 text-yellow-700">
+                        <Badge className="bg-yellow-100 text-yellow-700 hover:bg-yellow-200 border-yellow-200">
                           <Clock className="h-3 w-3 mr-1" />
                           Pending
                         </Badge>
@@ -556,7 +532,7 @@ export default function AdminRequests() {
                 {actionType === 'approve' ? 'Approve' : 'Reject'} Request
               </DialogTitle>
               <DialogDescription>
-                {actionType === 'approve' 
+                {actionType === 'approve'
                   ? 'Add optional notes for this approval'
                   : 'Please provide a reason for rejection'}
               </DialogDescription>
@@ -587,11 +563,8 @@ export default function AdminRequests() {
             </div>
           </DialogContent>
         </Dialog>
-            </div>
-          </div>
-        </main>
       </div>
-    </div>
+    </AdminLayout>
   );
 }
 

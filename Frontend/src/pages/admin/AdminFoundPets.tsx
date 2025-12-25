@@ -15,6 +15,8 @@ import { format } from 'date-fns';
 import { PetGallerySkeleton, PageHeaderSkeleton } from '@/components/ui/skeletons';
 import { getImageUrl } from '@/services/api';
 
+import { AdminLayout } from '@/components/layout/AdminLayout';
+
 export default function AdminFoundPets() {
   const { isAdmin, user } = useAuth();
   const navigate = useNavigate();
@@ -60,42 +62,42 @@ export default function AdminFoundPets() {
       setLoading(true);
       // Get all pets (without filtering) to ensure we get pending ones
       const allPetsData = await adminApi.getAllPets().catch(() => []);
-      
+
       // Also get pending reports specifically for found pets
       const pendingPetsData = await adminApi.getPendingReports('found').catch(() => []);
-      
+
       // Mark pending pets from getPendingReports so we can identify them
       const markedPendingPets = (pendingPetsData || []).map((p: any) => ({
         ...p,
         _isPendingFound: true, // Mark as pending found pet
       }));
-      
+
       // Filter allPetsData to ONLY include found pets (has found_date)
       // Found pets MUST have found_date set - this is the primary indicator
       const foundPetsFromAll = (allPetsData || []).filter((p: any) => {
         // Check for found_date in various possible field names
-        const hasFoundDate = p.found_date || p.foundDate || p.foundDate || 
-                           (p.found_date !== null && p.found_date !== undefined);
-        
-        
+        const hasFoundDate = p.found_date || p.foundDate || p.foundDate ||
+          (p.found_date !== null && p.found_date !== undefined);
+
+
         // Include if it has found_date (primary indicator of found pet)
         if (hasFoundDate) {
           // Include all pets with found_date, regardless of status
           return true;
         }
-        
+
         // Also include if explicitly marked as Found status
         if (p.adoption_status === 'Found') {
           return true;
         }
-        
+
         return false;
       });
-      
+
       // Combine: use pending reports as primary source, then add other found pets
       // Remove duplicates by ID
       const petMap = new Map();
-      
+
       // First, add pending found pets (most important)
       markedPendingPets.forEach((p: any) => {
         const id = p.id || p._id;
@@ -103,7 +105,7 @@ export default function AdminFoundPets() {
           petMap.set(id, p);
         }
       });
-      
+
       // Then, add other found pets (avoid duplicates)
       foundPetsFromAll.forEach((p: any) => {
         const id = p.id || p._id;
@@ -111,39 +113,39 @@ export default function AdminFoundPets() {
           petMap.set(id, p);
         }
       });
-      
+
       const combinedPets = Array.from(petMap.values());
-      
+
       // Normalize the data
       const normalizedPets = combinedPets.map((p: any) => ({
         ...p,
         _id: p.id || p._id,
         createdAt: p.created_at || p.createdAt,
       }));
-      
+
       // Remove duplicates based on ID
       const uniquePets = normalizedPets.filter((pet: any, index: number, self: any[]) =>
         index === self.findIndex((p: any) => (p.id || p._id) === (pet.id || pet._id))
       );
-      
+
       // Final filter: Include ALL pets that have found_date OR are marked as Found
       // This is simpler and more inclusive
       const foundPetsList = uniquePets.filter((pet: any) => {
         // Check if it has found_date (primary indicator)
-        const hasFoundDate = pet.found_date || pet.foundDate || 
-                           (pet.found_date !== null && pet.found_date !== undefined);
-        
+        const hasFoundDate = pet.found_date || pet.foundDate ||
+          (pet.found_date !== null && pet.found_date !== undefined);
+
         if (hasFoundDate) return true;
-        
+
         // Check if it's explicitly marked as Found
         if (pet.adoption_status === 'Found') return true;
-        
+
         // If it's marked as pending found from getPendingReports, include it
         if (pet._isPendingFound) return true;
-        
+
         return false;
       });
-      
+
       setFoundPets(foundPetsList);
     } catch (error: any) {
       console.error('Error loading found pets:', error);
@@ -175,14 +177,14 @@ export default function AdminFoundPets() {
     if (statusFilter !== 'all') {
       filtered = filtered.filter(pet => {
         const petStatus = pet.status || pet.adoption_status || '';
-        const isPending = !pet.is_verified || 
-                         petStatus.toLowerCase().includes('pending') ||
-                         petStatus === 'Pending Verification' ||
-                         petStatus === 'Pending';
-        const isListed = petStatus === 'Listed Found' || 
-                        petStatus === 'Found' ||
-                        (pet.is_verified && !isPending);
-        
+        const isPending = !pet.is_verified ||
+          petStatus.toLowerCase().includes('pending') ||
+          petStatus === 'Pending Verification' ||
+          petStatus === 'Pending';
+        const isListed = petStatus === 'Listed Found' ||
+          petStatus === 'Found' ||
+          (pet.is_verified && !isPending);
+
         if (statusFilter === 'Pending Verification' || statusFilter === 'Pending') {
           return isPending;
         } else if (statusFilter === 'Listed Found') {
@@ -199,17 +201,17 @@ export default function AdminFoundPets() {
     total: foundPets.length,
     pending: foundPets.filter((p: any) => {
       const petStatus = p.status || p.adoption_status || '';
-      const isPending = !p.is_verified || 
-                       petStatus.toLowerCase().includes('pending') ||
-                       petStatus === 'Pending Verification' ||
-                       petStatus === 'Pending' ||
-                       p._isPendingFound;
+      const isPending = !p.is_verified ||
+        petStatus.toLowerCase().includes('pending') ||
+        petStatus === 'Pending Verification' ||
+        petStatus === 'Pending' ||
+        p._isPendingFound;
       return isPending;
     }).length,
     verified: foundPets.filter((p: any) => {
       const petStatus = p.status || p.adoption_status || '';
-      return (petStatus === 'Listed Found' || petStatus === 'Found' || 
-              (p.is_verified && petStatus !== 'Pending' && petStatus !== 'Pending Verification'));
+      return (petStatus === 'Listed Found' || petStatus === 'Found' ||
+        (p.is_verified && petStatus !== 'Pending' && petStatus !== 'Pending Verification'));
     }).length,
     rejected: foundPets.filter((p: any) => {
       const petStatus = p.status || p.adoption_status || '';
@@ -298,70 +300,74 @@ export default function AdminFoundPets() {
 
   if (loading) {
     return (
-      <div className="min-h-screen p-6">
+      <AdminLayout>
         <div className="max-w-6xl mx-auto">
           <PageHeaderSkeleton />
           <PetGallerySkeleton count={6} />
         </div>
-      </div>
+      </AdminLayout>
     );
   }
 
   return (
-    <div className="p-6 space-y-6">
-            <div className="max-w-7xl mx-auto space-y-8">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-3xl font-bold flex items-center gap-2 text-gray-900">
-                  <Shield className="h-8 w-8 text-[#2BB6AF]" />
-                  Found Pets Management
-                </h1>
-                <p className="text-gray-600 mt-1">Verify and manage found pet reports</p>
-              </div>
-              <Badge variant="default" className="text-base px-3 py-1 bg-[#2BB6AF]">
-                {filteredPets.length} Found Pet{filteredPets.length !== 1 ? 's' : ''}
-              </Badge>
-            </div>
+    <AdminLayout onRefresh={loadFoundPets} isRefreshing={loading}>
+      <div className="w-full space-y-6">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2 text-gray-900">
+              <Shield className="h-6 w-6 sm:h-8 sm:w-8 text-[#2BB6AF]" />
+              Found Pets Management
+            </h1>
+            <p className="text-sm sm:text-base text-gray-600 mt-1">Verify and manage found pet reports</p>
+          </div>
+          <Badge variant="default" className="text-sm sm:text-base px-3 py-1 bg-[#2BB6AF] self-start sm:self-center">
+            {filteredPets.length} Found Pet{filteredPets.length !== 1 ? 's' : ''}
+          </Badge>
+        </div>
 
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium text-gray-600">Total Found Pets</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-gray-900">{stats.total}</div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium text-gray-600">Pending Verification</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-yellow-600">{stats.pending}</div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium text-gray-600">Verified</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-green-600">{stats.verified}</div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium text-gray-600">Rejected</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-red-600">{stats.rejected}</div>
-                </CardContent>
-              </Card>
-            </div>
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card className="bg-white shadow-md hover:shadow-lg transition-all duration-300 border-l-4 border-l-gray-500">
+            <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between space-y-0">
+              <CardTitle className="text-sm font-medium text-gray-600">Total Found Pets</CardTitle>
+              <Shield className="h-4 w-4 text-gray-500" />
+            </CardHeader>
+            <CardContent className="p-4 pt-0">
+              <div className="text-2xl sm:text-3xl font-bold text-gray-900">{stats.total}</div>
+            </CardContent>
+          </Card>
+          <Card className="bg-white shadow-md hover:shadow-lg transition-all duration-300 border-l-4 border-l-yellow-500">
+            <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between space-y-0">
+              <CardTitle className="text-sm font-medium text-gray-600">Pending Verification</CardTitle>
+              <AlertCircle className="h-4 w-4 text-yellow-500" />
+            </CardHeader>
+            <CardContent className="p-4 pt-0">
+              <div className="text-2xl sm:text-3xl font-bold text-yellow-600">{stats.pending}</div>
+            </CardContent>
+          </Card>
+          <Card className="bg-white shadow-md hover:shadow-lg transition-all duration-300 border-l-4 border-l-green-500">
+            <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between space-y-0">
+              <CardTitle className="text-sm font-medium text-gray-600">Verified</CardTitle>
+              <CheckCircle className="h-4 w-4 text-green-500" />
+            </CardHeader>
+            <CardContent className="p-4 pt-0">
+              <div className="text-2xl sm:text-3xl font-bold text-green-600">{stats.verified}</div>
+            </CardContent>
+          </Card>
+          <Card className="bg-white shadow-md hover:shadow-lg transition-all duration-300 border-l-4 border-l-red-500">
+            <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between space-y-0">
+              <CardTitle className="text-sm font-medium text-gray-600">Rejected</CardTitle>
+              <X className="h-4 w-4 text-red-500" />
+            </CardHeader>
+            <CardContent className="p-4 pt-0">
+              <div className="text-2xl sm:text-3xl font-bold text-red-600">{stats.rejected}</div>
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Filters */}
-        <Card>
+        <Card className="shadow-sm">
           <CardContent className="pt-6">
             <div className="flex flex-col md:flex-row gap-4">
               <div className="flex-1">
@@ -375,22 +381,25 @@ export default function AdminFoundPets() {
                   />
                 </div>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <Button
                   variant={statusFilter === 'all' ? 'default' : 'outline'}
                   onClick={() => setStatusFilter('all')}
+                  className="flex-1 sm:flex-none"
                 >
                   All
                 </Button>
                 <Button
                   variant={statusFilter === 'Pending Verification' ? 'default' : 'outline'}
                   onClick={() => setStatusFilter('Pending Verification')}
+                  className="flex-1 sm:flex-none"
                 >
                   Pending
                 </Button>
                 <Button
                   variant={statusFilter === 'Listed Found' ? 'default' : 'outline'}
                   onClick={() => setStatusFilter('Listed Found')}
+                  className="flex-1 sm:flex-none"
                 >
                   Listed
                 </Button>
@@ -402,7 +411,7 @@ export default function AdminFoundPets() {
         {/* Found Pets List */}
         <div className="space-y-4">
           {filteredPets.length === 0 ? (
-            <Card>
+            <Card className="shadow-sm border-dashed">
               <CardContent className="py-12 text-center">
                 <AlertCircle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                 <p className="text-muted-foreground">No found pets found</p>
@@ -410,24 +419,24 @@ export default function AdminFoundPets() {
             </Card>
           ) : (
             filteredPets.map((pet: any) => (
-              <Card key={pet._id} className="hover:shadow-md transition-shadow">
-                <CardContent className="pt-6">
-                  <div className="flex flex-col md:flex-row gap-6">
+              <Card key={pet._id} className="shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border-l-4 border-l-transparent hover:border-l-[#2BB6AF]">
+                <CardContent className="p-4">
+                  <div className="flex flex-col sm:flex-row gap-4">
                     {/* Pet Images - Using Cloudinary URLs */}
                     {(() => {
                       // Get all available image URLs
                       const imageUrls: string[] = [];
-                      
+
                       // Priority 1: Use cloudinary_url (primary Cloudinary URL)
                       if (pet.cloudinary_url) {
                         imageUrls.push(pet.cloudinary_url);
                       }
-                      
+
                       // Priority 2: Use image_url from serializer
                       if (pet.image_url && pet.image_url !== pet.cloudinary_url) {
                         imageUrls.push(pet.image_url);
                       }
-                      
+
                       // Priority 3: Use photos array from serializer (includes all photos)
                       if (pet.photos && Array.isArray(pet.photos) && pet.photos.length > 0) {
                         pet.photos.forEach((photo: string) => {
@@ -436,7 +445,7 @@ export default function AdminFoundPets() {
                           }
                         });
                       }
-                      
+
                       // Priority 4: Use images array (from PetImage model)
                       if (pet.images && Array.isArray(pet.images) && pet.images.length > 0) {
                         pet.images.forEach((img: any) => {
@@ -446,19 +455,19 @@ export default function AdminFoundPets() {
                           }
                         });
                       }
-                      
+
                       // Priority 5: Fallback to single image field
                       if (pet.image && !imageUrls.length) {
                         const fallbackUrl = pet.image.startsWith('http') ? pet.image : getImageUrl(pet.image);
                         if (fallbackUrl) imageUrls.push(fallbackUrl);
                       }
-                      
+
                       // Display images if available
                       if (imageUrls.length > 0) {
-                            return (
-                          <div className="flex gap-2 flex-wrap">
+                        return (
+                          <div className="flex gap-2 flex-wrap flex-shrink-0">
                             {imageUrls.slice(0, 3).map((imgUrl: string, idx: number) => (
-                              <div 
+                              <div
                                 key={idx}
                                 className="relative group"
                                 onClick={() => {
@@ -470,7 +479,7 @@ export default function AdminFoundPets() {
                                 <img
                                   src={imgUrl}
                                   alt={`Pet photo ${idx + 1}`}
-                                  className="h-32 w-32 rounded-lg object-cover border-2 border-gray-200 hover:border-[#2BB6AF] transition-all cursor-pointer shadow-md hover:shadow-lg"
+                                  className="h-24 w-24 rounded-lg object-cover border-2 border-gray-200 hover:border-[#2BB6AF] transition-all cursor-pointer shadow-md hover:shadow-lg"
                                   onError={(e) => {
                                     // Fallback if image fails to load
                                     (e.target as HTMLImageElement).src = 'https://via.placeholder.com/128?text=No+Image';
@@ -487,8 +496,8 @@ export default function AdminFoundPets() {
                               </div>
                             ))}
                             {imageUrls.length > 3 && (
-                              <div 
-                                className="h-32 w-32 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-500 text-sm cursor-pointer hover:border-[#2BB6AF] transition-all"
+                              <div
+                                className="h-24 w-24 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-500 text-sm cursor-pointer hover:border-[#2BB6AF] transition-all"
                                 onClick={() => {
                                   setSelectedImages(imageUrls);
                                   setCurrentImageIndex(0);
@@ -498,121 +507,105 @@ export default function AdminFoundPets() {
                                 +{imageUrls.length - 3} more
                               </div>
                             )}
-                      </div>
+                          </div>
                         );
                       }
-                      
+
                       // No images available
                       return (
-                        <div className="h-32 w-32 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-400 text-sm">
+                        <div className="h-24 w-24 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-400 text-sm flex-shrink-0">
                           No image
                         </div>
                       );
                     })()}
 
                     {/* Pet Details */}
-                    <div className="flex-1 space-y-3">
+                    <div className="flex-1 space-y-2 min-w-0">
                       <div className="flex items-start justify-between">
                         <div>
-                          <div className="flex items-center gap-2 mb-2">
-                            <Badge variant="default" className="bg-orange-500 hover:bg-orange-600">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Badge variant="default" className="bg-orange-500 hover:bg-orange-600 text-xs px-2 py-0.5">
                               {pet.species || 'Pet'}
                             </Badge>
                             <Badge variant={
-                              (pet.status === 'Pending Verification' || pet.adoption_status === 'Pending') ? 'destructive' : 
-                              (pet.is_verified ? 'default' : 'outline')
-                            }>
+                              (pet.status === 'Pending Verification' || pet.adoption_status === 'Pending') ? 'destructive' :
+                                (pet.is_verified ? 'default' : 'outline')
+                            } className="text-xs px-2 py-0.5">
                               {pet.status || pet.adoption_status || 'Pending'}
                             </Badge>
                           </div>
-                          <h3 className="text-xl font-semibold">
+                          <h3 className="text-lg font-semibold leading-tight">
                             {pet.name || `${pet.species || 'Pet'} - ${pet.breed || 'Mixed Breed'}`}
                           </h3>
-                          <p className="text-sm text-muted-foreground">
+                          <p className="text-xs text-muted-foreground mt-0.5">
                             {pet.breed && <><strong>Breed:</strong> {pet.breed}</>}
-                            {pet.color && <><br /><strong>Color:</strong> {pet.color}</>}
-                            {pet.color_primary && <><br /><strong>Color:</strong> {pet.color_primary} {pet.color_secondary && `& ${pet.color_secondary}`}</>}
+                            {pet.color && <><span className="mx-2">•</span><strong>Color:</strong> {pet.color}</>}
                           </p>
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                        <div>
-                          <strong>Distinguishing Marks:</strong>
-                          <p className="text-muted-foreground">{pet.distinguishing_marks}</p>
-                        </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
+
                         <div>
                           <strong>Location Found:</strong>
-                          <p className="text-muted-foreground">
+                          <p className="text-muted-foreground truncate">
                             {pet.location || pet.last_seen_or_found_location_text || 'N/A'}
                           </p>
-                          {(pet.pincode || pet.last_seen_or_found_pincode) && (
-                            <p className="text-muted-foreground">Pincode: {pet.pincode || pet.last_seen_or_found_pincode}</p>
-                          )}
                         </div>
                         <div>
                           <strong>Date Found:</strong>
                           <p className="text-muted-foreground">
-                            {pet.last_seen_or_found_date 
+                            {pet.last_seen_or_found_date
                               ? format(new Date(pet.last_seen_or_found_date), 'MMM dd, yyyy')
                               : (pet.created_at || pet.createdAt || pet.date_submitted)
-                              ? format(new Date(pet.created_at || pet.createdAt || pet.date_submitted), 'MMM dd, yyyy')
-                              : 'N/A'}
+                                ? format(new Date(pet.created_at || pet.createdAt || pet.date_submitted), 'MMM dd, yyyy')
+                                : 'N/A'}
                           </p>
                         </div>
-                        <div>
+                        <div className="col-span-1 md:col-span-2">
                           <strong>Reported by:</strong>
-                          <p className="text-muted-foreground">
-                            {pet.posted_by?.name || pet.submitted_by?.name || 'Unknown'} 
-                            ({pet.posted_by?.email || pet.submitted_by?.email || 'N/A'})
-                          </p>
+                          <span className="text-muted-foreground ml-1">
+                            {pet.posted_by?.name || pet.submitted_by?.name || 'Unknown'}
+                            <span className="opacity-70 ml-1">({pet.posted_by?.email || pet.submitted_by?.email || 'N/A'})</span>
+                          </span>
                         </div>
                       </div>
 
                       {/* Actions */}
-                      <div className="flex gap-2 pt-2 flex-wrap">
+                      <div className="flex items-center justify-between pt-2 mt-1 border-t border-gray-100">
+                        <div className="flex gap-2">
+                          {(pet.status === 'Pending Verification' || pet.adoption_status === 'Pending' || !pet.is_verified) && (
+                            <>
+                              <Button
+                                size="sm"
+                                className="h-8 text-xs bg-green-600 hover:bg-green-700 gap-1 shadow-sm"
+                                onClick={() => handleAccept(pet._id)}
+                              >
+                                <CheckCircle className="h-3 w-3" />
+                                Accept
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                className="h-8 text-xs gap-1 shadow-sm"
+                                onClick={() => handleReject(pet._id)}
+                              >
+                                <X className="h-3 w-3" />
+                                Reject
+                              </Button>
+                            </>
+                          )}
+                        </div>
+
                         <Button
                           size="sm"
                           variant="outline"
-                          className="gap-1"
+                          className="h-8 text-xs gap-1 ml-auto border-blue-200 hover:bg-blue-50 hover:text-blue-600 text-blue-500"
                           onClick={() => navigate(`/pets/${pet._id || pet.id}`)}
                         >
-                          <Eye className="h-4 w-4" />
-                          View
+                          <Eye className="h-3 w-3" />
+                          View Details
                         </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="gap-1"
-                          onClick={() => {
-                            setSelectedPetForMedical({ id: pet._id || pet.id, name: pet.name });
-                            setShowMedicalDialog(true);
-                          }}
-                        >
-                          <Stethoscope className="h-4 w-4" />
-                          Medical
-                        </Button>
-                        {(pet.status === 'Pending Verification' || pet.adoption_status === 'Pending' || !pet.is_verified) && (
-                          <>
-                            <Button
-                              size="sm"
-                              className="bg-green-600 hover:bg-green-700 gap-1"
-                              onClick={() => handleAccept(pet._id)}
-                            >
-                              <CheckCircle className="h-4 w-4" />
-                              Accept & Verify
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              className="gap-1"
-                              onClick={() => handleReject(pet._id)}
-                            >
-                              <X className="h-4 w-4" />
-                              Reject
-                            </Button>
-                          </>
-                        )}
                       </div>
                     </div>
                   </div>
@@ -787,7 +780,7 @@ export default function AdminFoundPets() {
             >
               <X className="h-6 w-6" />
             </Button>
-            
+
             {/* Main Image */}
             <div className="flex-1 flex items-center justify-center mb-4">
               <img
@@ -799,7 +792,7 @@ export default function AdminFoundPets() {
                 }}
               />
             </div>
-            
+
             {/* Navigation */}
             {selectedImages.length > 1 && (
               <div className="flex items-center justify-center gap-4 bg-white/10 backdrop-blur-sm rounded-lg p-4">
@@ -811,11 +804,11 @@ export default function AdminFoundPets() {
                 >
                   <ChevronLeft className="h-6 w-6" />
                 </Button>
-                
+
                 <div className="text-white text-sm font-medium">
                   {currentImageIndex + 1} / {selectedImages.length}
                 </div>
-                
+
                 <Button
                   variant="ghost"
                   size="icon"
@@ -826,7 +819,7 @@ export default function AdminFoundPets() {
                 </Button>
               </div>
             )}
-            
+
             {/* Thumbnail Strip */}
             {selectedImages.length > 1 && (
               <div className="flex gap-2 overflow-x-auto pb-2 mt-4">
@@ -835,11 +828,10 @@ export default function AdminFoundPets() {
                     key={idx}
                     src={imgUrl}
                     alt={`Thumbnail ${idx + 1}`}
-                    className={`h-16 w-16 rounded object-cover cursor-pointer border-2 transition-all ${
-                      idx === currentImageIndex 
-                        ? 'border-[#2BB6AF] scale-110' 
-                        : 'border-transparent hover:border-gray-400'
-                    }`}
+                    className={`h-16 w-16 rounded object-cover cursor-pointer border-2 transition-all ${idx === currentImageIndex
+                      ? 'border-[#2BB6AF] scale-110'
+                      : 'border-transparent hover:border-gray-400'
+                      }`}
                     onClick={() => setCurrentImageIndex(idx)}
                   />
                 ))}
@@ -848,7 +840,7 @@ export default function AdminFoundPets() {
           </div>
         </div>
       )}
-    </div>
+    </AdminLayout>
   );
 }
 

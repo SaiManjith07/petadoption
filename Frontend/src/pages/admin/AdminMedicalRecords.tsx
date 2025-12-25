@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Stethoscope, Search, Plus, Eye, Edit, Trash2, Calendar, Activity, Heart, Syringe } from 'lucide-react';
-import { AdminSidebar } from '@/components/layout/AdminSidebar';
-import { AdminTopNav } from '@/components/layout/AdminTopNav';
+import { AdminLayout } from '@/components/layout/AdminLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -61,7 +60,6 @@ export default function AdminMedicalRecords() {
   const [searchTerm, setSearchTerm] = useState('');
   const [petFilter, setPetFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [editingRecord, setEditingRecord] = useState<MedicalRecord | null>(null);
@@ -190,16 +188,16 @@ export default function AdminMedicalRecords() {
   const filteredRecords = records.filter((record) => {
     const pet = pets.find((p) => p.id === record.pet_id || p._id === record.pet_id);
     const petName = pet?.name || record.pet?.name || '';
-    
+
     const matchesSearch = !searchTerm ||
       petName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       record.health_status?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       record.vaccination_status?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       record.veterinarian_name?.toLowerCase().includes(searchTerm.toLowerCase());
-    
+
     const matchesPet = petFilter === 'all' || record.pet_id.toString() === petFilter;
     const matchesStatus = statusFilter === 'all' || record.health_status === statusFilter;
-    
+
     return matchesSearch && matchesPet && matchesStatus;
   });
 
@@ -469,267 +467,243 @@ export default function AdminMedicalRecords() {
     </div>
   );
 
-  if (loading && records.length === 0) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-white">
-        <div className="text-center">
-          <Stethoscope className="h-16 w-16 mx-auto text-[#4CAF50] animate-pulse" />
-          <p className="mt-6 text-lg font-medium text-gray-700">Loading Medical Records...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-white">
-      {/* Fixed Sidebar */}
-      <div className="hidden lg:block">
-        <AdminSidebar isOpen={true} onClose={() => setSidebarOpen(false)} />
-      </div>
-      
-      {/* Mobile Sidebar */}
-      <div className="lg:hidden">
-        <AdminSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      </div>
-
-      {/* Main Content */}
-      <div className="flex flex-col min-w-0 lg:ml-64">
-        <AdminTopNav 
-          onMenuToggle={() => setSidebarOpen(!sidebarOpen)} 
-          sidebarOpen={sidebarOpen}
-          onRefresh={loadData}
-        />
-
-        <main className="flex-1 overflow-y-auto bg-white">
-          <div className="p-6 lg:p-8 space-y-6">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-                  <Stethoscope className="h-8 w-8 text-[#4CAF50]" />
-                  Medical Records Management
-                </h1>
-                <p className="text-gray-600 mt-1">Register and manage medical information for pets</p>
-              </div>
-              <Button
-                onClick={handleAddNew}
-                className="bg-[#2BB6AF] hover:bg-[#239a94] text-white"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Add Medical Record
-              </Button>
-            </div>
-
-            {/* Filters */}
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex flex-col md:flex-row gap-4">
-                  <div className="flex-1">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                      <Input
-                        placeholder="Search by pet name, health status, or veterinarian..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10"
-                      />
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <select
-                      value={petFilter}
-                      onChange={(e) => setPetFilter(e.target.value)}
-                      className="px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-green-500"
-                    >
-                      <option value="all">All Pets</option>
-                      {pets.map((pet) => (
-                        <option key={pet.id || pet._id} value={pet.id || pet._id}>
-                          {pet.name || 'Unnamed'}
-                        </option>
-                      ))}
-                    </select>
-                    <select
-                      value={statusFilter}
-                      onChange={(e) => setStatusFilter(e.target.value)}
-                      className="px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-green-500"
-                    >
-                      <option value="all">All Status</option>
-                      <option value="Healthy">Healthy</option>
-                      <option value="Under Treatment">Under Treatment</option>
-                      <option value="Recovering">Recovering</option>
-                      <option value="Chronic Condition">Chronic Condition</option>
-                      <option value="Critical">Critical</option>
-                    </select>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Medical Records Table */}
-            {filteredRecords.length === 0 ? (
-              <Card>
-                <CardContent className="py-12 text-center">
-                  <Stethoscope className="h-16 w-16 mx-auto text-gray-400 mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No Medical Records</h3>
-                  <p className="text-gray-600 mb-4">
-                    {searchTerm || petFilter !== 'all' || statusFilter !== 'all'
-                      ? 'No medical records match your search'
-                      : 'No medical records have been registered yet.'}
-                  </p>
-                  <Button onClick={handleAddNew} className="bg-[#2BB6AF] hover:bg-[#239a94]">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add First Medical Record
-                  </Button>
-                </CardContent>
-              </Card>
-            ) : (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Medical Records ({filteredRecords.length})</CardTitle>
-                  <CardDescription>
-                    All registered medical records for pets
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Pet Name</TableHead>
-                          <TableHead>Health Status</TableHead>
-                          <TableHead>Vaccination</TableHead>
-                          <TableHead>Weight</TableHead>
-                          <TableHead>Veterinarian</TableHead>
-                          <TableHead>Last Checkup</TableHead>
-                          <TableHead>Created</TableHead>
-                          <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredRecords.map((record) => {
-                          const pet = pets.find((p) => p.id === record.pet_id || p._id === record.pet_id);
-                          const petName = pet?.name || record.pet?.name || 'Unknown';
-                          
-                          return (
-                            <TableRow key={record.id}>
-                              <TableCell className="font-medium">
-                                <div>
-                                  <p className="font-semibold">{petName}</p>
-                                  {pet && (
-                                    <p className="text-xs text-gray-500">{pet.breed || 'Unknown breed'}</p>
-                                  )}
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <Badge
-                                  variant={
-                                    record.health_status === 'Healthy' ? 'default' :
-                                    record.health_status === 'Critical' ? 'destructive' : 'secondary'
-                                  }
-                                  className={
-                                    record.health_status === 'Healthy' ? 'bg-green-100 text-green-700' :
-                                    record.health_status === 'Critical' ? 'bg-red-100 text-red-700' :
-                                    'bg-yellow-100 text-yellow-700'
-                                  }
-                                >
-                                  {record.health_status}
-                                </Badge>
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex items-center gap-1">
-                                  <Syringe className="h-3 w-3 text-gray-400" />
-                                  <span className="text-sm">{record.vaccination_status}</span>
-                                </div>
-                                {record.next_vaccination_due && (
-                                  <p className="text-xs text-gray-500 mt-1">
-                                    Due: {format(new Date(record.next_vaccination_due), 'MMM dd, yyyy')}
-                                  </p>
-                                )}
-                              </TableCell>
-                              <TableCell>
-                                {record.weight ? `${record.weight} kg` : 'N/A'}
-                                {record.temperature && (
-                                  <p className="text-xs text-gray-500">{record.temperature}°C</p>
-                                )}
-                              </TableCell>
-                              <TableCell>
-                                {record.veterinarian_name ? (
-                                  <div>
-                                    <p className="text-sm">{record.veterinarian_name}</p>
-                                    {record.clinic_name && (
-                                      <p className="text-xs text-gray-500">{record.clinic_name}</p>
-                                    )}
-                                  </div>
-                                ) : (
-                                  'N/A'
-                                )}
-                              </TableCell>
-                              <TableCell>
-                                {record.last_checkup_date ? (
-                                  <div className="flex items-center gap-1">
-                                    <Calendar className="h-3 w-3 text-gray-400" />
-                                    <span className="text-sm">
-                                      {format(new Date(record.last_checkup_date), 'MMM dd, yyyy')}
-                                    </span>
-                                  </div>
-                                ) : (
-                                  'N/A'
-                                )}
-                                {record.next_checkup_due && (
-                                  <p className="text-xs text-gray-500 mt-1">
-                                    Next: {format(new Date(record.next_checkup_due), 'MMM dd')}
-                                  </p>
-                                )}
-                              </TableCell>
-                              <TableCell>
-                                {record.created_at ? (
-                                  <div className="flex items-center gap-1">
-                                    <Calendar className="h-3 w-3 text-gray-400" />
-                                    <span className="text-sm">
-                                      {format(new Date(record.created_at), 'MMM dd, yyyy')}
-                                    </span>
-                                  </div>
-                                ) : (
-                                  'N/A'
-                                )}
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <div className="flex justify-end gap-2">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => navigate(`/pets/${record.pet_id}`)}
-                                  >
-                                    <Eye className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleEdit(record)}
-                                  >
-                                    <Edit className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => record.id && handleDelete(record.id)}
-                                  >
-                                    <Trash2 className="h-4 w-4 text-red-500" />
-                                  </Button>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+    <AdminLayout onRefresh={loadData} isRefreshing={loading}>
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center gap-2">
+              <Stethoscope className="h-6 w-6 sm:h-8 sm:w-8 text-[#4CAF50]" />
+              Medical Records
+            </h1>
+            <p className="text-sm sm:text-base text-gray-600 mt-1">Register and manage medical information for animals</p>
           </div>
-        </main>
+          <Button
+            onClick={handleAddNew}
+            className="w-full sm:w-auto bg-[#2BB6AF] hover:bg-[#239a94] text-white"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Add Record
+          </Button>
+        </div>
+
+        {/* Filters */}
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex flex-col md:flex-row gap-4">
+              <div className="flex-1">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Input
+                    placeholder="Search by pet name, health status, or veterinarian..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <select
+                  value={petFilter}
+                  onChange={(e) => setPetFilter(e.target.value)}
+                  className="px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-green-500"
+                >
+                  <option value="all">All Pets</option>
+                  {pets.map((pet) => (
+                    <option key={pet.id || pet._id} value={pet.id || pet._id}>
+                      {pet.name || 'Unnamed'}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-green-500"
+                >
+                  <option value="all">All Status</option>
+                  <option value="Healthy">Healthy</option>
+                  <option value="Under Treatment">Under Treatment</option>
+                  <option value="Recovering">Recovering</option>
+                  <option value="Chronic Condition">Chronic Condition</option>
+                  <option value="Critical">Critical</option>
+                </select>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Medical Records Table */}
+        {loading && records.length === 0 ? (
+          <div className="flex items-center justify-center min-h-screen bg-white">
+            <div className="text-center">
+              <Stethoscope className="h-16 w-16 mx-auto text-[#4CAF50] animate-pulse" />
+              <p className="mt-6 text-lg font-medium text-gray-700">Loading Medical Records...</p>
+            </div>
+          </div>
+        ) : filteredRecords.length === 0 ? (
+          <Card>
+            <CardContent className="py-12 text-center">
+              <Stethoscope className="h-16 w-16 mx-auto text-gray-400 mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">No Medical Records</h3>
+              <p className="text-gray-600 mb-4">
+                {searchTerm || petFilter !== 'all' || statusFilter !== 'all'
+                  ? 'No medical records match your search'
+                  : 'No medical records have been registered yet.'}
+              </p>
+              <Button onClick={handleAddNew} className="bg-[#2BB6AF] hover:bg-[#239a94]">
+                <Plus className="h-4 w-4 mr-2" />
+                Add First Medical Record
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card>
+            <CardHeader>
+              <CardTitle>Medical Records ({filteredRecords.length})</CardTitle>
+              <CardDescription>
+                All registered medical records for pets
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Pet Name</TableHead>
+                      <TableHead>Health Status</TableHead>
+                      <TableHead>Vaccination</TableHead>
+                      <TableHead>Weight</TableHead>
+                      <TableHead>Veterinarian</TableHead>
+                      <TableHead>Last Checkup</TableHead>
+                      <TableHead>Created</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredRecords.map((record) => {
+                      const pet = pets.find((p) => p.id === record.pet_id || p._id === record.pet_id);
+                      const petName = pet?.name || record.pet?.name || 'Unknown';
+
+                      return (
+                        <TableRow key={record.id}>
+                          <TableCell className="font-medium">
+                            <div>
+                              <p className="font-semibold">{petName}</p>
+                              {pet && (
+                                <p className="text-xs text-gray-500">{pet.breed || 'Unknown breed'}</p>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant={
+                                record.health_status === 'Healthy' ? 'default' :
+                                  record.health_status === 'Critical' ? 'destructive' : 'secondary'
+                              }
+                              className={
+                                record.health_status === 'Healthy' ? 'bg-green-100 text-green-700' :
+                                  record.health_status === 'Critical' ? 'bg-red-100 text-red-700' :
+                                    'bg-yellow-100 text-yellow-700'
+                              }
+                            >
+                              {record.health_status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1">
+                              <Syringe className="h-3 w-3 text-gray-400" />
+                              <span className="text-sm">{record.vaccination_status}</span>
+                            </div>
+                            {record.next_vaccination_due && (
+                              <p className="text-xs text-gray-500 mt-1">
+                                Due: {format(new Date(record.next_vaccination_due), 'MMM dd, yyyy')}
+                              </p>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {record.weight ? `${record.weight} kg` : 'N/A'}
+                            {record.temperature && (
+                              <p className="text-xs text-gray-500">{record.temperature}°C</p>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {record.veterinarian_name ? (
+                              <div>
+                                <p className="text-sm">{record.veterinarian_name}</p>
+                                {record.clinic_name && (
+                                  <p className="text-xs text-gray-500">{record.clinic_name}</p>
+                                )}
+                              </div>
+                            ) : (
+                              'N/A'
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {record.last_checkup_date ? (
+                              <div className="flex items-center gap-1">
+                                <Calendar className="h-3 w-3 text-gray-400" />
+                                <span className="text-sm">
+                                  {format(new Date(record.last_checkup_date), 'MMM dd, yyyy')}
+                                </span>
+                              </div>
+                            ) : (
+                              'N/A'
+                            )}
+                            {record.next_checkup_due && (
+                              <p className="text-xs text-gray-500 mt-1">
+                                Next: {format(new Date(record.next_checkup_due), 'MMM dd')}
+                              </p>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {record.created_at ? (
+                              <div className="flex items-center gap-1">
+                                <Calendar className="h-3 w-3 text-gray-400" />
+                                <span className="text-sm">
+                                  {format(new Date(record.created_at), 'MMM dd, yyyy')}
+                                </span>
+                              </div>
+                            ) : (
+                              'N/A'
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => navigate(`/pets/${record.pet_id}`)}
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEdit(record)}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => record.id && handleDelete(record.id)}
+                              >
+                                <Trash2 className="h-4 w-4 text-red-500" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
+
 
       {/* Add Medical Record Dialog */}
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
@@ -762,7 +736,7 @@ export default function AdminMedicalRecords() {
           <MedicalRecordForm isEdit={true} />
         </DialogContent>
       </Dialog>
-    </div>
+    </AdminLayout>
   );
 }
 

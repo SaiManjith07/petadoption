@@ -15,8 +15,8 @@ export function UserLayout({ children, title, subtitle, onRefresh }: UserLayoutP
   return (
     <div className="min-h-screen bg-[#F5F7FA]">
       {/* Top Navigation - Full Width */}
-      <UserTopNav 
-        onMenuToggle={() => setSidebarOpen(!sidebarOpen)} 
+      <UserTopNav
+        onMenuToggle={() => setSidebarOpen(!sidebarOpen)}
         sidebarOpen={sidebarOpen}
         onRefresh={onRefresh}
       />
@@ -25,7 +25,7 @@ export function UserLayout({ children, title, subtitle, onRefresh }: UserLayoutP
       <div className="hidden lg:block">
         <UserSidebar isOpen={true} onClose={() => setSidebarOpen(false)} />
       </div>
-      
+
       {/* Mobile Sidebar */}
       <div className="lg:hidden">
         <UserSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
@@ -42,7 +42,7 @@ export function UserLayout({ children, title, subtitle, onRefresh }: UserLayoutP
               )}
             </div>
           )}
-          <div className="p-6 lg:p-6 max-w-[1400px] mx-auto">
+          <div className="p-4 lg:p-6 max-w-[1400px] mx-auto">
             {children}
           </div>
         </main>

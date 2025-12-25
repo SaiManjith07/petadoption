@@ -19,7 +19,7 @@ export default function LostPets() {
   const loadPets = async () => {
     try {
       setLoading(true);
-      const data = await petsApi.getAll({ 
+      const data = await petsApi.getAll({
         status: 'Lost'
       });
       // Handle both paginated and direct array responses
@@ -44,7 +44,7 @@ export default function LostPets() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-green-50/30 -m-6 lg:-m-8 overflow-x-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-green-50/30 -m-4 lg:-m-6 overflow-x-hidden">
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 w-full">
         {/* Hero Section */}
         <div className="relative rounded-2xl mt-6 mb-6 overflow-hidden">
@@ -58,15 +58,15 @@ export default function LostPets() {
           </div>
           <div className="relative px-8 py-6">
             {/* Back Button */}
-            <Button 
-              variant="ghost" 
-              onClick={() => navigate('/home')} 
+            <Button
+              variant="ghost"
+              onClick={() => navigate('/home')}
               className="mb-4 text-gray-900 hover:text-black hover:bg-white/50 backdrop-blur-sm"
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Home
             </Button>
-            
+
             {/* Title and Icon */}
             <div className="flex items-start gap-4 mb-6">
               <div className="h-14 w-14 rounded-xl bg-white/80 backdrop-blur-md flex items-center justify-center border-2 border-[#2BB6AF] shadow-lg flex-shrink-0">
@@ -84,7 +84,7 @@ export default function LostPets() {
                 </div>
               </div>
             </div>
-            
+
             {/* Stats and Button Row */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div className="flex flex-wrap items-center gap-4">
@@ -101,8 +101,8 @@ export default function LostPets() {
                   <span className="text-sm font-semibold">Urgent Search</span>
                 </div>
               </div>
-              
-              <Button 
+
+              <Button
                 className="bg-white text-[#2BB6AF] hover:bg-[#E0F7F5] shadow-lg hover:shadow-[#2BB6AF]/20 border-2 border-white/50 font-semibold px-5 py-2.5 text-sm whitespace-nowrap"
                 onClick={() => navigate('/pets/new/lost')}
               >

@@ -37,12 +37,12 @@ export default function Login() {
     try {
       setIsLoading(true);
       const userData = await login(data.email, data.password);
-      
+
       toast({
         title: 'Welcome back!',
         description: 'You have successfully logged in.',
       });
-      
+
       // Small delay to ensure state is updated
       setTimeout(() => {
         const userRole = userData?.role || 'user';
@@ -81,9 +81,9 @@ export default function Login() {
         <div className="relative z-10 flex flex-col justify-center flex-1">
           {/* PetReunite Branding */}
           <div className="mb-8">
-            <Logo 
-              size="xl" 
-              showText={true} 
+            <Logo
+              size="xl"
+              showText={true}
               showTagline={true}
               linkTo="/"
               variant="white"
@@ -97,7 +97,7 @@ export default function Login() {
             <p className="text-white text-lg leading-relaxed mb-6 drop-shadow-lg font-medium">
               Login to continue helping pets find their way home through our trusted platform.
             </p>
-            
+
             {/* Key Features - Concise */}
             <div className="space-y-3">
               <div className="flex items-center gap-3">
@@ -118,7 +118,7 @@ export default function Login() {
           {/* Register Prompt */}
           <div className="mt-auto pt-8">
             <p className="text-white mb-4 text-base drop-shadow-md font-medium">Don't have an account?</p>
-            <Link 
+            <Link
               to="/auth/register"
               className="inline-block px-6 py-3 bg-white/10 hover:bg-white/20 border-2 border-white text-white font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl backdrop-blur-sm"
             >
@@ -129,7 +129,7 @@ export default function Login() {
       </div>
 
       {/* Right Panel - Login Form */}
-      <div className="flex-1 lg:w-[52%] flex items-center justify-center p-4 sm:p-6 lg:p-8 bg-white w-full">
+      <div className="flex-1 lg:w-[52%] flex items-center justify-center px-4 py-8 sm:p-6 lg:p-8 bg-white w-full">
         <div className="w-full max-w-lg">
           {/* Mobile Welcome Section */}
           <div className="lg:hidden mb-6 sm:mb-8 text-white p-6 sm:p-8 rounded-[2rem] relative overflow-hidden border-2 border-[#2BB6AF] shadow-xl shadow-[#2BB6AF]/30">
@@ -143,9 +143,9 @@ export default function Login() {
               <div className="absolute inset-0 bg-gradient-to-br from-[#2BB6AF]/80 via-[#239a94]/80 to-[#1a7a75]/80"></div>
             </div>
             <div className="relative z-10">
-              <Logo 
-                size="lg" 
-                showText={true} 
+              <Logo
+                size="lg"
+                showText={true}
                 showTagline={true}
                 linkTo="/"
                 variant="white"
@@ -156,7 +156,7 @@ export default function Login() {
                 Login to continue helping pets find their way home.
               </p>
               <p className="text-white/90 mb-2 text-xs drop-shadow-md">Don't have an account?</p>
-              <Link 
+              <Link
                 to="/auth/register"
                 className="text-white/90 text-xs underline hover:text-white transition-colors"
               >
@@ -201,8 +201,8 @@ export default function Login() {
                   <Label htmlFor="password" className="text-[14px] font-semibold text-[#333333] block">
                     Password
                   </Label>
-                  <Link 
-                    to="/auth/forgot-password" 
+                  <Link
+                    to="/auth/forgot-password"
                     className="text-[13px] text-[#2BB6AF] font-medium no-underline hover:underline transition-all"
                   >
                     Forgot Password?
@@ -255,8 +255,8 @@ export default function Login() {
               <div className="text-center pt-4">
                 <p className="text-sm text-gray-600">
                   Don't have an account?{' '}
-                  <Link 
-                    to="/auth/register" 
+                  <Link
+                    to="/auth/register"
                     className="text-[#2BB6AF] font-semibold no-underline hover:underline transition-all"
                   >
                     Register here

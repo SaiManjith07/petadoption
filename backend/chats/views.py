@@ -154,14 +154,31 @@ class ChatRoomListView(generics.ListCreateAPIView):
                             if hasattr(chat_request, 'type'):
                                 chat_type = chat_request.type
                         
-                        # Method 2: If still no pet_id, try to get from ChatRequest directly via reverse lookup
+                        # Method 2: If still no pet_id, try to get from ChatRequest directly via reverse lookup (Comprehensive Search)
                         if not pet_id:
                             try:
                                 from .models import ChatRequest
-                                chat_request_obj = ChatRequest.objects.filter(chat_room=room).select_related('pet').first()
-                                if chat_request_obj and chat_request_obj.pet:
-                                    pet_id = chat_request_obj.pet.id
-                                    print(f"Room {room.id}: Found pet_id {pet_id} via reverse lookup")
+                                from django.db.models import Q
+                                
+                                # Search for any ChatRequest linked to this room via any relationship
+                                chat_request_obj = ChatRequest.objects.filter(
+                                    Q(chat_room=room) | 
+                                    Q(final_chat_room=room) | 
+                                    Q(admin_verification_room=room)
+                                ).select_related('pet').first()
+                                
+                                if chat_request_obj:
+                                    # Found the request, get type and pet
+                                    if not chat_type and hasattr(chat_request_obj, 'type'):
+                                        chat_type = chat_request_obj.type
+                                        
+                                    if chat_request_obj.pet:
+                                        pet_id = chat_request_obj.pet.id
+                                        print(f"Room {room.id}: Found pet_id {pet_id} via comprehensive reverse lookup")
+                                        
+                                        # Also attach the pet object for frontend use (since we're building manual response)
+                                        # We can't attach to 'room' object directly efficiently without modifying the serializer or data structure below
+                                        # But pet_id is what's requested
                             except Exception as reverse_error:
                                 print(f"Room {room.id}: Reverse lookup failed: {reverse_error}")
                         
@@ -760,6 +777,12 @@ def get_chat_requests_for_owner(request):
                 'requester_name': getattr(req.requester, 'name', req.requester.email) if req.requester else '',
                 'message': req.message,
                 'created_at': req.created_at.isoformat() if req.created_at else None,
+                'pet_id': req.pet.id if req.pet else None,
+                'pet': {
+                    'id': req.pet.id,
+                    'name': req.pet.name,
+                    'image': req.pet.image.url if hasattr(req.pet, 'image') and req.pet.image else None
+                } if req.pet else None,
             })
         
         return Response({'data': data}, status=status.HTTP_200_OK)

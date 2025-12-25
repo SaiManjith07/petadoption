@@ -45,7 +45,7 @@ export default function Register() {
   const [emailAvailable, setEmailAvailable] = useState<boolean | null>(null);
   const [phoneAvailable, setPhoneAvailable] = useState<boolean | null>(null);
   const [countryCode, setCountryCode] = useState('+91');
-  const [pwdStrength, setPwdStrength] = useState<'weak'|'medium'|'strong'|null>(null);
+  const [pwdStrength, setPwdStrength] = useState<'weak' | 'medium' | 'strong' | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const nameInputRef = useRef<HTMLInputElement>(null);
@@ -195,7 +195,7 @@ export default function Register() {
   }, [errors]);
 
   return (
-    <div className="fixed top-0 left-0 w-full h-screen flex overflow-hidden bg-white">
+    <div className="min-h-screen flex flex-col lg:flex-row bg-white overflow-x-hidden">
       {/* Custom Scrollbar Styles */}
       <style>{`
         .form-section::-webkit-scrollbar {
@@ -227,73 +227,73 @@ export default function Register() {
         <div className="relative z-10 flex flex-col justify-center flex-1">
           {/* Decorative Paw Prints with Animation */}
           <div className="absolute inset-0 pointer-events-none opacity-30">
-          <div 
-            className="absolute text-white opacity-15 paw-print-float"
-            style={{ 
-              top: '15%', 
-              left: '10%', 
-              transform: 'rotate(15deg)', 
-              width: '50px', 
-              height: '50px',
-              animationDelay: '0s'
-            }}
-          >
-            <svg width="50" height="50" viewBox="0 0 24 24" fill="white" opacity="0.15">
-              <path d="M12 10c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-4-2c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1-.45-1-1-1zm8 0c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1-.45-1-1-1zM8 14c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1-.45-1-1-1zm8 0c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1-.45-1-1-1z"/>
-            </svg>
+            <div
+              className="absolute text-white opacity-15 paw-print-float"
+              style={{
+                top: '15%',
+                left: '10%',
+                transform: 'rotate(15deg)',
+                width: '50px',
+                height: '50px',
+                animationDelay: '0s'
+              }}
+            >
+              <svg width="50" height="50" viewBox="0 0 24 24" fill="white" opacity="0.15">
+                <path d="M12 10c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-4-2c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1-.45-1-1-1zm8 0c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1-.45-1-1-1zM8 14c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1-.45-1-1-1zm8 0c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1-.45-1-1-1z" />
+              </svg>
+            </div>
+            <div
+              className="absolute text-white opacity-12 paw-print-float"
+              style={{
+                top: '35%',
+                right: '12%',
+                transform: 'rotate(-25deg)',
+                width: '45px',
+                height: '45px',
+                animationDelay: '0.5s'
+              }}
+            >
+              <svg width="45" height="45" viewBox="0 0 24 24" fill="white" opacity="0.12">
+                <path d="M12 10c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-4-2c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1-.45-1-1-1zm8 0c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1-.45-1-1-1zM8 14c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1-.45-1-1-1zm8 0c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1-.45-1-1-1z" />
+              </svg>
+            </div>
+            <div
+              className="absolute text-white opacity-18 paw-print-float"
+              style={{
+                bottom: '25%',
+                left: '8%',
+                transform: 'rotate(40deg)',
+                width: '55px',
+                height: '55px',
+                animationDelay: '1s'
+              }}
+            >
+              <svg width="55" height="55" viewBox="0 0 24 24" fill="white" opacity="0.18">
+                <path d="M12 10c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-4-2c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1-.45-1-1-1zm8 0c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1-.45-1-1-1zM8 14c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1-.45-1-1-1zm8 0c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1-.45-1-1-1z" />
+              </svg>
+            </div>
+            <div
+              className="absolute text-white opacity-10 paw-print-float"
+              style={{
+                top: '60%',
+                right: '15%',
+                transform: 'rotate(-15deg)',
+                width: '40px',
+                height: '40px',
+                animationDelay: '1.5s'
+              }}
+            >
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="white" opacity="0.1">
+                <path d="M12 10c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-4-2c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1-.45-1-1-1zm8 0c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1-.45-1-1-1zM8 14c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1-.45-1-1-1zm8 0c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1-.45-1-1-1z" />
+              </svg>
+            </div>
+
           </div>
-          <div 
-            className="absolute text-white opacity-12 paw-print-float"
-            style={{ 
-              top: '35%', 
-              right: '12%', 
-              transform: 'rotate(-25deg)', 
-              width: '45px', 
-              height: '45px',
-              animationDelay: '0.5s'
-            }}
-          >
-            <svg width="45" height="45" viewBox="0 0 24 24" fill="white" opacity="0.12">
-              <path d="M12 10c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-4-2c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1-.45-1-1-1zm8 0c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1-.45-1-1-1zM8 14c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1-.45-1-1-1zm8 0c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1-.45-1-1-1z"/>
-            </svg>
-          </div>
-          <div 
-            className="absolute text-white opacity-18 paw-print-float"
-            style={{ 
-              bottom: '25%', 
-              left: '8%', 
-              transform: 'rotate(40deg)', 
-              width: '55px', 
-              height: '55px',
-              animationDelay: '1s'
-            }}
-          >
-            <svg width="55" height="55" viewBox="0 0 24 24" fill="white" opacity="0.18">
-              <path d="M12 10c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-4-2c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1-.45-1-1-1zm8 0c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1-.45-1-1-1zM8 14c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1-.45-1-1-1zm8 0c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1-.45-1-1-1z"/>
-            </svg>
-          </div>
-          <div 
-            className="absolute text-white opacity-10 paw-print-float"
-            style={{ 
-              top: '60%', 
-              right: '15%', 
-              transform: 'rotate(-15deg)', 
-              width: '40px', 
-              height: '40px',
-              animationDelay: '1.5s'
-            }}
-          >
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="white" opacity="0.1">
-              <path d="M12 10c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-4-2c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1-.45-1-1-1zm8 0c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1-.45-1-1-1zM8 14c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1-.45-1-1-1zm8 0c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1-.45-1-1-1z"/>
-            </svg>
-          </div>
-          
-        </div>
           {/* PetReunite Branding */}
           <div className="mb-6">
-            <Logo 
-              size="xl" 
-              showText={true} 
+            <Logo
+              size="xl"
+              showText={true}
               showTagline={true}
               linkTo="/"
               variant="white"
@@ -307,7 +307,7 @@ export default function Register() {
             <p className="text-white text-lg leading-relaxed mb-4 drop-shadow-md">
               Become part of a caring community dedicated to helping pets find their way home. Your registration is the first step towards making a real difference.
             </p>
-            
+
             {/* Key Features - Concise */}
             <div className="space-y-2.5">
               <div className="flex items-center gap-3">
@@ -348,7 +348,7 @@ export default function Register() {
       </div>
 
       {/* Right Panel - Form Section (Scrollable) */}
-      <div className="flex-1 lg:w-[55%] xl:w-[60%] h-screen overflow-y-auto overflow-x-hidden bg-[#F8FAFB] p-4 sm:p-6 md:p-10 lg:p-[40px_50px] xl:p-[60px_80px] form-section">
+      <div className="flex-1 w-full lg:w-[55%] xl:w-[60%] lg:h-screen lg:overflow-y-auto lg:overflow-x-hidden bg-[#F8FAFB] p-4 sm:p-6 md:p-10 lg:p-[40px_50px] xl:p-[60px_80px] form-section">
         <div className="w-full max-w-[600px] mx-auto">
           {/* Mobile Welcome Section */}
           <div className="lg:hidden mb-6 sm:mb-8 text-white p-6 sm:p-8 rounded-xl sm:rounded-[2rem] relative overflow-hidden border-2 border-[#2BB6AF] shadow-xl shadow-[#2BB6AF]/30">
@@ -362,9 +362,9 @@ export default function Register() {
               <div className="absolute inset-0 bg-gradient-to-br from-[#2BB6AF]/50 via-[#239a94]/50 to-[#1a7a75]/50"></div>
             </div>
             <div className="relative z-10">
-              <Logo 
-                size="lg" 
-                showText={true} 
+              <Logo
+                size="lg"
+                showText={true}
                 showTagline={true}
                 linkTo="/"
                 variant="white"
@@ -407,11 +407,10 @@ export default function Register() {
                     {...register('name')}
                     aria-invalid={!!errors.name}
                     aria-label="Full name"
-                    className={`h-auto py-[14px] pl-12 pr-4 text-[15px] w-full border-2 rounded-[10px] bg-[#F8FAFB] transition-all duration-300 outline-none font-inherit ${
-                      errors.name 
-                        ? 'border-[#E74C3C] bg-[#FFF5F5]' 
-                        : 'border-[#E8ECEF] focus:bg-white focus:border-[#2BB6AF] focus:shadow-[0_0_0_4px_rgba(43,182,175,0.1)]'
-                    }`}
+                    className={`h-auto py-[14px] pl-12 pr-4 text-[15px] w-full border-2 rounded-[10px] bg-[#F8FAFB] transition-all duration-300 outline-none font-inherit ${errors.name
+                      ? 'border-[#E74C3C] bg-[#FFF5F5]'
+                      : 'border-[#E8ECEF] focus:bg-white focus:border-[#2BB6AF] focus:shadow-[0_0_0_4px_rgba(43,182,175,0.1)]'
+                      }`}
                   />
                 </div>
                 {errors.name && (
@@ -433,13 +432,12 @@ export default function Register() {
                     {...register('email')}
                     aria-invalid={!!errors.email}
                     aria-label="Email address"
-                    className={`h-auto py-[14px] pl-12 pr-4 text-[15px] w-full border-2 rounded-[10px] bg-[#F8FAFB] transition-all duration-300 outline-none font-inherit ${
-                      errors.email 
-                        ? 'border-[#E74C3C] bg-[#FFF5F5]' 
-                        : emailAvailable === true
+                    className={`h-auto py-[14px] pl-12 pr-4 text-[15px] w-full border-2 rounded-[10px] bg-[#F8FAFB] transition-all duration-300 outline-none font-inherit ${errors.email
+                      ? 'border-[#E74C3C] bg-[#FFF5F5]'
+                      : emailAvailable === true
                         ? 'border-[#2BB6AF] bg-[#F0FFF4]'
                         : 'border-[#E8ECEF] focus:bg-white focus:border-[#2BB6AF] focus:shadow-[0_0_0_4px_rgba(43,182,175,0.1)]'
-                    }`}
+                      }`}
                   />
                 </div>
                 <div className="flex items-center justify-between mt-1">
@@ -466,9 +464,9 @@ export default function Register() {
                     Phone *
                   </Label>
                   <div className="flex gap-2">
-                    <select 
-                      value={countryCode} 
-                      onChange={(e) => { setCountryCode(e.target.value); setValue('countryCode', e.target.value); }} 
+                    <select
+                      value={countryCode}
+                      onChange={(e) => { setCountryCode(e.target.value); setValue('countryCode', e.target.value); }}
                       className="w-[120px] flex-shrink-0 px-3 py-[14px] border-2 border-[#E8ECEF] rounded-[10px] focus:border-[#2BB6AF] focus:ring-2 focus:ring-[#2BB6AF]/20 focus:outline-none bg-[#F8FAFB] focus:bg-white text-[15px] transition-all duration-300"
                     >
                       <option value="+91">+91 (IN)</option>
@@ -478,17 +476,16 @@ export default function Register() {
                     </select>
                     <div className="relative flex-1">
                       <Phone className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-[#666666] pointer-events-none" />
-                      <Input 
-                        id="phone" 
-                        placeholder="1234567890" 
-                        {...register('phone')} 
+                      <Input
+                        id="phone"
+                        placeholder="1234567890"
+                        {...register('phone')}
                         aria-invalid={!!errors.phone}
                         aria-label="Phone number"
-                        className={`h-auto py-[14px] pl-12 pr-4 text-[15px] w-full border-2 rounded-[10px] bg-[#F8FAFB] transition-all duration-300 outline-none font-inherit ${
-                          errors.phone 
-                            ? 'border-[#E74C3C] bg-[#FFF5F5]' 
-                            : 'border-[#E8ECEF] focus:bg-white focus:border-[#2BB6AF] focus:shadow-[0_0_0_4px_rgba(43,182,175,0.1)]'
-                        }`}
+                        className={`h-auto py-[14px] pl-12 pr-4 text-[15px] w-full border-2 rounded-[10px] bg-[#F8FAFB] transition-all duration-300 outline-none font-inherit ${errors.phone
+                          ? 'border-[#E74C3C] bg-[#FFF5F5]'
+                          : 'border-[#E8ECEF] focus:bg-white focus:border-[#2BB6AF] focus:shadow-[0_0_0_4px_rgba(43,182,175,0.1)]'
+                          }`}
                       />
                     </div>
                   </div>
@@ -506,17 +503,16 @@ export default function Register() {
                   </Label>
                   <div className="relative">
                     <MapPin className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-[#666666] pointer-events-none" />
-                    <Input 
-                      id="pincode" 
-                      placeholder="560001" 
-                      {...register('pincode')} 
+                    <Input
+                      id="pincode"
+                      placeholder="560001"
+                      {...register('pincode')}
                       aria-invalid={!!errors.pincode}
                       aria-label="Pincode"
-                      className={`h-auto py-[14px] pl-12 pr-4 text-[15px] w-full border-2 rounded-[10px] bg-[#F8FAFB] transition-all duration-300 outline-none font-inherit ${
-                        errors.pincode 
-                          ? 'border-[#E74C3C] bg-[#FFF5F5]' 
-                          : 'border-[#E8ECEF] focus:bg-white focus:border-[#2BB6AF] focus:shadow-[0_0_0_4px_rgba(43,182,175,0.1)]'
-                      }`}
+                      className={`h-auto py-[14px] pl-12 pr-4 text-[15px] w-full border-2 rounded-[10px] bg-[#F8FAFB] transition-all duration-300 outline-none font-inherit ${errors.pincode
+                        ? 'border-[#E74C3C] bg-[#FFF5F5]'
+                        : 'border-[#E8ECEF] focus:bg-white focus:border-[#2BB6AF] focus:shadow-[0_0_0_4px_rgba(43,182,175,0.1)]'
+                        }`}
                     />
                   </div>
                   {errors.pincode && <p className="text-xs text-red-600 font-medium mt-1">{errors.pincode.message}</p>}
@@ -537,11 +533,10 @@ export default function Register() {
                     aria-invalid={!!errors.address}
                     aria-label="Address"
                     rows={3}
-                    className={`h-auto py-[14px] pl-12 pr-4 text-[15px] w-full border-2 rounded-[10px] bg-[#F8FAFB] transition-all duration-300 outline-none font-inherit resize-none ${
-                      errors.address 
-                        ? 'border-[#E74C3C] bg-[#FFF5F5]' 
-                        : 'border-[#E8ECEF] focus:bg-white focus:border-[#2BB6AF] focus:shadow-[0_0_0_4px_rgba(43,182,175,0.1)]'
-                    }`}
+                    className={`h-auto py-[14px] pl-12 pr-4 text-[15px] w-full border-2 rounded-[10px] bg-[#F8FAFB] transition-all duration-300 outline-none font-inherit resize-none ${errors.address
+                      ? 'border-[#E74C3C] bg-[#FFF5F5]'
+                      : 'border-[#E8ECEF] focus:bg-white focus:border-[#2BB6AF] focus:shadow-[0_0_0_4px_rgba(43,182,175,0.1)]'
+                      }`}
                   />
                 </div>
                 {errors.address && (
@@ -562,11 +557,10 @@ export default function Register() {
                     {...register('landmark')}
                     aria-invalid={!!errors.landmark}
                     aria-label="Landmark"
-                    className={`h-auto py-[14px] pl-12 pr-4 text-[15px] w-full border-2 rounded-[10px] bg-[#F8FAFB] transition-all duration-300 outline-none font-inherit ${
-                      errors.landmark 
-                        ? 'border-[#E74C3C] bg-[#FFF5F5]' 
-                        : 'border-[#E8ECEF] focus:bg-white focus:border-[#2BB6AF] focus:shadow-[0_0_0_4px_rgba(43,182,175,0.1)]'
-                    }`}
+                    className={`h-auto py-[14px] pl-12 pr-4 text-[15px] w-full border-2 rounded-[10px] bg-[#F8FAFB] transition-all duration-300 outline-none font-inherit ${errors.landmark
+                      ? 'border-[#E74C3C] bg-[#FFF5F5]'
+                      : 'border-[#E8ECEF] focus:bg-white focus:border-[#2BB6AF] focus:shadow-[0_0_0_4px_rgba(43,182,175,0.1)]'
+                      }`}
                   />
                 </div>
                 {errors.landmark && (
@@ -580,17 +574,16 @@ export default function Register() {
                   <Label htmlFor="age" className="text-[14px] font-semibold text-[#2C3E50] mb-2 block">
                     Age *
                   </Label>
-                  <Input 
-                    id="age" 
-                    type="number" 
-                    {...register('age', { valueAsNumber: true })} 
+                  <Input
+                    id="age"
+                    type="number"
+                    {...register('age', { valueAsNumber: true })}
                     aria-invalid={!!errors.age}
                     aria-label="Age"
-                    className={`h-auto py-[14px] px-4 text-[15px] w-full border-2 rounded-[10px] bg-[#F8FAFB] transition-all duration-300 outline-none font-inherit ${
-                      errors.age 
-                        ? 'border-[#E74C3C] bg-[#FFF5F5]' 
-                        : 'border-[#E8ECEF] focus:bg-white focus:border-[#2BB6AF] focus:shadow-[0_0_0_4px_rgba(43,182,175,0.1)]'
-                    }`}
+                    className={`h-auto py-[14px] px-4 text-[15px] w-full border-2 rounded-[10px] bg-[#F8FAFB] transition-all duration-300 outline-none font-inherit ${errors.age
+                      ? 'border-[#E74C3C] bg-[#FFF5F5]'
+                      : 'border-[#E8ECEF] focus:bg-white focus:border-[#2BB6AF] focus:shadow-[0_0_0_4px_rgba(43,182,175,0.1)]'
+                      }`}
                   />
                   {errors.age && <p className="text-xs text-red-600 font-medium mt-1">{errors.age.message}</p>}
                 </div>
@@ -599,14 +592,13 @@ export default function Register() {
                   <Label htmlFor="gender" className="text-[14px] font-semibold text-[#2C3E50] mb-2 block">
                     Gender *
                   </Label>
-                  <select 
-                    id="gender" 
-                    {...register('gender')} 
-                    className={`w-full px-4 py-[14px] text-[15px] border-2 rounded-[10px] bg-[#F8FAFB] transition-all duration-300 outline-none font-inherit ${
-                      errors.gender 
-                        ? 'border-[#E74C3C] bg-[#FFF5F5]' 
-                        : 'border-[#E8ECEF] focus:bg-white focus:border-[#2BB6AF] focus:shadow-[0_0_0_4px_rgba(43,182,175,0.1)]'
-                    }`}
+                  <select
+                    id="gender"
+                    {...register('gender')}
+                    className={`w-full px-4 py-[14px] text-[15px] border-2 rounded-[10px] bg-[#F8FAFB] transition-all duration-300 outline-none font-inherit ${errors.gender
+                      ? 'border-[#E74C3C] bg-[#FFF5F5]'
+                      : 'border-[#E8ECEF] focus:bg-white focus:border-[#2BB6AF] focus:shadow-[0_0_0_4px_rgba(43,182,175,0.1)]'
+                      }`}
                     aria-invalid={!!errors.gender}
                     aria-label="Gender"
                   >
@@ -635,11 +627,10 @@ export default function Register() {
                       {...register('password')}
                       aria-invalid={!!errors.password}
                       aria-label="Password"
-                      className={`h-auto py-[14px] pl-12 pr-12 text-[15px] w-full border-2 rounded-[10px] bg-[#F8FAFB] transition-all duration-300 outline-none font-inherit ${
-                        errors.password 
-                          ? 'border-[#E74C3C] bg-[#FFF5F5]' 
-                          : 'border-[#E8ECEF] focus:bg-white focus:border-[#2BB6AF] focus:shadow-[0_0_0_4px_rgba(43,182,175,0.1)]'
-                      }`}
+                      className={`h-auto py-3 sm:py-[14px] pl-12 pr-12 text-[15px] w-full border-2 rounded-[10px] bg-[#F8FAFB] transition-all duration-300 outline-none font-inherit ${errors.password
+                        ? 'border-[#E74C3C] bg-[#FFF5F5]'
+                        : 'border-[#E8ECEF] focus:bg-white focus:border-[#2BB6AF] focus:shadow-[0_0_0_4px_rgba(43,182,175,0.1)]'
+                        }`}
                     />
                     <button
                       type="button"
@@ -654,11 +645,10 @@ export default function Register() {
                     <p className="text-xs text-red-600 font-medium mt-1">{errors.password.message}</p>
                   )}
                   {pwdStrength && (
-                    <p className={`text-[13px] font-medium mt-1.5 ${
-                      pwdStrength === 'strong' ? 'text-[#2BB6AF]' : 
-                      pwdStrength === 'medium' ? 'text-[#FFA726]' : 
-                      'text-[#E74C3C]'
-                    }`}>
+                    <p className={`text-[13px] font-medium mt-1.5 ${pwdStrength === 'strong' ? 'text-[#2BB6AF]' :
+                      pwdStrength === 'medium' ? 'text-[#FFA726]' :
+                        'text-[#E74C3C]'
+                      }`}>
                       Password strength: <span className="capitalize">{pwdStrength}</span>
                     </p>
                   )}
@@ -678,11 +668,10 @@ export default function Register() {
                       {...register('confirmPassword')}
                       aria-invalid={!!errors.confirmPassword}
                       aria-label="Confirm password"
-                      className={`h-auto py-[14px] pl-12 pr-12 text-[15px] w-full border-2 rounded-[10px] bg-[#F8FAFB] transition-all duration-300 outline-none font-inherit ${
-                        errors.confirmPassword 
-                          ? 'border-[#E74C3C] bg-[#FFF5F5]' 
-                          : 'border-[#E8ECEF] focus:bg-white focus:border-[#2BB6AF] focus:shadow-[0_0_0_4px_rgba(43,182,175,0.1)]'
-                      }`}
+                      className={`h-auto py-3 sm:py-[14px] pl-12 pr-12 text-[15px] w-full border-2 rounded-[10px] bg-[#F8FAFB] transition-all duration-300 outline-none font-inherit ${errors.confirmPassword
+                        ? 'border-[#E74C3C] bg-[#FFF5F5]'
+                        : 'border-[#E8ECEF] focus:bg-white focus:border-[#2BB6AF] focus:shadow-[0_0_0_4px_rgba(43,182,175,0.1)]'
+                        }`}
                     />
                     <button
                       type="button"
@@ -733,8 +722,8 @@ export default function Register() {
               <div className="text-center pt-4">
                 <p className="text-sm text-gray-600">
                   Already have an account?{' '}
-                  <Link 
-                    to="/auth/login" 
+                  <Link
+                    to="/auth/login"
                     className="text-[#2BB6AF] font-semibold no-underline hover:underline transition-all"
                   >
                     Sign in here

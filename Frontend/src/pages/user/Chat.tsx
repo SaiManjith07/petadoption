@@ -16,6 +16,9 @@ import { getImageUrl } from '@/services/api';
 import { getBaseUrl } from '@/config/api';
 import { ChatMessageSkeleton, Skeleton } from '@/components/ui/skeletons';
 
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { Info } from 'lucide-react';
+
 interface Message {
   id: number;
   sender: {
@@ -45,6 +48,174 @@ interface ChatRoom {
   type?: string;
   chat_request?: any;
 }
+
+const ParticipantsList = ({ room, user, otherUser, isAdmin }: { room: any, user: any, otherUser: any, isAdmin: boolean }) => {
+  return (
+    <div className="space-y-4">
+      <div className="space-y-3">
+        {room?.participants && room.participants.length > 0 ? (
+          room.participants.map((participant: any) => {
+            const isParticipantAdmin = participant.is_staff || participant.is_superuser || participant.role === 'admin';
+            const isCurrentUser = participant.id === user?.id;
+            return (
+              <div key={participant.id} className="flex items-center gap-3">
+                <Avatar>
+                  <AvatarFallback className={isParticipantAdmin ? 'bg-[hsl(var(--primary))]/10 text-[hsl(var(--primary))]' : 'bg-primary/10 text-primary'}>
+                    {participant.name?.charAt(0) || participant.email?.charAt(0) || <User className="h-4 w-4" />}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium">
+                    {participant.name || participant.email || 'Unknown'}
+                    {isParticipantAdmin ? (
+                      <span className="text-xs text-[hsl(var(--primary))] ml-1">(admin)</span>
+                    ) : (
+                      <span className="text-xs text-gray-500 ml-1">(user)</span>
+                    )}
+                    {isCurrentUser && (
+                      <span className="text-xs text-[hsl(var(--primary))] ml-1">(you)</span>
+                    )}
+                  </p>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {participant.email || 'No email'}
+                  </p>
+                </div>
+                <Badge variant={isParticipantAdmin ? 'default' : 'secondary'}>
+                  {isParticipantAdmin ? 'Admin' : 'User'}
+                </Badge>
+              </div>
+            );
+          })
+        ) : otherUser ? (
+          <>
+            <div className="flex items-center gap-3">
+              <Avatar>
+                <AvatarFallback className="bg-primary/10 text-primary">
+                  {otherUser.name?.charAt(0) || otherUser.email?.charAt(0) || <User className="h-4 w-4" />}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium">
+                  {otherUser.name || otherUser.email || 'Unknown'}
+                  {otherUser.is_staff || otherUser.is_superuser ? (
+                    <span className="text-xs text-[hsl(var(--primary))] ml-1">(admin)</span>
+                  ) : (
+                    <span className="text-xs text-gray-500 ml-1">(user)</span>
+                  )}
+                </p>
+                <p className="text-xs text-muted-foreground truncate">
+                  {otherUser.email || 'No email'}
+                </p>
+              </div>
+              <Badge variant={(otherUser.is_staff || otherUser.is_superuser) ? 'default' : 'secondary'}>
+                {(otherUser.is_staff || otherUser.is_superuser) ? 'Admin' : 'User'}
+              </Badge>
+            </div>
+            {user && (
+              <div className="flex items-center gap-3">
+                <Avatar>
+                  <AvatarFallback className="bg-[hsl(var(--primary))]/10 text-[hsl(var(--primary))]">
+                    {user.name?.charAt(0) || user.email?.charAt(0) || <User className="h-4 w-4" />}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium">
+                    {user.name || user.email || 'You'}
+                    {isAdmin ? (
+                      <span className="text-xs text-[hsl(var(--primary))] ml-1">(admin)</span>
+                    ) : (
+                      <span className="text-xs text-gray-500 ml-1">(user)</span>
+                    )}
+                    <span className="text-xs text-green-600 ml-1">(you)</span>
+                  </p>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {user.email || 'No email'}
+                  </p>
+                </div>
+                <Badge variant={isAdmin ? 'default' : 'secondary'}>
+                  {isAdmin ? 'Admin' : 'User'}
+                </Badge>
+              </div>
+            )}
+          </>
+        ) : (
+          <>
+            <div className="flex items-center gap-3">
+              <Avatar>
+                <AvatarFallback className="bg-primary/10 text-primary">
+                  <User className="h-4 w-4" />
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium">Pet Owner</p>
+                <p className="text-xs text-muted-foreground truncate">Lost their pet</p>
+              </div>
+              <Badge variant="secondary">Owner</Badge>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <Avatar>
+                <AvatarFallback className="bg-secondary/10 text-secondary">
+                  <User className="h-4 w-4" />
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium">Rescuer</p>
+                <p className="text-xs text-muted-foreground truncate">Found the pet</p>
+              </div>
+              <Badge variant="secondary">Rescuer</Badge>
+            </div>
+
+            {isAdmin && (
+              <div className="flex items-center gap-3">
+                <Avatar>
+                  <AvatarFallback className="bg-accent/10 text-accent">
+                    <Shield className="h-4 w-4" />
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium">
+                    Admin
+                    <span className="text-xs text-[hsl(var(--primary))] ml-1">(admin)</span>
+                  </p>
+                  <p className="text-xs text-muted-foreground truncate">Moderator</p>
+                </div>
+                <Badge variant="default">Admin</Badge>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      <Separator />
+
+      <div className="space-y-2">
+        <h4 className="text-sm font-medium">Chat Guidelines</h4>
+        <ul className="space-y-1 text-xs text-muted-foreground">
+          <li>• Be respectful and patient</li>
+          <li>• Share clear photos for verification</li>
+          <li>• Arrange safe meetup locations</li>
+          <li>• Admin will assist if needed</li>
+        </ul>
+      </div>
+
+      {isAdmin && (
+        <>
+          <Separator />
+          <div className="space-y-2">
+            <h4 className="text-sm font-medium text-warning">Admin Actions</h4>
+            <Button variant="outline" size="sm" className="w-full">
+              Request Proof
+            </Button>
+            <Button size="sm" className="w-full">
+              Mark Reunified
+            </Button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
 
 export default function Chat() {
   const { roomId } = useParams();
@@ -350,12 +521,35 @@ export default function Chat() {
                       </CardDescription>
                     </div>
                   </div>
-                  {isAdmin && (
-                    <Button onClick={handleMarkReunified} className="gap-2">
-                      <CheckCircle className="h-4 w-4" />
-                      Mark Reunified
-                    </Button>
-                  )}
+
+                  <div className="flex items-center gap-2">
+                    {/* Mobile Info Button */}
+                    <Sheet>
+                      <SheetTrigger asChild>
+                        <Button variant="ghost" size="icon" className="lg:hidden">
+                          <Info className="h-5 w-5" />
+                        </Button>
+                      </SheetTrigger>
+                      <SheetContent>
+                        <SheetHeader className="mb-4">
+                          <SheetTitle>Participants</SheetTitle>
+                        </SheetHeader>
+                        <ParticipantsList room={room} user={user} otherUser={otherUser} isAdmin={isAdmin} />
+                      </SheetContent>
+                    </Sheet>
+
+                    {isAdmin && (
+                      <Button onClick={handleMarkReunified} className="gap-2 hidden sm:flex">
+                        <CheckCircle className="h-4 w-4" />
+                        Mark Reunified
+                      </Button>
+                    )}
+                    {isAdmin && (
+                      <Button onClick={handleMarkReunified} size="icon" className="sm:hidden">
+                        <CheckCircle className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </CardHeader>
 
@@ -389,8 +583,8 @@ export default function Chat() {
                         </div>
                         <div
                           className={`rounded-lg px-4 py-2 max-w-md ${isOwn
-                              ? 'bg-primary text-primary-foreground'
-                              : 'bg-muted'
+                            ? 'bg-primary text-primary-foreground'
+                            : 'bg-muted'
                             }`}
                         >
                           {message.message_type === 'image' && (message.cloudinary_url || message.image_url || message.image) && !message.is_deleted ? (
@@ -510,173 +704,13 @@ export default function Chat() {
           </div>
 
           {/* Participants Sidebar */}
-          <div className="lg:col-span-1">
+          <div className="lg:col-span-1 hidden lg:block">
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg">Participants</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-3">
-                  {room?.participants && room.participants.length > 0 ? (
-                    room.participants.map((participant: any) => {
-                      const isParticipantAdmin = participant.is_staff || participant.is_superuser || participant.role === 'admin';
-                      const isCurrentUser = participant.id === user?.id;
-                      return (
-                        <div key={participant.id} className="flex items-center gap-3">
-                          <Avatar>
-                            <AvatarFallback className={isParticipantAdmin ? 'bg-[hsl(var(--primary))]/10 text-[hsl(var(--primary))]' : 'bg-primary/10 text-primary'}>
-                              {participant.name?.charAt(0) || participant.email?.charAt(0) || <User className="h-4 w-4" />}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium">
-                              {participant.name || participant.email || 'Unknown'}
-                              {isParticipantAdmin ? (
-                                <span className="text-xs text-[hsl(var(--primary))] ml-1">(admin)</span>
-                              ) : (
-                                <span className="text-xs text-gray-500 ml-1">(user)</span>
-                              )}
-                              {isCurrentUser && (
-                                <span className="text-xs text-[hsl(var(--primary))] ml-1">(you)</span>
-                              )}
-                            </p>
-                            <p className="text-xs text-muted-foreground truncate">
-                              {participant.email || 'No email'}
-                            </p>
-                          </div>
-                          <Badge variant={isParticipantAdmin ? 'default' : 'secondary'}>
-                            {isParticipantAdmin ? 'Admin' : 'User'}
-                          </Badge>
-                        </div>
-                      );
-                    })
-                  ) : otherUser ? (
-                    <>
-                      <div className="flex items-center gap-3">
-                        <Avatar>
-                          <AvatarFallback className="bg-primary/10 text-primary">
-                            {otherUser.name?.charAt(0) || otherUser.email?.charAt(0) || <User className="h-4 w-4" />}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium">
-                            {otherUser.name || otherUser.email || 'Unknown'}
-                            {otherUser.is_staff || otherUser.is_superuser ? (
-                              <span className="text-xs text-[hsl(var(--primary))] ml-1">(admin)</span>
-                            ) : (
-                              <span className="text-xs text-gray-500 ml-1">(user)</span>
-                            )}
-                          </p>
-                          <p className="text-xs text-muted-foreground truncate">
-                            {otherUser.email || 'No email'}
-                          </p>
-                        </div>
-                        <Badge variant={(otherUser.is_staff || otherUser.is_superuser) ? 'default' : 'secondary'}>
-                          {(otherUser.is_staff || otherUser.is_superuser) ? 'Admin' : 'User'}
-                        </Badge>
-                      </div>
-                      {user && (
-                        <div className="flex items-center gap-3">
-                          <Avatar>
-                            <AvatarFallback className="bg-[hsl(var(--primary))]/10 text-[hsl(var(--primary))]">
-                              {user.name?.charAt(0) || user.email?.charAt(0) || <User className="h-4 w-4" />}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium">
-                              {user.name || user.email || 'You'}
-                              {isAdmin ? (
-                                <span className="text-xs text-[hsl(var(--primary))] ml-1">(admin)</span>
-                              ) : (
-                                <span className="text-xs text-gray-500 ml-1">(user)</span>
-                              )}
-                              <span className="text-xs text-green-600 ml-1">(you)</span>
-                            </p>
-                            <p className="text-xs text-muted-foreground truncate">
-                              {user.email || 'No email'}
-                            </p>
-                          </div>
-                          <Badge variant={isAdmin ? 'default' : 'secondary'}>
-                            {isAdmin ? 'Admin' : 'User'}
-                          </Badge>
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <>
-                      <div className="flex items-center gap-3">
-                        <Avatar>
-                          <AvatarFallback className="bg-primary/10 text-primary">
-                            <User className="h-4 w-4" />
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium">Pet Owner</p>
-                          <p className="text-xs text-muted-foreground truncate">Lost their pet</p>
-                        </div>
-                        <Badge variant="secondary">Owner</Badge>
-                      </div>
-
-                      <div className="flex items-center gap-3">
-                        <Avatar>
-                          <AvatarFallback className="bg-secondary/10 text-secondary">
-                            <User className="h-4 w-4" />
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium">Rescuer</p>
-                          <p className="text-xs text-muted-foreground truncate">Found the pet</p>
-                        </div>
-                        <Badge variant="secondary">Rescuer</Badge>
-                      </div>
-
-                      {isAdmin && (
-                        <div className="flex items-center gap-3">
-                          <Avatar>
-                            <AvatarFallback className="bg-accent/10 text-accent">
-                              <Shield className="h-4 w-4" />
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium">
-                              Admin
-                              <span className="text-xs text-[hsl(var(--primary))] ml-1">(admin)</span>
-                            </p>
-                            <p className="text-xs text-muted-foreground truncate">Moderator</p>
-                          </div>
-                          <Badge variant="default">Admin</Badge>
-                        </div>
-                      )}
-                    </>
-                  )}
-                </div>
-
-                <Separator />
-
-                <div className="space-y-2">
-                  <h4 className="text-sm font-medium">Chat Guidelines</h4>
-                  <ul className="space-y-1 text-xs text-muted-foreground">
-                    <li>• Be respectful and patient</li>
-                    <li>• Share clear photos for verification</li>
-                    <li>• Arrange safe meetup locations</li>
-                    <li>• Admin will assist if needed</li>
-                  </ul>
-                </div>
-
-                {isAdmin && (
-                  <>
-                    <Separator />
-                    <div className="space-y-2">
-                      <h4 className="text-sm font-medium text-warning">Admin Actions</h4>
-                      <Button variant="outline" size="sm" className="w-full">
-                        Request Proof
-                      </Button>
-                      <Button size="sm" className="w-full">
-                        Mark Reunified
-                      </Button>
-                    </div>
-                  </>
-                )}
+                <ParticipantsList room={room} user={user} otherUser={otherUser} isAdmin={isAdmin} />
               </CardContent>
             </Card>
           </div>

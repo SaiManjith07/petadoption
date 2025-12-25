@@ -30,7 +30,7 @@ def get_user_from_token(request):
             token = auth_header.split(' ')[1]
     
     if not token:
-        return AnonymousUser()
+        return AnonymousUser(), "No token provided"
     
     try:
         # Validate token
@@ -39,10 +39,13 @@ def get_user_from_token(request):
         jwt_auth = JWTAuthentication()
         validated_token = jwt_auth.get_validated_token(token)
         user = jwt_auth.get_user(validated_token)
-        return user
+        return user, None
     except (InvalidToken, TokenError, Exception) as e:
-        print(f"[SSE] Token validation error: {e}")
-        return AnonymousUser()
+        import sys
+        print(f"[SSE] Token validation error: {e}", file=sys.stderr)
+        # print(f"[SSE] Token received (first 10 chars): {token[:10] if token else 'None'}", file=sys.stderr)
+        # print(f"[SSE] Token received (length): {len(token) if token else 0}", file=sys.stderr)
+        return AnonymousUser(), str(e)
 
 
 @require_http_methods(["GET"])
@@ -55,10 +58,10 @@ def stream_messages(request, room_id):
     """
     try:
         # Authenticate user from token (query param or header)
-        user = get_user_from_token(request)
+        user, auth_error = get_user_from_token(request)
         if isinstance(user, AnonymousUser):
             return JsonResponse(
-                {'error': 'Authentication required'},
+                {'error': f'Authentication required: {auth_error}'},
                 status=status.HTTP_401_UNAUTHORIZED
             )
         

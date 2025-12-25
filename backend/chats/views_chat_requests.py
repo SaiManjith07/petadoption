@@ -352,8 +352,20 @@ def admin_complete_verification(request, request_id):
         user_ids = sorted([chat_request.requester.id, target_user.id])
         
         # Update room_id to standard format for compatibility (but admin stays in participants)
-        if not verification_room.room_id or verification_room.room_id.startswith('admin_verification_'):
-            verification_room.room_id = f"{user_ids[0]}_{user_ids[1]}"
+        # Check if we can rename it, or if we need to keep it as is (if standard ID is taken)
+        proposed_room_id = f"{user_ids[0]}_{user_ids[1]}"
+        
+        # Check if another room already has this ID
+        from .models import ChatRoom
+        existing_room = ChatRoom.objects.filter(room_id=proposed_room_id).exclude(id=verification_room.id).first()
+        
+        if existing_room:
+            print(f"Room ID {proposed_room_id} already taken by room {existing_room.id}. Keeping verification room ID: {verification_room.room_id}")
+            # We keep the verification_room.room_id as is (e.g. 'admin_verification_X')
+            # This is fine, as long as participants are correct
+        else:
+            if not verification_room.room_id or verification_room.room_id.startswith('admin_verification_'):
+                verification_room.room_id = proposed_room_id
         
         # Set user_a and user_b for the two main users (requester and target)
         # Note: Admin is still in participants, just not in user_a/user_b fields
@@ -363,23 +375,11 @@ def admin_complete_verification(request, request_id):
         verification_room.is_active = True
         verification_room.save()
         
-        # Verify: Room should now have exactly 3 participants (admin + requester + target)
-        participants = list(verification_room.participants.all())
-        participant_ids = [p.id for p in participants]
-        print(f"✓ STEP 2: Added target user to same room {verification_room.id}")
-        print(f"  Room ID: {verification_room.room_id}")
-        print(f"  Participants (3): Admin (ID: {request.user.id}), Requester (ID: {chat_request.requester.id}), Target (ID: {target_user.id})")
-        assert len(participants) == 3, f"Expected 3 participants, got {len(participants)}"
-        assert request.user.id in participant_ids, "Admin should be in participants"
-        assert chat_request.requester.id in participant_ids, "Requester should be in participants"
-        assert target_user.id in participant_ids, "Target should be in participants"
-        
-        # Update chat request
+        # Update chat request status
         chat_request.status = 'active'
         chat_request.admin_approved_at = timezone.now()
-        chat_request.final_chat_room = verification_room  # Same room, now with all 3 users
-        if admin_notes:
-            chat_request.admin_notes = admin_notes
+        chat_request.target = target_user  # Ensure target is set
+        chat_request.final_chat_room = verification_room
         chat_request.save()
         
         # Send WebSocket notifications
@@ -391,21 +391,21 @@ def admin_complete_verification(request, request_id):
             async_to_sync(channel_layer.group_send)(
                 f'user_{chat_request.requester.id}',
                 {
-                    'type': 'chat_approved',
+                    'type': 'chat_status_update',
                     'data': {
                         'id': chat_request.id,
                         'status': 'active',
-                        'message': 'Your chat request has been approved. You can now chat!',
+                        'message': 'Admin verified. Chat is now active!',
                         'room_id': verification_room.room_id or str(verification_room.id),
                     }
                 }
             )
             
-            # Notify target user
+            # Notify target user (You have been added to a chat)
             async_to_sync(channel_layer.group_send)(
                 f'user_{chat_request.target.id}',
                 {
-                    'type': 'chat_approved',
+                    'type': 'chat_request', # Still send as request so it refreshes list, but marked as active
                     'data': {
                         'id': chat_request.id,
                         'requester': {
@@ -413,8 +413,9 @@ def admin_complete_verification(request, request_id):
                             'name': getattr(chat_request.requester, 'name', chat_request.requester.email),
                         },
                         'message': chat_request.message,
-                        'status': 'active',
-                        'message_text': 'A chat has been approved. You can now chat!',
+                        'status': 'active', # ACTIVE status
+                        'message_text': 'Admin added you to a chat regarding a pet adoption/claim.',
+                        'pet_id': chat_request.pet.id if chat_request.pet else None,
                         'room_id': verification_room.room_id or str(verification_room.id),
                     }
                 }
@@ -423,6 +424,7 @@ def admin_complete_verification(request, request_id):
         serializer = ChatRequestSerializer(chat_request, context={'request': request})
         return Response({
             **serializer.data,
+            'message': 'Verification complete. Target user added to chat.',
             'final_room_id': verification_room.room_id or str(verification_room.id),
         }, status=status.HTTP_200_OK)
         
@@ -619,48 +621,85 @@ def user_accept_request(request, request_id):
             
             try:
                 with transaction.atomic():
-                    # Calculate room_id
-                    user_ids = sorted([chat_request.requester.id, chat_request.target.id])
-                    room_id = f"{user_ids[0]}_{user_ids[1]}"
+                    room = None
+                    admin_verification_room = chat_request.admin_verification_room
                     
-                    # Get or create room (simplified - uses get_or_create)
-                    room, created = ChatRoom.objects.get_or_create(
-                        room_id=room_id,
-                        defaults={
-                            'user_a_id': user_ids[0],
-                            'user_b_id': user_ids[1],
-                            'chat_request': chat_request,
-                            'is_active': True,
-                        }
-                    )
-                    
-                    # Update room if it existed
-                    if not created:
-                        if not room.user_a_id:
-                            room.user_a_id = user_ids[0]
-                        if not room.user_b_id:
-                            room.user_b_id = user_ids[1]
-                        if not room.chat_request_id:
-                            room.chat_request = chat_request
+                    if admin_verification_room:
+                        # Case 1: Use existing Admin Verification Room (Admin + Requester + Target)
+                        print(f"Using existing admin verification room: {admin_verification_room.id}")
+                        room = admin_verification_room
+                        
+                        # Add Target User to the room
+                        if request.user not in room.participants.all():
+                            room.participants.add(request.user)
+                            
+                        # Ensure Requester is still in room
+                        if chat_request.requester not in room.participants.all():
+                            room.participants.add(chat_request.requester)
+                            
+                        # Update room metadata
+                        user_ids = sorted([chat_request.requester.id, request.user.id])
+                        # We keep the room ID unique or update it to standard format but ensure uniqueness
+                        if not room.room_id or room.room_id.startswith('admin_verification_'):
+                             # Update room_id to standard format, but careful not to conflict
+                            standard_id = f"{user_ids[0]}_{user_ids[1]}"
+                            # Check if a room with this ID already exists (old rooms)
+                            if ChatRoom.objects.filter(room_id=standard_id).exclude(id=room.id).exists():
+                                # Keep old room_id or use a special one
+                                pass 
+                            else:
+                                room.room_id = standard_id
+                        
+                        room.user_a_id = user_ids[0]
+                        room.user_b_id = user_ids[1]
+                        room.chat_request = chat_request
                         room.is_active = True
                         room.save()
+                    else:
+                        # Case 2: No verification room (Direct request or legacy)
+                        # Calculate room_id
+                        user_ids = sorted([chat_request.requester.id, chat_request.target.id])
+                        room_id = f"{user_ids[0]}_{user_ids[1]}"
+                        
+                        # Get or create room (simplified - uses get_or_create)
+                        room, created = ChatRoom.objects.get_or_create(
+                            room_id=room_id,
+                            defaults={
+                                'user_a_id': user_ids[0],
+                                'user_b_id': user_ids[1],
+                                'chat_request': chat_request,
+                                'is_active': True,
+                            }
+                        )
                     
-                    # Add participants
-                    if chat_request.requester not in room.participants.all():
-                        room.participants.add(chat_request.requester)
-                    if chat_request.target not in room.participants.all():
-                        room.participants.add(chat_request.target)
+                        # Update room if it existed
+                        if not created:
+                            if not room.user_a_id:
+                                room.user_a_id = user_ids[0]
+                            if not room.user_b_id:
+                                room.user_b_id = user_ids[1]
+                            if not room.chat_request_id:
+                                room.chat_request = chat_request
+                            room.is_active = True
+                            room.save()
+                        
+                        # Add participants
+                        if chat_request.requester not in room.participants.all():
+                            room.participants.add(chat_request.requester)
+                        if chat_request.target not in room.participants.all():
+                            room.participants.add(chat_request.target)
                     
                     # Update chat request status
                     chat_request.status = 'active'
                     chat_request.user_accepted_at = timezone.now()
+                    chat_request.final_chat_room = room 
                     chat_request.save()
                 
                 # Return success response
                 return Response({
                     'id': chat_request.id,
                     'status': 'active',
-                    'room_id': room.room_id or room_id,
+                    'room_id': room.room_id or room.id,
                     'message': 'Chat request accepted successfully'
                 }, status=status.HTTP_200_OK)
                 
@@ -920,6 +959,12 @@ def get_my_chat_requests(request):
                     'message': req.message,
                     'created_at': req.created_at.isoformat() if req.created_at else None,
                     'is_incoming': req.target == request.user,
+                    'pet_id': req.pet.id if req.pet else None,
+                    'pet': {
+                        'id': req.pet.id,
+                        'name': req.pet.name,
+                        'image': req.pet.image if hasattr(req.pet, 'image') and req.pet.image else None
+                    } if req.pet else None,
                 })
             except Exception as req_error:
                 print(f"Error processing request {req.id}: {req_error}")

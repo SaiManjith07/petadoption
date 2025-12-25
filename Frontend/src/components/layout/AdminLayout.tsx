@@ -12,33 +12,38 @@ export function AdminLayout({ children, onRefresh, isRefreshing = false }: Admin
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-[#F9FAFB]">
-      {/* Top Navigation - Full Width */}
-      <AdminTopNav 
-        onMenuToggle={() => setSidebarOpen(!sidebarOpen)} 
+    <div className="min-h-screen bg-[#F9FAFB] flex flex-col">
+      {/* Top Navigation - Fixed at top */}
+      <AdminTopNav
+        onMenuToggle={() => setSidebarOpen(!sidebarOpen)}
         sidebarOpen={sidebarOpen}
         onRefresh={onRefresh}
         isRefreshing={isRefreshing}
       />
 
-      {/* Fixed Sidebar */}
-      <div className="hidden lg:block">
-        <AdminSidebar isOpen={true} onClose={() => setSidebarOpen(false)} />
-      </div>
-      
-      {/* Mobile Sidebar */}
-      <div className="lg:hidden">
-        <AdminSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      </div>
+      <div className="flex pt-[70px] flex-1">
+        {/* Fixed Sidebar Wrapper - Desktop */}
+        <div className="hidden lg:block w-[280px] min-h-[calc(100vh-70px)] shrink-0 relative">
+          <AdminSidebar
+            isOpen={true}
+            onClose={() => setSidebarOpen(false)}
+            className="lg:absolute lg:top-0 lg:left-0 lg:h-full lg:static lg:shadow-none"
+          />
+        </div>
 
-      {/* Main Content - Updated margins and padding */}
-      <div className="flex flex-col min-w-0 lg:ml-[280px] transition-all duration-300 overflow-x-hidden">
-        {/* Main Content Area - Scrollable */}
-        <main className="flex-1 overflow-y-auto overflow-x-hidden bg-[#F9FAFB] pt-[70px] min-h-[calc(100vh-70px)] w-full">
-          <div className="p-6 lg:p-8 max-w-[1400px] mx-auto">
-            {children}
-          </div>
-        </main>
+        {/* Mobile Sidebar - Absolute overlay */}
+        <div className="lg:hidden">
+          <AdminSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+        </div>
+
+        {/* Main Content - Fluid width, no margins needed because of Flex layout */}
+        <div className="flex-1 w-full min-w-0 transition-all duration-300">
+          <main className="h-[calc(100vh-70px)] overflow-y-auto overflow-x-hidden bg-[#F9FAFB] w-full">
+            <div className="p-4 lg:p-6 w-full">
+              {children}
+            </div>
+          </main>
+        </div>
       </div>
     </div>
   );

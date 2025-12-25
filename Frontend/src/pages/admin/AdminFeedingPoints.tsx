@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Shield, MapPin, Plus, X, CheckCircle, Search, Menu, Edit, Trash2, UtensilsCrossed, Clock } from 'lucide-react';
-import { AdminSidebar } from '@/components/layout/AdminSidebar';
-import { AdminTopNav } from '@/components/layout/AdminTopNav';
+import { AdminLayout } from '@/components/layout/AdminLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -25,7 +24,6 @@ export default function AdminFeedingPoints() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [editingPoint, setEditingPoint] = useState<any>(null);
@@ -193,6 +191,7 @@ export default function AdminFeedingPoints() {
       toast({
         title: 'Success',
         description: 'Feeding point updated successfully',
+        variant: 'default',
       });
       setShowEditDialog(false);
       setEditingPoint(null);
@@ -318,217 +317,191 @@ export default function AdminFeedingPoints() {
       point.city?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       point.location?.address?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       point.location?.city?.toLowerCase().includes(searchTerm.toLowerCase());
-    
+
     const matchesStatus = statusFilter === 'all' ||
       (statusFilter === 'active' && point.is_active) ||
       (statusFilter === 'inactive' && !point.is_active) ||
       (statusFilter === 'pending' && !point.is_active);
-    
+
     return matchesSearch && matchesStatus;
   });
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-white">
-        <div className="text-center">
-          <Shield className="h-16 w-16 mx-auto text-[#4CAF50] animate-pulse" />
-          <p className="mt-6 text-lg font-medium text-gray-700">Loading Feeding Points...</p>
+  return (
+    <AdminLayout onRefresh={loadFeedingPoints} isRefreshing={loading}>
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center gap-2">
+              <UtensilsCrossed className="h-6 w-6 sm:h-8 sm:w-8 text-[#4CAF50]" />
+              Feeding Points
+            </h1>
+            <p className="text-sm sm:text-base text-gray-600 mt-1">Manage feeding points for animals</p>
+          </div>
+          <Button
+            onClick={() => setShowAddDialog(true)}
+            className="w-full sm:w-auto bg-[#2BB6AF] hover:bg-[#239a94] text-white"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Add Feeding Point
+          </Button>
+        </div>
+
+        {/* Filters */}
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex flex-col md:flex-row gap-4">
+              <div className="flex-1">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Input
+                    placeholder="Search by name, address, or city..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-green-500"
+                >
+                  <option value="all">All Status</option>
+                  <option value="pending">Pending Approval</option>
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Feeding Points List */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {loading ? (
+            <div className="col-span-full text-center py-12">
+              <Shield className="h-16 w-16 mx-auto text-[#4CAF50] animate-pulse" />
+              <p className="mt-6 text-lg font-medium text-gray-700">Loading Feeding Points...</p>
+            </div>
+          ) : filteredPoints.length === 0 ? (
+            <div className="col-span-full text-center py-12">
+              <MapPin className="h-16 w-16 mx-auto text-gray-400 mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">No Feeding Points</h3>
+              <p className="text-gray-600">
+                {searchTerm || statusFilter !== 'all'
+                  ? 'No feeding points match your search'
+                  : 'No feeding points found. Click "Add Feeding Point" to create one.'}
+              </p>
+            </div>
+          ) : (
+            filteredPoints.map((point: any) => (
+              <Card key={point.id || point._id} className="hover:shadow-md transition-shadow">
+                <CardHeader>
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="h-12 w-12 rounded-lg bg-[#E8F8EE] flex items-center justify-center">
+                        <UtensilsCrossed className="h-6 w-6 text-[#4CAF50]" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-lg">{point.name}</CardTitle>
+                        <CardDescription>
+                          {point.location?.city || point.city || 'N/A'}, {point.location?.state || point.state || ''}
+                        </CardDescription>
+                      </div>
+                    </div>
+                    <Badge
+                      variant={point.is_active ? 'default' : 'destructive'}
+                      className={
+                        point.is_active
+                          ? 'bg-[#E8F8EE] text-[#2BB6AF]'
+                          : 'bg-yellow-100 text-yellow-700'
+                      }
+                    >
+                      {point.is_active ? (
+                        <>
+                          <CheckCircle className="h-3 w-3 mr-1" />
+                          Active
+                        </>
+                      ) : (
+                        <>
+                          <Clock className="h-3 w-3 mr-1" />
+                          Pending
+                        </>
+                      )}
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div>
+                    <p className="text-sm font-semibold text-gray-700 mb-1">Address</p>
+                    <p className="text-sm text-gray-600">
+                      {point.location?.address || point.address || 'N/A'}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {point.location?.pincode || point.pincode || ''}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-700 mb-1">Type</p>
+                    <Badge variant="outline">{point.type || 'both'}</Badge>
+                  </div>
+                  {point.contact_phone && (
+                    <div>
+                      <p className="text-sm font-semibold text-gray-700 mb-1">Contact</p>
+                      <p className="text-sm text-gray-600">{point.contact_phone}</p>
+                    </div>
+                  )}
+                  <div className="flex gap-2 pt-2">
+                    {!point.is_active && (
+                      <>
+                        <Button
+                          size="sm"
+                          className="flex-1 bg-[#2BB6AF] hover:bg-[#239a94] text-white"
+                          onClick={() => handleApproveFeedingPoint(point.id || point._id)}
+                        >
+                          <CheckCircle className="h-4 w-4 mr-2" />
+                          Approve
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleRejectFeedingPoint(point.id || point._id)}
+                        >
+                          <X className="h-4 w-4 mr-2" />
+                          Reject
+                        </Button>
+                      </>
+                    )}
+                    {point.is_active && (
+                      <>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEditPoint(point)}
+                          className="flex-1"
+                        >
+                          <Edit className="h-4 w-4 mr-2" />
+                          Edit
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleDeletePoint(point.id || point._id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          )}
         </div>
       </div>
-    );
-  }
 
-  return (
-    <div className="min-h-screen bg-white">
-      {/* Fixed Sidebar */}
-      <div className="hidden lg:block">
-        <AdminSidebar isOpen={true} onClose={() => setSidebarOpen(false)} />
-      </div>
-      
-      {/* Mobile Sidebar */}
-      <div className="lg:hidden">
-        <AdminSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      </div>
-
-      {/* Main Content */}
-      <div className="flex flex-col min-w-0 lg:ml-64">
-        <AdminTopNav 
-          onMenuToggle={() => setSidebarOpen(!sidebarOpen)} 
-          sidebarOpen={sidebarOpen}
-          onRefresh={loadFeedingPoints}
-        />
-
-        <main className="flex-1 overflow-y-auto bg-white">
-          <div className="p-6 lg:p-8 space-y-6">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-                  <UtensilsCrossed className="h-8 w-8 text-[#4CAF50]" />
-                  Feeding Points Management
-                </h1>
-                <p className="text-gray-600 mt-1">Manage feeding points for animals</p>
-              </div>
-              <Button
-                onClick={() => setShowAddDialog(true)}
-                className="bg-[#2BB6AF] hover:bg-[#239a94] text-white"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Add Feeding Point
-              </Button>
-            </div>
-
-            {/* Filters */}
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex flex-col md:flex-row gap-4">
-                  <div className="flex-1">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                      <Input
-                        placeholder="Search by name, address, or city..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10"
-                      />
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <select
-                      value={statusFilter}
-                      onChange={(e) => setStatusFilter(e.target.value)}
-                      className="px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-green-500"
-                    >
-                      <option value="all">All Status</option>
-                      <option value="pending">Pending Approval</option>
-                      <option value="active">Active</option>
-                      <option value="inactive">Inactive</option>
-                    </select>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Feeding Points List */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredPoints.length === 0 ? (
-                <div className="col-span-full text-center py-12">
-                  <MapPin className="h-16 w-16 mx-auto text-gray-400 mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No Feeding Points</h3>
-                  <p className="text-gray-600">
-                    {searchTerm || statusFilter !== 'all' 
-                      ? 'No feeding points match your search' 
-                      : 'No feeding points found. Click "Add Feeding Point" to create one.'}
-                  </p>
-                </div>
-              ) : (
-                filteredPoints.map((point: any) => (
-                  <Card key={point.id || point._id} className="hover:shadow-md transition-shadow">
-                    <CardHeader>
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="h-12 w-12 rounded-lg bg-[#E8F8EE] flex items-center justify-center">
-                            <UtensilsCrossed className="h-6 w-6 text-[#4CAF50]" />
-                          </div>
-                          <div>
-                            <CardTitle className="text-lg">{point.name}</CardTitle>
-                            <CardDescription>
-                              {point.location?.city || point.city || 'N/A'}, {point.location?.state || point.state || ''}
-                            </CardDescription>
-                          </div>
-                        </div>
-                        <Badge 
-                          variant={point.is_active ? 'default' : 'destructive'}
-                          className={
-                            point.is_active 
-                              ? 'bg-[#E8F8EE] text-[#2BB6AF]' 
-                              : 'bg-yellow-100 text-yellow-700'
-                          }
-                        >
-                          {point.is_active ? (
-                            <>
-                              <CheckCircle className="h-3 w-3 mr-1" />
-                              Active
-                            </>
-                          ) : (
-                            <>
-                              <Clock className="h-3 w-3 mr-1" />
-                              Pending
-                            </>
-                          )}
-                        </Badge>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div>
-                        <p className="text-sm font-semibold text-gray-700 mb-1">Address</p>
-                        <p className="text-sm text-gray-600">
-                          {point.location?.address || point.address || 'N/A'}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {point.location?.pincode || point.pincode || ''}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold text-gray-700 mb-1">Type</p>
-                        <Badge variant="outline">{point.type || 'both'}</Badge>
-                      </div>
-                      {point.contact_phone && (
-                        <div>
-                          <p className="text-sm font-semibold text-gray-700 mb-1">Contact</p>
-                          <p className="text-sm text-gray-600">{point.contact_phone}</p>
-                        </div>
-                      )}
-                      <div className="flex gap-2 pt-2">
-                        {!point.is_active && (
-                          <>
-                            <Button
-                              size="sm"
-                              className="flex-1 bg-[#2BB6AF] hover:bg-[#239a94] text-white"
-                              onClick={() => handleApproveFeedingPoint(point.id || point._id)}
-                            >
-                              <CheckCircle className="h-4 w-4 mr-2" />
-                              Approve
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              onClick={() => handleRejectFeedingPoint(point.id || point._id)}
-                            >
-                              <X className="h-4 w-4 mr-2" />
-                              Reject
-                            </Button>
-                          </>
-                        )}
-                        {point.is_active && (
-                          <>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleEditPoint(point)}
-                              className="flex-1"
-                            >
-                              <Edit className="h-4 w-4 mr-2" />
-                              Edit
-                            </Button>
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              onClick={() => handleDeletePoint(point.id || point._id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))
-              )}
-            </div>
-          </div>
-        </main>
-      </div>
 
       {/* Add Feeding Point Dialog */}
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
@@ -822,7 +795,7 @@ export default function AdminFeedingPoints() {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </AdminLayout>
   );
 }
 

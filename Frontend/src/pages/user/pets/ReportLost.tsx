@@ -89,7 +89,7 @@ export default function ReportLost() {
       // Filter results by color if provided
       let results = response.results || response.data || [];
       if (debouncedColor) {
-        results = results.filter((pet: any) => 
+        results = results.filter((pet: any) =>
           pet.description?.toLowerCase().includes(debouncedColor.toLowerCase()) ||
           pet.name?.toLowerCase().includes(debouncedColor.toLowerCase())
         );
@@ -168,7 +168,7 @@ export default function ReportLost() {
 
       // Create FormData for multipart/form-data (for file uploads)
       const formData = new FormData();
-      
+
       // Map fields to Pet model - status will be set to 'Pending' by backend
       formData.append('name', data.species || 'Pet');
       formData.append('breed', data.breed || '');
@@ -188,7 +188,7 @@ export default function ReportLost() {
       if (data.date_lost) {
         formData.append('last_seen', new Date(data.date_lost).toISOString());
       }
-      
+
       // Add images - first photo as main image
       if (photos.length > 0) {
         formData.append('image', photos[0]);
@@ -207,11 +207,11 @@ export default function ReportLost() {
     } catch (error: any) {
       // Display validation errors in a more user-friendly way
       let errorMessage = 'Could not submit report. Please try again.';
-      
+
       // Check for validation errors in response
       if (error.response?.data) {
         const errorData = error.response.data;
-        
+
         // If there are field-specific errors, format them nicely
         if (errorData.errors && typeof errorData.errors === 'object') {
           const errorFields = Object.entries(errorData.errors)
@@ -221,7 +221,7 @@ export default function ReportLost() {
               return `${fieldName}: ${message}`;
             })
             .join('\n• ');
-          
+
           errorMessage = `Validation errors:\n• ${errorFields}`;
         } else if (errorData.detail) {
           errorMessage = errorData.detail;
@@ -231,7 +231,7 @@ export default function ReportLost() {
       } else if (error.message) {
         errorMessage = error.message;
       }
-      
+
       // If it's a validation error with multiple fields, show them in a list
       if (errorMessage.includes('Validation failed:') || errorMessage.includes('Validation errors:')) {
         const errorLines = errorMessage.split('\n').slice(1); // Skip first line
@@ -265,9 +265,9 @@ export default function ReportLost() {
         <div className="absolute inset-0 bg-gradient-to-br from-gray-50/95 via-white/95 to-green-50/30"></div>
       </div>
       <div className="relative mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
-        <Button 
-          variant="ghost" 
-          onClick={() => navigate(-1)} 
+        <Button
+          variant="ghost"
+          onClick={() => navigate(-1)}
           className="mb-4 sm:mb-6"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
@@ -277,7 +277,7 @@ export default function ReportLost() {
         {/* Single Container with Image and Form */}
         <Card className="shadow-2xl border-2 border-gray-200 bg-white rounded-2xl overflow-hidden">
           {/* Top Image with Text Overlay */}
-          <div className="relative w-full h-40 sm:h-56 md:h-64 overflow-hidden">
+          <div className="relative w-full h-64 sm:h-64 md:h-72 lg:h-80 overflow-hidden">
             <img
               src="https://images.unsplash.com/photo-1551717743-49959800b1f6?w=1200&q=80"
               alt="Lost pets - dogs, cats, and other animals waiting to be found"
@@ -286,7 +286,7 @@ export default function ReportLost() {
             />
             {/* Dark overlay for text readability */}
             <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/50" />
-            
+
             {/* Text Overlay - Better Aligned */}
             <div className="absolute inset-0 flex flex-col justify-center px-4 sm:px-6 md:px-8 lg:px-12 py-4 sm:py-6 md:py-8">
               <div className="max-w-4xl">
@@ -327,337 +327,336 @@ export default function ReportLost() {
             </CardHeader>
             <form onSubmit={handleSubmit(onSubmit)}>
               <CardContent className="space-y-4 sm:space-y-6 md:space-y-8 px-4 sm:px-6 md:px-8 lg:px-12 py-4 sm:py-6 md:py-8">
-              
-              <Alert className="bg-[#E8F8EE] border-2 border-[#2BB6AF]/30 rounded-xl">
-                <AlertCircle className="h-5 w-5 text-[#2BB6AF]" />
-                <AlertDescription className="text-[#239a94] font-semibold">
-                  As you fill in the details, we'll automatically search for matching found pets in real-time
-                </AlertDescription>
-              </Alert>
 
-              {/* Section 1: Basic Information */}
-              <div className="space-y-6">
-                <div className="flex items-center gap-3 pb-2 border-b border-gray-200">
-                  <div className="h-8 w-1 bg-gradient-to-b from-orange-500 to-orange-600 rounded-full" />
-                  <h3 className="text-lg font-semibold text-gray-900">Basic Information</h3>
-                </div>
+                <Alert className="bg-[#E8F8EE] border-2 border-[#2BB6AF]/30 rounded-xl">
+                  <AlertCircle className="h-5 w-5 text-[#2BB6AF]" />
+                  <AlertDescription className="text-[#239a94] font-semibold">
+                    As you fill in the details, we'll automatically search for matching found pets in real-time
+                  </AlertDescription>
+                </Alert>
 
-                {/* First Row - Species and Breed */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-                {/* Species - Manual Input */}
-                <div className="space-y-2">
-                  <Label htmlFor="species" className="text-sm font-semibold">Species *</Label>
-                  <Input
-                    id="species"
-                    placeholder="e.g., Dog, Cat, Cow, Bird, etc."
-                    className="h-11"
-                    {...register('species')}
-                  />
-                  <p className="text-xs text-gray-500">Enter the type of animal (e.g., Dog, Cat, Bird, Rabbit, etc.)</p>
-                  {errors.species && (
-                    <p className="text-sm text-destructive mt-1">{errors.species.message}</p>
-                  )}
-                </div>
+                {/* Section 1: Basic Information */}
+                <div className="space-y-6">
+                  <div className="flex items-center gap-3 pb-2 border-b border-gray-200">
+                    <div className="h-8 w-1 bg-gradient-to-b from-orange-500 to-orange-600 rounded-full" />
+                    <h3 className="text-lg font-semibold text-gray-900">Basic Information</h3>
+                  </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="breed" className="text-sm font-semibold">Breed *</Label>
-                  <Input
-                    id="breed"
-                    placeholder="e.g., Golden Retriever, Mixed Breed"
-                    className="h-11"
-                    {...register('breed')}
-                  />
-                  {errors.breed && (
-                    <p className="text-sm text-destructive mt-1">{errors.breed.message}</p>
-                  )}
-                </div>
-              </div>
-
-                {/* Second Row - Gender and Color */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="gender" className="text-sm font-semibold">Gender *</Label>
-                  <Select onValueChange={(value) => setValue('gender', value)}>
-                    <SelectTrigger className="h-11">
-                      <SelectValue placeholder="Select gender" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Male">Male</SelectItem>
-                      <SelectItem value="Female">Female</SelectItem>
-                      <SelectItem value="Unknown">Unknown</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {errors.gender && (
-                    <p className="text-sm text-destructive mt-1">{errors.gender.message}</p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="color" className="text-sm font-semibold">Color/Pattern *</Label>
-                  <Input
-                    id="color"
-                    placeholder="e.g., Golden, Black and White"
-                    className="h-11"
-                    {...register('color')}
-                  />
-                  {errors.color && (
-                    <p className="text-sm text-destructive mt-1">{errors.color.message}</p>
-                  )}
-                </div>
-              </div>
-
-              </div>
-
-              {/* Section 2: Physical Characteristics */}
-              <div className="space-y-6">
-                <div className="flex items-center gap-3 pb-2 border-b border-gray-200">
-                  <div className="h-8 w-1 bg-gradient-to-b from-orange-500 to-orange-600 rounded-full" />
-                  <h3 className="text-lg font-semibold text-gray-900">Physical Characteristics</h3>
-                </div>
-                
-                {/* Third Row - Age and Weight */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Estimated Age */}
-                <div className="space-y-2">
-                  <Label htmlFor="estimated_age" className="text-sm font-semibold">Estimated Age</Label>
-                  <Select onValueChange={(value) => setValue('estimated_age', value)}>
-                    <SelectTrigger className="h-11">
-                      <SelectValue placeholder="Select age range" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="puppy/kitten">Puppy/Kitten (0-6 months)</SelectItem>
-                      <SelectItem value="young">Young (6 months - 2 years)</SelectItem>
-                      <SelectItem value="adult">Adult (2-7 years)</SelectItem>
-                      <SelectItem value="senior">Senior (7+ years)</SelectItem>
-                      <SelectItem value="unknown">Unknown</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Weight */}
-                <div className="space-y-2">
-                  <Label htmlFor="weight" className="text-sm font-semibold">Weight (kg)</Label>
-                  <Input
-                    id="weight"
-                    type="number"
-                    step="0.1"
-                    placeholder="e.g., 15.5"
-                    className="h-11"
-                    {...register('weight')}
-                  />
-                  <p className="text-xs text-gray-500">Enter weight in kilograms</p>
-                </div>
-              </div>
-
-                {/* Fourth Row - Tag/Registration and Collar/Tag */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Tag/Registration Number */}
-                <div className="space-y-2">
-                  <Label htmlFor="tag_registration_number" className="text-sm font-semibold">Tag/Registration Number (optional)</Label>
-                  <Input
-                    id="tag_registration_number"
-                    placeholder="e.g., Tag ID, Registration No., License No."
-                    className="h-11"
-                    {...register('tag_registration_number')}
-                  />
-                  <p className="text-xs text-gray-500">Enter any tag ID, registration number, or license number</p>
-                </div>
-
-                {/* Collar/Tag Info */}
-                <div className="space-y-2">
-                  <Label htmlFor="collar_tag" className="text-sm font-semibold">Collar/Tag Information</Label>
-                  <Input
-                    id="collar_tag"
-                    placeholder="e.g., Blue collar with name tag 'Max'"
-                    className="h-11"
-                    {...register('collar_tag')}
-                  />
-                  <p className="text-xs text-gray-500">Describe any collar, tags, or identification markers</p>
-                </div>
-              </div>
-
-                {/* Distinguishing Marks - Full Width */}
-                <div className="space-y-2">
-                  <Label htmlFor="distinguishing_marks" className="text-sm font-semibold">Distinguishing Marks & Description *</Label>
-                  <Textarea
-                    id="distinguishing_marks"
-                    rows={5}
-                    placeholder="Describe any unique features, markings, collar, tags, behavior, etc."
-                    className="resize-none"
-                    {...register('distinguishing_marks')}
-                  />
-                  {errors.distinguishing_marks && (
-                    <p className="text-sm text-destructive mt-1">{errors.distinguishing_marks.message}</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Section 3: Location & Date */}
-              <div className="space-y-6">
-                <div className="flex items-center gap-3 pb-2 border-b border-gray-200">
-                  <div className="h-8 w-1 bg-gradient-to-b from-orange-500 to-orange-600 rounded-full" />
-                  <h3 className="text-lg font-semibold text-gray-900">Location & Date</h3>
-                </div>
-                
-                {/* Location and Date */}
-                <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="location_lost" className="text-sm font-semibold">Location Last Seen *</Label>
-                  <Input
-                    id="location_lost"
-                    placeholder="e.g., Central Park, 5th Avenue entrance"
-                    className="h-11"
-                    {...register('location_lost')}
-                  />
-                  {errors.location_lost && (
-                    <p className="text-sm text-destructive mt-1">{errors.location_lost.message}</p>
-                  )}
-                </div>
-
-                {/* Location Options */}
-                <div className="space-y-3 p-4 border rounded-lg bg-gray-50">
-                  <Label className="text-sm font-semibold">Additional Location Information (Optional)</Label>
-                  <p className="text-xs text-gray-500 mb-3">You can provide location in one of the following ways:</p>
-                  
-                  <div className="space-y-3">
-                    {/* Map URL Option */}
+                  {/* First Row - Species and Breed */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                    {/* Species - Manual Input */}
                     <div className="space-y-2">
-                      <Label htmlFor="location_map_url" className="text-xs font-medium">Map URL (Google Maps, etc.)</Label>
+                      <Label htmlFor="species" className="text-sm font-semibold">Species *</Label>
                       <Input
-                        id="location_map_url"
-                        type="url"
-                        placeholder="https://maps.google.com/..."
-                        className="h-10 text-sm"
-                        {...register('location_map_url')}
+                        id="species"
+                        placeholder="e.g., Dog, Cat, Cow, Bird, etc."
+                        className="h-11"
+                        {...register('species')}
                       />
+                      <p className="text-xs text-gray-500">Enter the type of animal (e.g., Dog, Cat, Bird, Rabbit, etc.)</p>
+                      {errors.species && (
+                        <p className="text-sm text-destructive mt-1">{errors.species.message}</p>
+                      )}
                     </div>
 
-                    {/* Coordinates Option */}
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-2">
-                        <Label htmlFor="location_latitude" className="text-xs font-medium">Latitude</Label>
-                        <Input
-                          id="location_latitude"
-                          type="number"
-                          step="any"
-                          placeholder="e.g., 28.6139"
-                          className="h-10 text-sm"
-                          {...register('location_latitude')}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="location_longitude" className="text-xs font-medium">Longitude</Label>
-                        <Input
-                          id="location_longitude"
-                          type="number"
-                          step="any"
-                          placeholder="e.g., 77.2090"
-                          className="h-10 text-sm"
-                          {...register('location_longitude')}
-                        />
-                      </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="breed" className="text-sm font-semibold">Breed *</Label>
+                      <Input
+                        id="breed"
+                        placeholder="e.g., Golden Retriever, Mixed Breed"
+                        className="h-11"
+                        {...register('breed')}
+                      />
+                      {errors.breed && (
+                        <p className="text-sm text-destructive mt-1">{errors.breed.message}</p>
+                      )}
                     </div>
-                    <p className="text-xs text-gray-400">Or use a map app to get coordinates and paste them here</p>
                   </div>
-                </div>
 
-                {/* Date Lost */}
-                <div className="space-y-2">
-                  <Label htmlFor="date_lost" className="text-sm font-semibold">Date Lost *</Label>
-                  <Input
-                    id="date_lost"
-                    type="date"
-                    className="h-11"
-                    max={new Date().toISOString().split('T')[0]}
-                    {...register('date_lost')}
-                  />
-                  {errors.date_lost && (
-                    <p className="text-sm text-destructive mt-1">{errors.date_lost.message}</p>
-                  )}
-                </div>
-              </div>
-
-              </div>
-
-              {/* Section 4: Photos */}
-              <div className="space-y-6">
-                <div className="flex items-center gap-3 pb-2 border-b border-gray-200">
-                  <div className="h-8 w-1 bg-gradient-to-b from-orange-500 to-orange-600 rounded-full" />
-                  <h3 className="text-lg font-semibold text-gray-900">Photos</h3>
-                </div>
-                
-                {/* Photos - Full Width */}
-                <div className="space-y-2">
-                <Label htmlFor="photos" className="text-sm font-semibold">
-                  Photos <span className="text-destructive">*</span>
-                  <span className="text-xs font-normal text-gray-600 ml-2">(Required for identification)</span>
-                </Label>
-                <div className="flex items-center justify-center w-full">
-                  <label
-                    htmlFor="photos"
-                    className={`flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-xl cursor-pointer transition-all ${
-                      photos.length === 0 
-                        ? 'bg-red-50/50 border-red-300 hover:border-red-400 hover:bg-red-50' 
-                        : 'bg-muted/30 hover:bg-muted/50 hover:border-primary/50'
-                    }`}
-                  >
-                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                      <Upload className="w-10 h-10 mb-3 text-muted-foreground" />
-                      <p className={`text-sm font-medium ${photos.length === 0 ? 'text-red-600' : 'text-muted-foreground'}`}>
-                        {photos.length > 0
-                          ? `${photos.length} photo(s) selected`
-                          : 'Click to upload photos or drag and drop (Required)'}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">PNG, JPG up to 10MB - At least 1 photo required</p>
+                  {/* Second Row - Gender and Color */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="gender" className="text-sm font-semibold">Gender *</Label>
+                      <Select onValueChange={(value) => setValue('gender', value)}>
+                        <SelectTrigger className="h-11">
+                          <SelectValue placeholder="Select gender" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Male">Male</SelectItem>
+                          <SelectItem value="Female">Female</SelectItem>
+                          <SelectItem value="Unknown">Unknown</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {errors.gender && (
+                        <p className="text-sm text-destructive mt-1">{errors.gender.message}</p>
+                      )}
                     </div>
-                    <input
-                      id="photos"
-                      type="file"
-                      className="hidden"
-                      accept="image/*"
-                      multiple
-                      onChange={handlePhotoChange}
+
+                    <div className="space-y-2">
+                      <Label htmlFor="color" className="text-sm font-semibold">Color/Pattern *</Label>
+                      <Input
+                        id="color"
+                        placeholder="e.g., Golden, Black and White"
+                        className="h-11"
+                        {...register('color')}
+                      />
+                      {errors.color && (
+                        <p className="text-sm text-destructive mt-1">{errors.color.message}</p>
+                      )}
+                    </div>
+                  </div>
+
+                </div>
+
+                {/* Section 2: Physical Characteristics */}
+                <div className="space-y-6">
+                  <div className="flex items-center gap-3 pb-2 border-b border-gray-200">
+                    <div className="h-8 w-1 bg-gradient-to-b from-orange-500 to-orange-600 rounded-full" />
+                    <h3 className="text-lg font-semibold text-gray-900">Physical Characteristics</h3>
+                  </div>
+
+                  {/* Third Row - Age and Weight */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Estimated Age */}
+                    <div className="space-y-2">
+                      <Label htmlFor="estimated_age" className="text-sm font-semibold">Estimated Age</Label>
+                      <Select onValueChange={(value) => setValue('estimated_age', value)}>
+                        <SelectTrigger className="h-11">
+                          <SelectValue placeholder="Select age range" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="puppy/kitten">Puppy/Kitten (0-6 months)</SelectItem>
+                          <SelectItem value="young">Young (6 months - 2 years)</SelectItem>
+                          <SelectItem value="adult">Adult (2-7 years)</SelectItem>
+                          <SelectItem value="senior">Senior (7+ years)</SelectItem>
+                          <SelectItem value="unknown">Unknown</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Weight */}
+                    <div className="space-y-2">
+                      <Label htmlFor="weight" className="text-sm font-semibold">Weight (kg)</Label>
+                      <Input
+                        id="weight"
+                        type="number"
+                        step="0.1"
+                        placeholder="e.g., 15.5"
+                        className="h-11"
+                        {...register('weight')}
+                      />
+                      <p className="text-xs text-gray-500">Enter weight in kilograms</p>
+                    </div>
+                  </div>
+
+                  {/* Fourth Row - Tag/Registration and Collar/Tag */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Tag/Registration Number */}
+                    <div className="space-y-2">
+                      <Label htmlFor="tag_registration_number" className="text-sm font-semibold">Tag/Registration Number (optional)</Label>
+                      <Input
+                        id="tag_registration_number"
+                        placeholder="e.g., Tag ID, Registration No., License No."
+                        className="h-11"
+                        {...register('tag_registration_number')}
+                      />
+                      <p className="text-xs text-gray-500">Enter any tag ID, registration number, or license number</p>
+                    </div>
+
+                    {/* Collar/Tag Info */}
+                    <div className="space-y-2">
+                      <Label htmlFor="collar_tag" className="text-sm font-semibold">Collar/Tag Information</Label>
+                      <Input
+                        id="collar_tag"
+                        placeholder="e.g., Blue collar with name tag 'Max'"
+                        className="h-11"
+                        {...register('collar_tag')}
+                      />
+                      <p className="text-xs text-gray-500">Describe any collar, tags, or identification markers</p>
+                    </div>
+                  </div>
+
+                  {/* Distinguishing Marks - Full Width */}
+                  <div className="space-y-2">
+                    <Label htmlFor="distinguishing_marks" className="text-sm font-semibold">Distinguishing Marks & Description *</Label>
+                    <Textarea
+                      id="distinguishing_marks"
+                      rows={5}
+                      placeholder="Describe any unique features, markings, collar, tags, behavior, etc."
+                      className="resize-none"
+                      {...register('distinguishing_marks')}
                     />
-                  </label>
-                </div>
-                {photos.length > 0 && (
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
-                    {photos.map((photo, index) => (
-                      <div key={index} className="relative group">
-                        <img
-                          src={URL.createObjectURL(photo)}
-                          alt={`Preview ${index + 1}`}
-                          className="h-24 w-full object-cover rounded-lg border-2 border-border"
-                        />
-                      </div>
-                    ))}
+                    {errors.distinguishing_marks && (
+                      <p className="text-sm text-destructive mt-1">{errors.distinguishing_marks.message}</p>
+                    )}
                   </div>
-                )}
                 </div>
-              </div>
 
-              {/* Live Match Results */}
-              {matches.length > 0 && (
-                <LiveMatchResults matches={matches} onSelectMatch={handleSelectMatch} />
-              )}
-            </CardContent>
+                {/* Section 3: Location & Date */}
+                <div className="space-y-6">
+                  <div className="flex items-center gap-3 pb-2 border-b border-gray-200">
+                    <div className="h-8 w-1 bg-gradient-to-b from-orange-500 to-orange-600 rounded-full" />
+                    <h3 className="text-lg font-semibold text-gray-900">Location & Date</h3>
+                  </div>
+
+                  {/* Location and Date */}
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="location_lost" className="text-sm font-semibold">Location Last Seen *</Label>
+                      <Input
+                        id="location_lost"
+                        placeholder="e.g., Central Park, 5th Avenue entrance"
+                        className="h-11"
+                        {...register('location_lost')}
+                      />
+                      {errors.location_lost && (
+                        <p className="text-sm text-destructive mt-1">{errors.location_lost.message}</p>
+                      )}
+                    </div>
+
+                    {/* Location Options */}
+                    <div className="space-y-3 p-4 border rounded-lg bg-gray-50">
+                      <Label className="text-sm font-semibold">Additional Location Information (Optional)</Label>
+                      <p className="text-xs text-gray-500 mb-3">You can provide location in one of the following ways:</p>
+
+                      <div className="space-y-3">
+                        {/* Map URL Option */}
+                        <div className="space-y-2">
+                          <Label htmlFor="location_map_url" className="text-xs font-medium">Map URL (Google Maps, etc.)</Label>
+                          <Input
+                            id="location_map_url"
+                            type="url"
+                            placeholder="https://maps.google.com/..."
+                            className="h-10 text-sm"
+                            {...register('location_map_url')}
+                          />
+                        </div>
+
+                        {/* Coordinates Option */}
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-2">
+                            <Label htmlFor="location_latitude" className="text-xs font-medium">Latitude</Label>
+                            <Input
+                              id="location_latitude"
+                              type="number"
+                              step="any"
+                              placeholder="e.g., 28.6139"
+                              className="h-10 text-sm"
+                              {...register('location_latitude')}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="location_longitude" className="text-xs font-medium">Longitude</Label>
+                            <Input
+                              id="location_longitude"
+                              type="number"
+                              step="any"
+                              placeholder="e.g., 77.2090"
+                              className="h-10 text-sm"
+                              {...register('location_longitude')}
+                            />
+                          </div>
+                        </div>
+                        <p className="text-xs text-gray-400">Or use a map app to get coordinates and paste them here</p>
+                      </div>
+                    </div>
+
+                    {/* Date Lost */}
+                    <div className="space-y-2">
+                      <Label htmlFor="date_lost" className="text-sm font-semibold">Date Lost *</Label>
+                      <Input
+                        id="date_lost"
+                        type="date"
+                        className="h-11"
+                        max={new Date().toISOString().split('T')[0]}
+                        {...register('date_lost')}
+                      />
+                      {errors.date_lost && (
+                        <p className="text-sm text-destructive mt-1">{errors.date_lost.message}</p>
+                      )}
+                    </div>
+                  </div>
+
+                </div>
+
+                {/* Section 4: Photos */}
+                <div className="space-y-6">
+                  <div className="flex items-center gap-3 pb-2 border-b border-gray-200">
+                    <div className="h-8 w-1 bg-gradient-to-b from-orange-500 to-orange-600 rounded-full" />
+                    <h3 className="text-lg font-semibold text-gray-900">Photos</h3>
+                  </div>
+
+                  {/* Photos - Full Width */}
+                  <div className="space-y-2">
+                    <Label htmlFor="photos" className="text-sm font-semibold">
+                      Photos <span className="text-destructive">*</span>
+                      <span className="text-xs font-normal text-gray-600 ml-2">(Required for identification)</span>
+                    </Label>
+                    <div className="flex items-center justify-center w-full">
+                      <label
+                        htmlFor="photos"
+                        className={`flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-xl cursor-pointer transition-all ${photos.length === 0
+                            ? 'bg-red-50/50 border-red-300 hover:border-red-400 hover:bg-red-50'
+                            : 'bg-muted/30 hover:bg-muted/50 hover:border-primary/50'
+                          }`}
+                      >
+                        <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                          <Upload className="w-10 h-10 mb-3 text-muted-foreground" />
+                          <p className={`text-sm font-medium ${photos.length === 0 ? 'text-red-600' : 'text-muted-foreground'}`}>
+                            {photos.length > 0
+                              ? `${photos.length} photo(s) selected`
+                              : 'Click to upload photos or drag and drop (Required)'}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1">PNG, JPG up to 10MB - At least 1 photo required</p>
+                        </div>
+                        <input
+                          id="photos"
+                          type="file"
+                          className="hidden"
+                          accept="image/*"
+                          multiple
+                          onChange={handlePhotoChange}
+                        />
+                      </label>
+                    </div>
+                    {photos.length > 0 && (
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
+                        {photos.map((photo, index) => (
+                          <div key={index} className="relative group">
+                            <img
+                              src={URL.createObjectURL(photo)}
+                              alt={`Preview ${index + 1}`}
+                              className="h-24 w-full object-cover rounded-lg border-2 border-border"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Live Match Results */}
+                {matches.length > 0 && (
+                  <LiveMatchResults matches={matches} onSelectMatch={handleSelectMatch} />
+                )}
+              </CardContent>
 
               <div className="px-6 sm:px-8 py-4 flex flex-col sm:flex-row gap-3 border-t bg-muted/20">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => navigate(-1)}
-                className="flex-1 h-11"
-              >
-                Cancel
-              </Button>
-              <Button 
-                type="submit" 
-                disabled={isSubmitting || photos.length === 0} 
-                className="flex-1 h-11 bg-gradient-to-r from-[#2BB6AF] to-[#239a94] hover:from-[#239a94] hover:to-[#1a7a75] text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isSubmitting ? 'Submitting...' : 'Submit Report (No Match Found)'}
-              </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => navigate(-1)}
+                  className="flex-1 h-11"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={isSubmitting || photos.length === 0}
+                  className="flex-1 h-11 bg-gradient-to-r from-[#2BB6AF] to-[#239a94] hover:from-[#239a94] hover:to-[#1a7a75] text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isSubmitting ? 'Submitting...' : 'Submit Report (No Match Found)'}
+                </Button>
               </div>
             </form>
           </div>

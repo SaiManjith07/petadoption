@@ -68,9 +68,7 @@ def dashboard_stats(request):
         stats = None
         try:
             stats = DashboardStats.get_latest()
-        except Exception as get_error:
-            print(f"Error getting dashboard stats: {get_error}")
-            print(traceback.format_exc())
+        except Exception:
             # Try to calculate stats directly from database if model doesn't exist
             try:
                 from pets.models import Pet
@@ -88,6 +86,7 @@ def dashboard_stats(request):
                     lost=Count('id', filter=Q(adoption_status='Lost', is_verified=True)),
                     available=Count('id', filter=Q(adoption_status='Available for Adoption')),
                     adopted=Count('id', filter=Q(adoption_status='Adopted')),
+                    reunited=Count('id', filter=Q(adoption_status='Reunited')),
                     pending_found_reports=Count('id', filter=Q(adoption_status='Pending', is_verified=False, found_date__isnull=False)),
                     pending_lost_reports=Count('id', filter=Q(adoption_status='Pending', is_verified=False, found_date__isnull=True))
                 )
@@ -157,7 +156,7 @@ def dashboard_stats(request):
                         'found': pet_agg['found'],
                         'lost': pet_agg['lost'],
                     },
-                    'matched': 0,
+                    'matched': pet_agg['reunited'],
                     'recent_activity': {
                         'pets_last_7_days': 0,
                         'users_last_7_days': 0,
@@ -167,9 +166,7 @@ def dashboard_stats(request):
                 return Response({
                     'data': stats_dict
                 })
-            except Exception as calc_error:
-                print(f"Error calculating stats directly: {calc_error}")
-                print(traceback.format_exc())
+            except Exception:
                 # Return default structure
                 return Response({
                     'data': {
@@ -187,14 +184,13 @@ def dashboard_stats(request):
         from datetime import timedelta
         if stats:
             try:
-                if not stats.last_updated or (timezone.now() - stats.last_updated) > timedelta(minutes=5):
+                if not stats.last_updated or (timezone.now() - stats.last_updated) > timedelta(seconds=5):
                     stats.updated_by = request.user
                     stats.update_stats()
                     stats.save()  # Save after updating
-            except Exception as update_error:
-                print(f"Error updating dashboard stats: {update_error}")
-                print(traceback.format_exc())
+            except Exception:
                 # Continue with existing stats even if update fails
+                pass
         
         # Convert to dict with error handling
         if stats:
@@ -246,83 +242,96 @@ def dashboard_stats(request):
 @permission_classes([IsAdminUser])
 def pending_reports(request):
     """Get pending pet reports."""
-    report_type = request.query_params.get('report_type', None)
-    
-    # Get pets that need verification
-    # When users report found/lost pets, they are created with adoption_status='Pending' and is_verified=False
-    # We need to check both Pending status and unverified Found/Lost pets
-    if report_type == 'found':
-        # Include: Pending pets with found_date (found pets waiting approval) OR Found pets that aren't verified
-        # Found pets are created with adoption_status='Pending' and found_date set
-        # CRITICAL: Must have found_date NOT null (this is the key differentiator)
-        queryset = Pet.objects.filter(
-            is_verified=False,
-            found_date__isnull=False  # MUST have found_date
-        ).filter(
-            Q(adoption_status='Pending') | Q(adoption_status='Found')
-        ).exclude(
-            # Exclude lost pets
-            adoption_status='Lost'
-        ).select_related(
-            'category', 'owner', 'posted_by'
-        ).prefetch_related(
-            'images'
-        ).order_by('-created_at')
+    try:
+        report_type = request.query_params.get('report_type', None)
         
-        # Debug logging
-        print(f"[DEBUG] Found pets query - report_type={report_type}, count={queryset.count()}")
-        print(f"[DEBUG] Query filters: is_verified=False, found_date__isnull=False, status in ['Pending', 'Found']")
-        for pet in queryset[:5]:  # Log first 5
-            print(f"  - Pet ID {pet.id}: name='{pet.name}', found_date={pet.found_date}, status={pet.adoption_status}, is_verified={pet.is_verified}")
+        # Get pets that need verification
+        # When users report found/lost pets, they are created with adoption_status='Pending' and is_verified=False
+        # We need to check both Pending status and unverified Found/Lost pets
+        if report_type == 'found':
+            # Include: Pending pets with found_date (found pets waiting approval) OR Found pets that aren't verified
+            # Found pets are created with adoption_status='Pending' and found_date set
+            # CRITICAL: Must have found_date NOT null (this is the key differentiator)
+            queryset = Pet.objects.filter(
+                is_verified=False,
+                found_date__isnull=False  # MUST have found_date
+            ).filter(
+                Q(adoption_status='Pending') | Q(adoption_status='Found')
+            ).exclude(
+                # Exclude lost pets
+                adoption_status='Lost'
+            ).select_related(
+                'category', 'owner', 'posted_by'
+            ).prefetch_related(
+                'images'
+            ).order_by('-created_at')
+            
+            # Debug logging
+            print(f"[DEBUG] Found pets query - report_type={report_type}, count={queryset.count()}")
+            print(f"[DEBUG] Query filters: is_verified=False, found_date__isnull=False, status in ['Pending', 'Found']")
+            for pet in queryset[:5]:  # Log first 5
+                print(f"  - Pet ID {pet.id}: name='{pet.name}', found_date={pet.found_date}, status={pet.adoption_status}, is_verified={pet.is_verified}")
+            
+            # Also log total pending pets for debugging
+            all_pending = Pet.objects.filter(adoption_status='Pending', is_verified=False).count()
+            all_found_pending = Pet.objects.filter(adoption_status='Pending', is_verified=False, found_date__isnull=False).count()
+            print(f"[DEBUG] Total pending pets: {all_pending}, Found pending pets: {all_found_pending}")
+        elif report_type == 'lost':
+            # Include: Pending pets without found_date (lost pets waiting approval) OR Lost pets that aren't verified
+            # Lost pets are created with adoption_status='Pending' but no found_date
+            # CRITICAL: Must have found_date IS null (this is the key differentiator)
+            queryset = Pet.objects.filter(
+                is_verified=False,
+                found_date__isnull=True  # MUST NOT have found_date
+            ).filter(
+                Q(adoption_status='Pending') | Q(adoption_status='Lost')
+            ).exclude(
+                # Exclude found pets
+                adoption_status='Found'
+            ).select_related(
+                'category', 'owner', 'posted_by'
+            ).prefetch_related(
+                'images'
+            ).order_by('-created_at')
+            
+            # Debug logging
+            print(f"[DEBUG] Lost pets query - report_type={report_type}, count={queryset.count()}")
+            print(f"[DEBUG] Query filters: is_verified=False, found_date__isnull=True, status in ['Pending', 'Lost']")
+            for pet in queryset[:5]:  # Log first 5
+                print(f"  - Pet ID {pet.id}: name='{pet.name}', found_date={pet.found_date}, status={pet.adoption_status}, is_verified={pet.is_verified}")
+            
+            # Also log total pending pets for debugging
+            all_pending = Pet.objects.filter(adoption_status='Pending', is_verified=False).count()
+            all_lost_pending = Pet.objects.filter(adoption_status='Pending', is_verified=False, found_date__isnull=True).count()
+            print(f"[DEBUG] Total pending pets: {all_pending}, Lost pending pets: {all_lost_pending}")
+        else:
+            # Get all unverified pets (Pending, Found, or Lost)
+            queryset = Pet.objects.filter(
+                Q(adoption_status='Pending', is_verified=False) | 
+                Q(adoption_status='Found', is_verified=False) | 
+                Q(adoption_status='Lost', is_verified=False)
+            ).select_related(
+                'category', 'owner', 'posted_by'
+            ).prefetch_related(
+                'images'
+            ).order_by('-created_at')
         
-        # Also log total pending pets for debugging
-        all_pending = Pet.objects.filter(adoption_status='Pending', is_verified=False).count()
-        all_found_pending = Pet.objects.filter(adoption_status='Pending', is_verified=False, found_date__isnull=False).count()
-        print(f"[DEBUG] Total pending pets: {all_pending}, Found pending pets: {all_found_pending}")
-    elif report_type == 'lost':
-        # Include: Pending pets without found_date (lost pets waiting approval) OR Lost pets that aren't verified
-        # Lost pets are created with adoption_status='Pending' but no found_date
-        # CRITICAL: Must have found_date IS null (this is the key differentiator)
-        queryset = Pet.objects.filter(
-            is_verified=False,
-            found_date__isnull=True  # MUST NOT have found_date
-        ).filter(
-            Q(adoption_status='Pending') | Q(adoption_status='Lost')
-        ).exclude(
-            # Exclude found pets
-            adoption_status='Found'
-        ).select_related(
-            'category', 'owner', 'posted_by'
-        ).prefetch_related(
-            'images'
-        ).order_by('-created_at')
+        from pets.serializers import PetListSerializer
+        serializer = PetListSerializer(queryset, many=True, context={'request': request})
         
-        # Debug logging
-        print(f"[DEBUG] Lost pets query - report_type={report_type}, count={queryset.count()}")
-        print(f"[DEBUG] Query filters: is_verified=False, found_date__isnull=True, status in ['Pending', 'Lost']")
-        for pet in queryset[:5]:  # Log first 5
-            print(f"  - Pet ID {pet.id}: name='{pet.name}', found_date={pet.found_date}, status={pet.adoption_status}, is_verified={pet.is_verified}")
-        
-        # Also log total pending pets for debugging
-        all_pending = Pet.objects.filter(adoption_status='Pending', is_verified=False).count()
-        all_lost_pending = Pet.objects.filter(adoption_status='Pending', is_verified=False, found_date__isnull=True).count()
-        print(f"[DEBUG] Total pending pets: {all_pending}, Lost pending pets: {all_lost_pending}")
-    else:
-        # Get all unverified pets (Pending, Found, or Lost)
-        queryset = Pet.objects.filter(
-            Q(adoption_status='Pending', is_verified=False) | 
-            Q(adoption_status='Found', is_verified=False) | 
-            Q(adoption_status='Lost', is_verified=False)
-        ).select_related(
-            'category', 'owner', 'posted_by'
-        ).prefetch_related(
-            'images'
-        ).order_by('-created_at')
-    
-    from pets.serializers import PetListSerializer
-    serializer = PetListSerializer(queryset, many=True, context={'request': request})
-    
-    return Response({'data': serializer.data})
+        return Response({'data': serializer.data})
+    except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
+        print(f"[ERROR] pending_reports failed: {e}")
+        print(error_trace)
+        return Response(
+            {
+                'error': str(e),
+                'traceback': error_trace if request.user.is_staff else None
+            },
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
 
 
 @api_view(['GET'])

@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Shield, Building2, Plus, X, CheckCircle, Search, Menu, Edit, Trash2, MapPin } from 'lucide-react';
-import { AdminSidebar } from '@/components/layout/AdminSidebar';
-import { AdminTopNav } from '@/components/layout/AdminTopNav';
+import { AdminLayout } from '@/components/layout/AdminLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -26,7 +25,6 @@ export default function AdminShelterLocations() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showApproveDialog, setShowApproveDialog] = useState(false);
@@ -283,7 +281,7 @@ export default function AdminShelterLocations() {
         console.error('Approval error:', errorData);
         throw new Error(errorMessage);
       }
-      
+
       const result = await response.json();
 
       toast({
@@ -390,15 +388,15 @@ export default function AdminShelterLocations() {
       (shelter.location?.city || shelter.city)?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (shelter.location?.address || shelter.address)?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       shelter.user?.name?.toLowerCase().includes(searchTerm.toLowerCase());
-    
+
     // Determine status: pending if not verified, approved if verified
     const shelterStatus = shelter.status || (shelter.is_verified ? 'approved' : 'pending');
-    
+
     const matchesStatus = statusFilter === 'all' ||
       (statusFilter === 'approved' && shelterStatus === 'approved') ||
       (statusFilter === 'pending' && shelterStatus === 'pending') ||
       (statusFilter === 'rejected' && shelterStatus === 'rejected');
-    
+
     return matchesSearch && matchesStatus;
   });
 
@@ -414,204 +412,183 @@ export default function AdminShelterLocations() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Fixed Sidebar */}
-      <div className="hidden lg:block">
-        <AdminSidebar isOpen={true} onClose={() => setSidebarOpen(false)} />
-      </div>
-      
-      {/* Mobile Sidebar */}
-      <div className="lg:hidden">
-        <AdminSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      </div>
+    <AdminLayout onRefresh={loadShelters} isRefreshing={loading}>
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center gap-2">
+              <Building2 className="h-6 w-6 sm:h-8 sm:w-8 text-[#4CAF50]" />
+              Shelter Locations
+            </h1>
+            <p className="text-sm sm:text-base text-gray-600 mt-1">Manage shelter locations for animals</p>
+          </div>
+          <Button
+            onClick={() => setShowAddDialog(true)}
+            className="w-full sm:w-auto bg-[#2BB6AF] hover:bg-[#239a94] text-white"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Add Shelter
+          </Button>
+        </div>
 
-      {/* Main Content */}
-      <div className="flex flex-col min-w-0 lg:ml-64">
-        <AdminTopNav 
-          onMenuToggle={() => setSidebarOpen(!sidebarOpen)} 
-          sidebarOpen={sidebarOpen}
-          onRefresh={loadShelters}
-        />
-
-        <main className="flex-1 overflow-y-auto bg-white">
-          <div className="p-6 lg:p-8 space-y-6">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-                  <Building2 className="h-8 w-8 text-[#4CAF50]" />
-                  Shelter Locations Management
-                </h1>
-                <p className="text-gray-600 mt-1">Manage shelter locations for animals</p>
+        {/* Filters */}
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex flex-col md:flex-row gap-4">
+              <div className="flex-1">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Input
+                    placeholder="Search by name, address, or city..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
               </div>
-              <Button
-                onClick={() => setShowAddDialog(true)}
-                className="bg-[#2BB6AF] hover:bg-[#239a94] text-white"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Add Shelter Location
-              </Button>
+              <div className="flex gap-2">
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-green-500"
+                >
+                  <option value="all">All Status</option>
+                  <option value="approved">Approved</option>
+                  <option value="pending">Pending</option>
+                  <option value="rejected">Rejected</option>
+                </select>
+              </div>
             </div>
+          </CardContent>
+        </Card>
 
-            {/* Filters */}
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex flex-col md:flex-row gap-4">
-                  <div className="flex-1">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                      <Input
-                        placeholder="Search by name, address, or city..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10"
-                      />
+        {/* Shelters List */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredShelters.length === 0 ? (
+            <div className="col-span-full text-center py-12">
+              <Building2 className="h-16 w-16 mx-auto text-gray-400 mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">No Shelter Locations</h3>
+              <p className="text-gray-600">
+                {searchTerm || statusFilter !== 'all'
+                  ? 'No shelters match your search'
+                  : 'No shelter locations found. Click "Add Shelter Location" to create one.'}
+              </p>
+            </div>
+          ) : (
+            filteredShelters.map((shelter: any) => (
+              <Card
+                key={shelter.id || shelter._id}
+                className={`hover:shadow-md transition-shadow ${(shelter.status === 'pending' || !shelter.is_verified)
+                  ? 'border-yellow-300 border-2 bg-yellow-50/30'
+                  : ''
+                  }`}
+              >
+                <CardHeader>
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-[#2BB6AF] to-[#239a94] flex items-center justify-center">
+                        <Building2 className="h-6 w-6 text-white" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-lg">{shelter.shelter_name}</CardTitle>
+                        <CardDescription>
+                          {shelter.location?.city || shelter.city || 'N/A'}, {shelter.location?.state || shelter.state || ''}
+                        </CardDescription>
+                      </div>
+                    </div>
+                    <Badge
+                      variant={
+                        (shelter.status === 'pending' || !shelter.is_verified) ? 'default' :
+                          (shelter.status === 'approved' || shelter.is_verified) ? 'default' :
+                            'destructive'
+                      }
+                      className={
+                        (shelter.status === 'pending' || !shelter.is_verified) ? 'bg-yellow-100 text-yellow-700 border-yellow-300' :
+                          (shelter.status === 'approved' || shelter.is_verified) ? 'bg-[#E8F8EE] text-[#2BB6AF] border-[#2BB6AF]/30' :
+                            'bg-red-100 text-red-700 border-red-300'
+                      }
+                    >
+                      {shelter.status || (shelter.is_verified ? 'Approved' : 'Pending')}
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div>
+                    <p className="text-sm font-semibold text-gray-700 mb-1">Address</p>
+                    <p className="text-sm text-gray-600">
+                      {shelter.location?.address || shelter.address || 'N/A'}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {shelter.location?.pincode || shelter.pincode || ''}
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <p className="text-sm font-semibold text-gray-700 mb-1">Capacity</p>
+                      <p className="text-sm text-gray-600">
+                        {shelter.capacity || shelter.total_capacity || 'N/A'} animals
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-gray-700 mb-1">Area</p>
+                      <p className="text-sm text-gray-600">
+                        {shelter.area_sqft || 'N/A'} sq ft
+                      </p>
                     </div>
                   </div>
-                  <div className="flex gap-2">
-                    <select
-                      value={statusFilter}
-                      onChange={(e) => setStatusFilter(e.target.value)}
-                      className="px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-green-500"
-                    >
-                      <option value="all">All Status</option>
-                      <option value="approved">Approved</option>
-                      <option value="pending">Pending</option>
-                      <option value="rejected">Rejected</option>
-                    </select>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Shelters List */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredShelters.length === 0 ? (
-                <div className="col-span-full text-center py-12">
-                  <Building2 className="h-16 w-16 mx-auto text-gray-400 mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No Shelter Locations</h3>
-                  <p className="text-gray-600">
-                    {searchTerm || statusFilter !== 'all' 
-                      ? 'No shelters match your search' 
-                      : 'No shelter locations found. Click "Add Shelter Location" to create one.'}
-                  </p>
-                </div>
-              ) : (
-                filteredShelters.map((shelter: any) => (
-                  <Card 
-                    key={shelter.id || shelter._id} 
-                    className={`hover:shadow-md transition-shadow ${
-                      (shelter.status === 'pending' || !shelter.is_verified) 
-                        ? 'border-yellow-300 border-2 bg-yellow-50/30' 
-                        : ''
-                    }`}
-                  >
-                    <CardHeader>
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-[#2BB6AF] to-[#239a94] flex items-center justify-center">
-                            <Building2 className="h-6 w-6 text-white" />
-                          </div>
-                          <div>
-                            <CardTitle className="text-lg">{shelter.shelter_name}</CardTitle>
-                            <CardDescription>
-                              {shelter.location?.city || shelter.city || 'N/A'}, {shelter.location?.state || shelter.state || ''}
-                            </CardDescription>
-                          </div>
-                        </div>
-                        <Badge
-                          variant={
-                            (shelter.status === 'pending' || !shelter.is_verified) ? 'default' :
-                            (shelter.status === 'approved' || shelter.is_verified) ? 'default' :
-                            'destructive'
-                          }
-                          className={
-                            (shelter.status === 'pending' || !shelter.is_verified) ? 'bg-yellow-100 text-yellow-700 border-yellow-300' :
-                            (shelter.status === 'approved' || shelter.is_verified) ? 'bg-[#E8F8EE] text-[#2BB6AF] border-[#2BB6AF]/30' :
-                            'bg-red-100 text-red-700 border-red-300'
-                          }
-                        >
-                          {shelter.status || (shelter.is_verified ? 'Approved' : 'Pending')}
-                        </Badge>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div>
-                        <p className="text-sm font-semibold text-gray-700 mb-1">Address</p>
-                        <p className="text-sm text-gray-600">
-                          {shelter.location?.address || shelter.address || 'N/A'}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {shelter.location?.pincode || shelter.pincode || ''}
-                        </p>
-                      </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <p className="text-sm font-semibold text-gray-700 mb-1">Capacity</p>
-                          <p className="text-sm text-gray-600">
-                            {shelter.capacity || shelter.total_capacity || 'N/A'} animals
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-sm font-semibold text-gray-700 mb-1">Area</p>
-                          <p className="text-sm text-gray-600">
-                            {shelter.area_sqft || 'N/A'} sq ft
-                          </p>
-                        </div>
-                      </div>
-                      {shelter.facilities && shelter.facilities.length > 0 && (
-                        <div>
-                          <p className="text-sm font-semibold text-gray-700 mb-1">Facilities</p>
-                          <div className="flex flex-wrap gap-1">
-                            {shelter.facilities.slice(0, 3).map((facility: string, idx: number) => (
-                              <Badge key={idx} variant="outline" className="text-xs">
-                                {facility}
-                              </Badge>
-                            ))}
-                            {shelter.facilities.length > 3 && (
-                              <Badge variant="outline" className="text-xs">
-                                +{shelter.facilities.length - 3}
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                      <div className="flex gap-2 pt-2">
-                        {(shelter.status === 'pending' || !shelter.is_verified) && (
-                          <Button
-                            size="sm"
-                            className="bg-[#2BB6AF] hover:bg-[#239a94] flex-1"
-                            onClick={() => handleApproveShelter(shelter)}
-                          >
-                            <CheckCircle className="h-4 w-4 mr-2" />
-                            Approve
-                          </Button>
+                  {shelter.facilities && shelter.facilities.length > 0 && (
+                    <div>
+                      <p className="text-sm font-semibold text-gray-700 mb-1">Facilities</p>
+                      <div className="flex flex-wrap gap-1">
+                        {shelter.facilities.slice(0, 3).map((facility: string, idx: number) => (
+                          <Badge key={idx} variant="outline" className="text-xs">
+                            {facility}
+                          </Badge>
+                        ))}
+                        {shelter.facilities.length > 3 && (
+                          <Badge variant="outline" className="text-xs">
+                            +{shelter.facilities.length - 3}
+                          </Badge>
                         )}
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEditShelter(shelter)}
-                          className={shelter.status === 'pending' ? 'flex-1' : 'flex-1'}
-                        >
-                          <Edit className="h-4 w-4 mr-2" />
-                          Edit
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => handleDeleteShelter(shelter.id || shelter._id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
                       </div>
-                    </CardContent>
-                  </Card>
-                ))
-              )}
-            </div>
-          </div>
-        </main>
+                    </div>
+                  )}
+                  <div className="flex gap-2 pt-2">
+                    {(shelter.status === 'pending' || !shelter.is_verified) && (
+                      <Button
+                        size="sm"
+                        className="bg-[#2BB6AF] hover:bg-[#239a94] flex-1"
+                        onClick={() => handleApproveShelter(shelter)}
+                      >
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        Approve
+                      </Button>
+                    )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleEditShelter(shelter)}
+                      className={shelter.status === 'pending' ? 'flex-1' : 'flex-1'}
+                    >
+                      <Edit className="h-4 w-4 mr-2" />
+                      Edit
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => handleDeleteShelter(shelter.id || shelter._id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </div>
       </div>
+
 
       {/* Add Shelter Dialog */}
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
@@ -1023,7 +1000,7 @@ export default function AdminShelterLocations() {
 
               <div className="space-y-4">
                 <Label className="text-base font-semibold">Verification Parameters</Label>
-                
+
                 <div className="space-y-3">
                   <div className="flex items-center space-x-2">
                     <Checkbox
@@ -1153,7 +1130,7 @@ export default function AdminShelterLocations() {
           )}
         </DialogContent>
       </Dialog>
-    </div>
+    </AdminLayout>
   );
 }
 

@@ -74,9 +74,9 @@ export default function AdminUsers() {
       const filters: any = {};
       if (roleFilter !== 'all') filters.role = roleFilter;
       if (statusFilter !== 'all') filters.is_active = statusFilter === 'active';
-      
+
       const usersData = await adminApi.getAllUsers(filters);
-      setUsers(Array.isArray(usersData) ? usersData : usersData?.data || []);
+      setUsers(usersData);
     } catch (error: any) {
       toast({
         title: 'Error',
@@ -100,9 +100,9 @@ export default function AdminUsers() {
 
   const handleSaveEdit = async () => {
     if (!selectedUser) return;
-    
+
     try {
-      await adminApi.updateUser(selectedUser._id, {
+      await adminApi.updateUser(selectedUser._id || selectedUser.id, {
         role: editForm.role,
         is_active: editForm.is_active,
       });
@@ -122,7 +122,10 @@ export default function AdminUsers() {
   };
 
   const handleConnectUser = async (targetUser: any) => {
-    const currentUserId = currentUser?.id || currentUser?._id || currentUser?.user_id;
+    // Cast to any to access potential legacy fields
+    const user = currentUser as any;
+    const currentUserId = user?.id || user?._id || user?.user_id;
+
     if (!currentUserId) {
       toast({
         title: 'Error',
@@ -144,16 +147,16 @@ export default function AdminUsers() {
 
     try {
       setConnectingUserId(targetUserId);
-      
+
       // Create a direct chat room (no pet, no request) from admin to user
       const result = await adminApi.createChatRequest(
         targetUserId,
-        `Admin ${currentUser.name || currentUser.email || 'Administrator'} wants to connect with you.`
+        `Admin ${currentUser?.name || user?.email || 'Administrator'} wants to connect with you.`
       );
-      
+
       // The endpoint now creates a direct chat room, not a request
       const roomId = result?.room_id || result?.data?.room_id;
-      
+
       if (roomId) {
         toast({
           title: 'Chat Room Created',
@@ -168,11 +171,11 @@ export default function AdminUsers() {
         });
       }
     } catch (error: any) {
-      const errorMsg = error?.response?.data?.error || 
-                      error?.response?.data?.detail || 
-                      error?.message || 
-                      'Failed to send chat request';
-      
+      const errorMsg = error?.response?.data?.error ||
+        error?.response?.data?.detail ||
+        error?.message ||
+        'Failed to send chat request';
+
       toast({
         title: 'Error',
         description: errorMsg,
@@ -185,7 +188,7 @@ export default function AdminUsers() {
 
   const handleDeactivateUser = async (userId: string) => {
     if (!confirm('Are you sure you want to deactivate this user?')) return;
-    
+
     try {
       await adminApi.deleteUser(userId);
       toast({
@@ -209,26 +212,28 @@ export default function AdminUsers() {
 
   const filteredUsers = users.filter((u: any) => {
     // Filter out the current logged-in admin
-    const currentUserId = currentUser?.id || currentUser?._id || currentUser?.user_id;
+    const user = currentUser as any;
+    const currentUserId = user?.id || user?._id || user?.user_id;
     const userId = u._id || u.id || u.user_id;
     if (currentUserId && userId && String(currentUserId) === String(userId)) {
       return false;
     }
-    
-    const matchesSearch = !searchTerm || 
+
+    const matchesSearch = !searchTerm ||
       u.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       u.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       u.phone?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesRole = roleFilter === 'all' || u.role === roleFilter;
-    const matchesStatus = statusFilter === 'all' || 
+    const matchesStatus = statusFilter === 'all' ||
       (statusFilter === 'active' && u.is_active !== false) ||
       (statusFilter === 'inactive' && u.is_active === false);
     return matchesSearch && matchesRole && matchesStatus;
   });
 
   // Filter out current user for stats
-  const currentUserId = currentUser?.id || currentUser?._id || currentUser?.user_id;
   const usersExcludingCurrent = users.filter((u: any) => {
+    const user = currentUser as any;
+    const currentUserId = user?.id || user?._id || user?.user_id;
     if (!currentUserId) return true;
     const userId = u._id || u.id || u.user_id;
     return !userId || String(userId) !== String(currentUserId);
@@ -245,12 +250,15 @@ export default function AdminUsers() {
 
   return (
     <AdminLayout onRefresh={loadUsers}>
-      <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8 w-full">
+      <div className="w-full">
         {/* Header */}
         <div className="mb-4 sm:mb-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-4">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">User Management</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center gap-2">
+                <Users className="h-8 w-8 text-blue-500" />
+                User Management
+              </h1>
               <p className="text-sm sm:text-base text-gray-600 mt-1">Manage all users, roles, and permissions</p>
             </div>
           </div>
@@ -259,225 +267,229 @@ export default function AdminUsers() {
         {/* Stats Cards */}
         <div className="mb-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium text-gray-600">Total Users</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-gray-900">{stats.total}</div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium text-gray-600">Active Users</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-green-600">{stats.active}</div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium text-gray-600">Regular Users</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-blue-600">{stats.regular}</div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium text-gray-600">Rescuers</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-purple-600">{stats.rescuers}</div>
-                  </CardContent>
-                </Card>
+            <Card className="bg-white shadow-md hover:shadow-lg transition-all duration-300 border-l-4 border-l-gray-500">
+              <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between space-y-0">
+                <CardTitle className="text-sm font-medium text-gray-600">Total Users</CardTitle>
+                <Users className="h-4 w-4 text-gray-500" />
+              </CardHeader>
+              <CardContent className="p-4 pt-0">
+                <div className="text-3xl font-bold text-gray-900">{stats.total}</div>
+              </CardContent>
+            </Card>
+            <Card className="bg-white shadow-md hover:shadow-lg transition-all duration-300 border-l-4 border-l-green-500">
+              <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between space-y-0">
+                <CardTitle className="text-sm font-medium text-gray-600">Active Users</CardTitle>
+                <UserCheck className="h-4 w-4 text-green-500" />
+              </CardHeader>
+              <CardContent className="p-4 pt-0">
+                <div className="text-3xl font-bold text-green-600">{stats.active}</div>
+              </CardContent>
+            </Card>
+            <Card className="bg-white shadow-md hover:shadow-lg transition-all duration-300 border-l-4 border-l-blue-500">
+              <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between space-y-0">
+                <CardTitle className="text-sm font-medium text-gray-600">Regular Users</CardTitle>
+                <Users className="h-4 w-4 text-blue-500" />
+              </CardHeader>
+              <CardContent className="p-4 pt-0">
+                <div className="text-3xl font-bold text-blue-600">{stats.regular}</div>
+              </CardContent>
+            </Card>
+            <Card className="bg-white shadow-md hover:shadow-lg transition-all duration-300 border-l-4 border-l-purple-500">
+              <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between space-y-0">
+                <CardTitle className="text-sm font-medium text-gray-600">Rescuers</CardTitle>
+                <Shield className="h-4 w-4 text-purple-500" />
+              </CardHeader>
+              <CardContent className="p-4 pt-0">
+                <div className="text-3xl font-bold text-purple-600">{stats.rescuers}</div>
+              </CardContent>
+            </Card>
           </div>
         </div>
 
         {/* Search and Filters */}
-        <Card className="mb-6">
-              <CardHeader>
-                <CardTitle>Search & Filter</CardTitle>
-                <CardDescription>Find users by name, email, or filter by role and status</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <div className="flex-1">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                      <Input
-                        placeholder="Search by name, email, or phone..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10"
-                      />
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <select
-                      value={roleFilter}
-                      onChange={(e) => {
-                        setRoleFilter(e.target.value);
-                        loadUsers();
-                      }}
-                      className="px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-green-500"
-                    >
-                      <option value="all">All Roles</option>
-                      <option value="user">User</option>
-                      <option value="rescuer">Rescuer</option>
-                      <option value="admin">Admin</option>
-                    </select>
-                    <select
-                      value={statusFilter}
-                      onChange={(e) => {
-                        setStatusFilter(e.target.value);
-                        loadUsers();
-                      }}
-                      className="px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-green-500"
-                    >
-                      <option value="all">All Status</option>
-                      <option value="active">Active</option>
-                      <option value="inactive">Inactive</option>
-                    </select>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={loadUsers}
-                      className="gap-2"
-                    >
-                      <Filter className="h-4 w-4" />
-                      Refresh
-                    </Button>
-                  </div>
+        <Card className="mb-6 shadow-sm">
+          <CardHeader>
+            <CardTitle>Search & Filter</CardTitle>
+            <CardDescription>Find users by name, email, or filter by role and status</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex-1">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Input
+                    placeholder="Search by name, email, or phone..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+              <div className="flex gap-2">
+                <select
+                  value={roleFilter}
+                  onChange={(e) => {
+                    setRoleFilter(e.target.value);
+                    loadUsers();
+                  }}
+                  className="px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-green-500"
+                >
+                  <option value="all">All Roles</option>
+                  <option value="user">User</option>
+                  <option value="rescuer">Rescuer</option>
+                  <option value="admin">Admin</option>
+                </select>
+                <select
+                  value={statusFilter}
+                  onChange={(e) => {
+                    setStatusFilter(e.target.value);
+                    loadUsers();
+                  }}
+                  className="px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-green-500"
+                >
+                  <option value="all">All Status</option>
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={loadUsers}
+                  className="gap-2"
+                >
+                  <Filter className="h-4 w-4" />
+                  Refresh
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-            {/* Users Table */}
-            <Card>
-              <CardHeader>
-                <CardTitle>All Users</CardTitle>
-                <CardDescription>
-                  Showing {filteredUsers.length} of {users.length} users
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {loading ? (
-                  <div className="text-center py-12">
-                    <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
-                    <p className="mt-4 text-gray-600">Loading users...</p>
-                  </div>
-                ) : filteredUsers.length === 0 ? (
-                  <div className="text-center py-12">
-                    <Users className="h-16 w-16 mx-auto text-gray-400 mb-4" />
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">No Users Found</h3>
-                    <p className="text-gray-600">
-                      {searchTerm || roleFilter !== 'all' || statusFilter !== 'all'
-                        ? 'Try adjusting your search or filters'
-                        : 'No users in the system yet.'}
-                    </p>
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Name</TableHead>
-                          <TableHead>Email</TableHead>
-                          <TableHead>Phone</TableHead>
-                          <TableHead>Role</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Joined</TableHead>
-                          <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredUsers.map((user: any, index: number) => (
-                          <TableRow key={user._id || user.id || `user-${index}`}>
-                            <TableCell className="font-medium">{user.name || 'N/A'}</TableCell>
-                            <TableCell>{user.email || 'N/A'}</TableCell>
-                            <TableCell>{user.phone || 'N/A'}</TableCell>
-                            <TableCell>
-                              <Badge
-                                variant={
-                                  user.role === 'admin'
-                                    ? 'default'
-                                    : user.role === 'rescuer'
-                                    ? 'secondary'
-                                    : 'outline'
-                                }
-                              >
-                                {user.role || 'user'}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              {user.is_active !== false ? (
-                                <Badge variant="default" className="bg-green-100 text-green-800">
-                                  <CheckCircle className="h-3 w-3 mr-1" />
-                                  Active
-                                </Badge>
-                              ) : (
-                                <Badge variant="destructive">
-                                  <AlertCircle className="h-3 w-3 mr-1" />
-                                  Inactive
-                                </Badge>
-                              )}
-                            </TableCell>
-                            <TableCell className="text-sm text-gray-600">
-                              {user.createdAt
-                                ? format(new Date(user.createdAt), 'MMM dd, yyyy')
-                                : 'N/A'}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex justify-end gap-2">
+        {/* Users Table */}
+        <Card className="shadow-sm">
+          <CardHeader>
+            <CardTitle>All Users</CardTitle>
+            <CardDescription>
+              Showing {filteredUsers.length} of {users.length} users
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="text-center py-12">
+                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+                <p className="mt-4 text-gray-600">Loading users...</p>
+              </div>
+            ) : filteredUsers.length === 0 ? (
+              <div className="text-center py-12">
+                <Users className="h-16 w-16 mx-auto text-gray-400 mb-4" />
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">No Users Found</h3>
+                <p className="text-gray-600">
+                  {searchTerm || roleFilter !== 'all' || statusFilter !== 'all'
+                    ? 'Try adjusting your search or filters'
+                    : 'No users in the system yet.'}
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Phone</TableHead>
+                      <TableHead>Role</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Joined</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredUsers.map((user: any, index: number) => (
+                      <TableRow key={user._id || user.id || `user-${index}`}>
+                        <TableCell className="font-medium">{user.name || 'N/A'}</TableCell>
+                        <TableCell>{user.email || 'N/A'}</TableCell>
+                        <TableCell>{user.phone || 'N/A'}</TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={
+                              user.role === 'admin'
+                                ? 'default'
+                                : user.role === 'rescuer'
+                                  ? 'secondary'
+                                  : 'outline'
+                            }
+                          >
+                            {user.role || 'user'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {user.is_active !== false ? (
+                            <Badge variant="default" className="bg-green-100 text-green-800">
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              Active
+                            </Badge>
+                          ) : (
+                            <Badge variant="destructive">
+                              <AlertCircle className="h-3 w-3 mr-1" />
+                              Inactive
+                            </Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-sm text-gray-600">
+                          {user.createdAt
+                            ? format(new Date(user.createdAt), 'MMM dd, yyyy')
+                            : 'N/A'}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleViewUser(user)}
+                              className="gap-1"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleConnectUser(user)}
+                              disabled={connectingUserId === (user._id || user.id)}
+                              className="gap-1 bg-[#2BB6AF]/10 hover:bg-[#2BB6AF]/20 text-[#2BB6AF] border-[#2BB6AF]/30"
+                            >
+                              <MessageSquare className={`h-4 w-4 ${connectingUserId === (user._id || user.id) ? 'animate-spin' : ''}`} />
+                              Connect
+                            </Button>
+                            {user.role !== 'admin' && (
+                              <>
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  onClick={() => handleViewUser(user)}
+                                  onClick={() => handleEditUser(user)}
                                   className="gap-1"
                                 >
-                                  <Eye className="h-4 w-4" />
+                                  <Edit className="h-4 w-4" />
                                 </Button>
                                 <Button
-                                  variant="outline"
+                                  variant="ghost"
                                   size="sm"
-                                  onClick={() => handleConnectUser(user)}
-                                  disabled={connectingUserId === (user._id || user.id)}
-                                  className="gap-1 bg-[#2BB6AF]/10 hover:bg-[#2BB6AF]/20 text-[#2BB6AF] border-[#2BB6AF]/30"
+                                  onClick={() => handleDeactivateUser(user._id)}
+                                  className="gap-1 text-red-600 hover:text-red-700"
                                 >
-                                  <MessageSquare className={`h-4 w-4 ${connectingUserId === (user._id || user.id) ? 'animate-spin' : ''}`} />
-                                  Connect
+                                  <UserX className="h-4 w-4" />
                                 </Button>
-                                {user.role !== 'admin' && (
-                                  <>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => handleEditUser(user)}
-                                      className="gap-1"
-                                    >
-                                      <Edit className="h-4 w-4" />
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => handleDeactivateUser(user._id)}
-                                      className="gap-1 text-red-600 hover:text-red-700"
-                                    >
-                                      <UserX className="h-4 w-4" />
-                                    </Button>
-                                  </>
-                                )}
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                              </>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* View User Dialog */}
         <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
@@ -534,7 +546,7 @@ export default function AdminUsers() {
                   <div>
                     <Label>Address</Label>
                     <p className="text-sm text-gray-600">
-                      {selectedUser.address.full_address || 
+                      {selectedUser.address.full_address ||
                         (selectedUser.address.city || '') + ', ' + (selectedUser.address.state || '') + ' ' + (selectedUser.address.pincode || '')}
                     </p>
                   </div>

@@ -121,9 +121,9 @@ class MessageSerializer(serializers.ModelSerializer):
                         # Last resort: return relative URL (will be fixed by frontend)
                         return image_url
                     except (AttributeError, Exception) as url_error:
-                        print(f"Error getting image URL: {url_error}")
-        except Exception as e:
-            print(f"Error in get_image_url: {e}")
+                        pass
+        except Exception:
+            pass
         return None
 
 
@@ -154,8 +154,8 @@ class ChatRoomSerializer(serializers.ModelSerializer):
             last_msg = obj.messages.last()
             if last_msg:
                 return MessageSerializer(last_msg, context=self.context).data
-        except Exception as e:
-            print(f"Error in ChatRoomSerializer.get_last_message: {e}")
+        except Exception:
+            pass
         return None
 
     def get_unread_count(self, obj):
@@ -199,8 +199,8 @@ class ChatRoomListSerializer(serializers.ModelSerializer):
             if hasattr(obj, 'participants'):
                 participants = obj.participants.all()
                 return UserSerializer(participants, many=True).data
-        except Exception as e:
-            print(f"Error in get_participants: {e}")
+        except Exception:
+            pass
         return []
     
     def get_user_a(self, obj):
@@ -223,8 +223,8 @@ class ChatRoomListSerializer(serializers.ModelSerializer):
                         return UserSerializer(user_a, context=self.context).data
                     except Exception:
                         pass
-        except Exception as e:
-            print(f"Error in get_user_a: {e}")
+        except Exception:
+            pass
         return None
     
     def get_user_b(self, obj):
@@ -247,8 +247,8 @@ class ChatRoomListSerializer(serializers.ModelSerializer):
                         return UserSerializer(user_b, context=self.context).data
                     except Exception:
                         pass
-        except Exception as e:
-            print(f"Error in get_user_b: {e}")
+        except Exception:
+            pass
         return None
     
     def get_room_id(self, obj):
@@ -266,8 +266,8 @@ class ChatRoomListSerializer(serializers.ModelSerializer):
                 if len(participants) == 2:
                     user_ids = sorted([p.id for p in participants])
                     return f"{user_ids[0]}_{user_ids[1]}"
-        except Exception as e:
-            print(f"Error in get_room_id: {e}")
+        except Exception:
+            pass
         return None
 
     def get_last_message(self, obj):
@@ -293,10 +293,8 @@ class ChatRoomListSerializer(serializers.ModelSerializer):
                         'created_at': created_at.isoformat() if created_at else None,
                         'sender': sender_name
                     }
-        except Exception as e:
-            print(f"Error in ChatRoomListSerializer.get_last_message: {e}")
-            import traceback
-            print(traceback.format_exc())
+        except Exception:
+            pass
         return None
 
     def get_unread_count(self, obj):
@@ -305,8 +303,8 @@ class ChatRoomListSerializer(serializers.ModelSerializer):
             if request and request.user:
                 # Use values() to avoid loading full Message objects
                 return obj.messages.filter(read_status=False).exclude(sender_id=request.user.id).count()
-        except Exception as e:
-            print(f"Error in get_unread_count: {e}")
+        except Exception:
+            pass
         return 0
 
     def get_other_participant(self, obj):
@@ -336,8 +334,8 @@ class ChatRoomListSerializer(serializers.ModelSerializer):
                             return UserSerializer(other).data
                 except Exception:
                     pass
-        except Exception as e:
-            print(f"Error in get_other_participant: {e}")
+        except Exception:
+            pass
         return None
     
     def get_pet_id(self, obj):
@@ -347,8 +345,8 @@ class ChatRoomListSerializer(serializers.ModelSerializer):
                 chat_request = obj.chat_request
                 if hasattr(chat_request, 'pet') and chat_request.pet:
                     return chat_request.pet.id
-        except Exception as e:
-            print(f"Error in get_pet_id: {e}")
+        except Exception:
+            pass
         return None
     
     def get_type(self, obj):
@@ -363,8 +361,8 @@ class ChatRoomListSerializer(serializers.ModelSerializer):
             chat_request = obj.chat_request
             if hasattr(chat_request, 'type') and chat_request.type:
                 return chat_request.type
-        except Exception as e:
-            print(f"Error in get_type: {e}")
+        except Exception:
+            pass
         # Default to 'normal' for direct communication
         return 'normal'
     
@@ -375,8 +373,8 @@ class ChatRoomListSerializer(serializers.ModelSerializer):
                 chat_request = obj.chat_request
                 if hasattr(chat_request, 'verified_by_admin') and chat_request.verified_by_admin:
                     return chat_request.verified_by_admin.id
-        except Exception as e:
-            print(f"Error in get_verified_by_admin_id: {e}")
+        except Exception:
+            pass
         return None
     
     def get_chat_request(self, obj):
@@ -384,8 +382,8 @@ class ChatRoomListSerializer(serializers.ModelSerializer):
         try:
             if hasattr(obj, 'chat_request') and obj.chat_request:
                 return ChatRequestSerializer(obj.chat_request, context=self.context).data
-        except Exception as e:
-            print(f"Error in get_chat_request: {e}")
+        except Exception:
+            pass
         return None
 
 
@@ -407,8 +405,8 @@ class ChatRequestSerializer(serializers.ModelSerializer):
         try:
             if hasattr(obj, 'admin_verification_room') and obj.admin_verification_room:
                 return ChatRoomSerializer(obj.admin_verification_room, context=self.context).data
-        except Exception as e:
-            print(f"Error serializing admin_verification_room: {e}")
+        except Exception:
+            pass
         return None
     
     def get_final_chat_room(self, obj):
@@ -416,8 +414,8 @@ class ChatRequestSerializer(serializers.ModelSerializer):
         try:
             if hasattr(obj, 'final_chat_room') and obj.final_chat_room:
                 return ChatRoomSerializer(obj.final_chat_room, context=self.context).data
-        except Exception as e:
-            print(f"Error serializing final_chat_room: {e}")
+        except Exception:
+            pass
         return None
     
     def get_target_id(self, obj):
@@ -431,8 +429,8 @@ class ChatRequestSerializer(serializers.ModelSerializer):
                 match = re.search(r'Target user ID: (\d+)', obj.admin_notes)
                 if match:
                     return int(match.group(1))
-        except Exception as e:
-            print(f"Error getting target_id: {e}")
+        except Exception:
+            pass
         return None
     
     def get_pet(self, obj):
@@ -449,18 +447,15 @@ class ChatRequestSerializer(serializers.ModelSerializer):
                             'name': getattr(obj.pet, 'name', 'Unknown'),
                             'breed': getattr(obj.pet, 'breed', ''),
                         }
-                except (ImportError, AttributeError, Exception) as ser_error:
+                except (ImportError, AttributeError, Exception):
                     # Fallback if PetListSerializer fails
-                    print(f"Error using PetListSerializer: {ser_error}")
                     return {
                         'id': obj.pet.id,
                         'name': getattr(obj.pet, 'name', 'Unknown'),
                         'breed': getattr(obj.pet, 'breed', ''),
                     }
-        except Exception as e:
-            print(f"Error serializing pet in ChatRequest: {e}")
-            import traceback
-            print(traceback.format_exc())
+        except Exception:
+            pass
         return None
     
     
@@ -488,8 +483,8 @@ class ChatRequestSerializer(serializers.ModelSerializer):
                             room_id = getattr(chat_room, 'room_id', None)
                             if room_id:
                                 return str(room_id)
-                except Exception as e:
-                    print(f"Error accessing chat_room attribute: {e}")
+                                return str(room_id)
+                except Exception:
                     pass
                 
                 # If chat_room not loaded, try to get it from database
@@ -500,8 +495,9 @@ class ChatRequestSerializer(serializers.ModelSerializer):
                         room_id = getattr(room, 'room_id', None)
                         if room_id:
                             return str(room_id)
-                except Exception as e:
-                    print(f"Error querying ChatRoom: {e}")
+                        if room_id:
+                            return str(room_id)
+                except Exception:
                     pass
                 
                 # Generate room_id from requester and target (fallback)
@@ -512,12 +508,11 @@ class ChatRequestSerializer(serializers.ModelSerializer):
                         if requester and target and hasattr(requester, 'id') and hasattr(target, 'id'):
                             user_ids = sorted([requester.id, target.id])
                             return f"{user_ids[0]}_{user_ids[1]}"
-                except Exception as e:
-                    print(f"Error generating room_id from users: {e}")
+                            user_ids = sorted([requester.id, target.id])
+                            return f"{user_ids[0]}_{user_ids[1]}"
+                except Exception:
                     pass
-        except Exception as e:
-            print(f"Error in get_room_id for ChatRequest: {e}")
-            import traceback
-            print(traceback.format_exc())
+        except Exception:
+            pass
         return None
 

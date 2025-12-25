@@ -55,6 +55,7 @@ class Pet(models.Model):
     
     # Identification fields
     tag_registration_number = models.CharField(max_length=100, blank=True, null=True, help_text="Tag ID, Registration Number, or License Number")
+    distinguishing_marks = models.TextField(blank=True, null=True, help_text="Distinguishing marks or features")
     
     # Location fields for lost/found pets
     location = models.CharField(max_length=255, blank=True, null=True)

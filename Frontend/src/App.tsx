@@ -370,9 +370,7 @@ const AppContent = () => {
             path="/admin/found-pets"
             element={
               <AdminProtectedRoute>
-                <AdminLayout>
-                  <AdminFoundPets />
-                </AdminLayout>
+                <AdminFoundPets />
               </AdminProtectedRoute>
             }
           />
@@ -380,9 +378,7 @@ const AppContent = () => {
             path="/admin/lost-pets"
             element={
               <AdminProtectedRoute>
-                <AdminLayout>
-                  <AdminLostPets />
-                </AdminLayout>
+                <AdminLostPets />
               </AdminProtectedRoute>
             }
           />

@@ -203,59 +203,63 @@ export default function AdminAdopt() {
 
   return (
     <AdminLayout onRefresh={() => loadAdoptionRequests(false)} isRefreshing={isRefreshing}>
-      <div className="space-y-8">
+      <div className="w-full space-y-8">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold flex items-center gap-2 text-gray-900">
-              <Home className="h-8 w-8 text-[#2BB6AF]" />
-              Adoption Requests Management
+            <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2 text-gray-900">
+              <Home className="h-6 w-6 sm:h-8 sm:w-8 text-[#2BB6AF]" />
+              Adoption Requests
             </h1>
-            <p className="text-gray-600 mt-1">Verify and approve adoption requests</p>
+            <p className="text-sm sm:text-base text-gray-600 mt-1">Verify and approve adoption requests</p>
           </div>
-          <Badge variant="default" className="text-base px-3 py-1 bg-[#2BB6AF]">
+          <Badge variant="default" className="text-sm sm:text-base px-3 py-1 bg-[#2BB6AF] self-start sm:self-center">
             {filteredRequests.length} Adoption Request{filteredRequests.length !== 1 ? 's' : ''}
           </Badge>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card>
-            <CardHeader className="pb-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card className="bg-white shadow-md hover:shadow-lg transition-all duration-300 border-l-4 border-l-gray-500">
+            <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between space-y-0">
               <CardTitle className="text-sm font-medium text-gray-600">Total Requests</CardTitle>
+              <Home className="h-4 w-4 text-gray-500" />
             </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-gray-900">{stats.total}</div>
+            <CardContent className="p-4 pt-0">
+              <div className="text-2xl sm:text-3xl font-bold text-gray-900">{stats.total}</div>
             </CardContent>
           </Card>
-          <Card>
-            <CardHeader className="pb-3">
+          <Card className="bg-white shadow-md hover:shadow-lg transition-all duration-300 border-l-4 border-l-yellow-500">
+            <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between space-y-0">
               <CardTitle className="text-sm font-medium text-gray-600">Pending Adoption</CardTitle>
+              <AlertCircle className="h-4 w-4 text-yellow-500" />
             </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-yellow-600">{stats.pending}</div>
+            <CardContent className="p-4 pt-0">
+              <div className="text-2xl sm:text-3xl font-bold text-yellow-600">{stats.pending}</div>
             </CardContent>
           </Card>
-          <Card>
-            <CardHeader className="pb-3">
+          <Card className="bg-white shadow-md hover:shadow-lg transition-all duration-300 border-l-4 border-l-green-500">
+            <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between space-y-0">
               <CardTitle className="text-sm font-medium text-gray-600">Available</CardTitle>
+              <CheckCircle className="h-4 w-4 text-green-500" />
             </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-green-600">{stats.available}</div>
+            <CardContent className="p-4 pt-0">
+              <div className="text-2xl sm:text-3xl font-bold text-green-600">{stats.available}</div>
             </CardContent>
           </Card>
-          <Card>
-            <CardHeader className="pb-3">
+          <Card className="bg-white shadow-md hover:shadow-lg transition-all duration-300 border-l-4 border-l-blue-500">
+            <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between space-y-0">
               <CardTitle className="text-sm font-medium text-gray-600">Adopted</CardTitle>
+              <Shield className="h-4 w-4 text-blue-500" />
             </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-blue-600">{stats.adopted}</div>
+            <CardContent className="p-4 pt-0">
+              <div className="text-2xl sm:text-3xl font-bold text-blue-600">{stats.adopted}</div>
             </CardContent>
           </Card>
         </div>
 
         {/* Filters */}
-        <Card>
+        <Card className="shadow-sm">
           <CardContent className="pt-6">
             <div className="flex flex-col md:flex-row gap-4">
               <div className="flex-1">
@@ -269,28 +273,32 @@ export default function AdminAdopt() {
                   />
                 </div>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <Button
                   variant={statusFilter === 'all' ? 'default' : 'outline'}
                   onClick={() => setStatusFilter('all')}
+                  className="flex-1 sm:flex-none"
                 >
                   All
                 </Button>
                 <Button
                   variant={statusFilter === 'Pending Adoption' ? 'default' : 'outline'}
                   onClick={() => setStatusFilter('Pending Adoption')}
+                  className="flex-1 sm:flex-none"
                 >
                   Pending
                 </Button>
                 <Button
                   variant={statusFilter === 'Available for Adoption' ? 'default' : 'outline'}
                   onClick={() => setStatusFilter('Available for Adoption')}
+                  className="flex-1 sm:flex-none"
                 >
                   Available
                 </Button>
                 <Button
                   variant={statusFilter === 'Adopted' ? 'default' : 'outline'}
                   onClick={() => setStatusFilter('Adopted')}
+                  className="flex-1 sm:flex-none"
                 >
                   Adopted
                 </Button>
@@ -302,7 +310,7 @@ export default function AdminAdopt() {
         {/* Adoption Requests List */}
         <div className="space-y-4">
           {filteredRequests.length === 0 ? (
-            <Card>
+            <Card className="shadow-sm border-dashed">
               <CardContent className="py-12 text-center">
                 <AlertCircle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                 <p className="text-muted-foreground">No adoption requests found</p>
@@ -310,13 +318,13 @@ export default function AdminAdopt() {
             </Card>
           ) : (
             filteredRequests.map((request: any) => (
-              <Card key={request.id || request._id || Math.random().toString()} className="hover:shadow-md transition-shadow">
+              <Card key={request.id || request._id || Math.random().toString()} className="shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border-l-4 border-l-transparent hover:border-l-[#2BB6AF]">
                 <CardContent className="pt-6">
-                  <div className="flex flex-col md:flex-row gap-6">
+                  <div className="flex flex-col sm:flex-row gap-6">
                     {/* Pet Images */}
                     {(request.photos || request.images || request.photo_urls || request.image_urls) &&
                       (request.photos?.length > 0 || request.images?.length > 0 || request.photo_urls?.length > 0 || request.image_urls?.length > 0) && (
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 flex-wrap flex-shrink-0">
                           {(request.photos || request.images || request.photo_urls || request.image_urls || []).slice(0, 3).map((photo: any, idx: number) => {
                             const photoUrl = typeof photo === 'string' ? photo : (photo.url || photo.image_url || photo.photo_url);
                             return photoUrl ? (
@@ -335,7 +343,7 @@ export default function AdminAdopt() {
                       )}
 
                     {/* Pet Details */}
-                    <div className="flex-1 space-y-3">
+                    <div className="flex-1 space-y-3 min-w-0">
                       <div className="flex items-start justify-between">
                         <div>
                           <div className="flex items-center gap-2 mb-2">

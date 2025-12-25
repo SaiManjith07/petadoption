@@ -180,7 +180,7 @@ export default function FeedingPoints() {
           </CardHeader>
           <CardContent>
             <p className="text-sm text-gray-600 mb-4 text-center">Interactive map available after login</p>
-            <Button 
+            <Button
               className="w-full bg-gradient-to-r from-[#2BB6AF] to-[#239a94] hover:from-[#239a94] hover:to-[#1a7a75] text-white"
               onClick={() => navigate('/auth/login')}
             >
@@ -214,114 +214,114 @@ export default function FeedingPoints() {
                   Add Feed Point
                 </Button>
               </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Add New Feeding Point</DialogTitle>
-                <DialogDescription>
-                  {isAdmin
-                    ? 'Add a new community feeding or water point. It will be automatically approved and visible on the map.'
-                    : 'Add a new community feeding or water point. Admin will review and approve it.'}
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <Label>Name *</Label>
-                  <Input
-                    value={newPoint.name}
-                    onChange={(e) => setNewPoint({ ...newPoint, name: e.target.value })}
-                    placeholder="e.g., Park Feeding Station"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Add New Feeding Point</DialogTitle>
+                  <DialogDescription>
+                    {isAdmin
+                      ? 'Add a new community feeding or water point. It will be automatically approved and visible on the map.'
+                      : 'Add a new community feeding or water point. Admin will review and approve it.'}
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
                   <div>
-                    <Label>Type *</Label>
-                    <select
-                      value={newPoint.type}
-                      onChange={(e) => setNewPoint({ ...newPoint, type: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                    >
-                      <option value="water">Water Only</option>
-                      <option value="food">Food Only</option>
-                      <option value="both">Both</option>
-                    </select>
-                  </div>
-                </div>
-                <div>
-                  <Label>Address *</Label>
-                  <Input
-                    value={newPoint.address}
-                    onChange={(e) => setNewPoint({ ...newPoint, address: e.target.value })}
-                    placeholder="Street address"
-                  />
-                </div>
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <Label>City *</Label>
+                    <Label>Name *</Label>
                     <Input
-                      value={newPoint.city}
-                      onChange={(e) => setNewPoint({ ...newPoint, city: e.target.value })}
-                      placeholder="City"
+                      value={newPoint.name}
+                      onChange={(e) => setNewPoint({ ...newPoint, name: e.target.value })}
+                      placeholder="e.g., Park Feeding Station"
                     />
                   </div>
-                  <div>
-                    <Label>State</Label>
-                    <Input
-                      value={newPoint.state}
-                      onChange={(e) => setNewPoint({ ...newPoint, state: e.target.value })}
-                      placeholder="State"
-                    />
-                  </div>
-                  <div>
-                    <Label>Pincode *</Label>
-                    <Input
-                      value={newPoint.pincode}
-                      onChange={(e) => setNewPoint({ ...newPoint, pincode: e.target.value })}
-                      placeholder="Pincode"
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label>Latitude</Label>
-                    <div className="flex gap-2">
-                      <Input
-                        value={newPoint.lat}
-                        onChange={(e) => setNewPoint({ ...newPoint, lat: e.target.value })}
-                        placeholder="Latitude"
-                      />
-                      <Button type="button" variant="outline" onClick={getCurrentLocation} size="sm">
-                        Get Location
-                      </Button>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label>Type *</Label>
+                      <select
+                        value={newPoint.type}
+                        onChange={(e) => setNewPoint({ ...newPoint, type: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      >
+                        <option value="water">Water Only</option>
+                        <option value="food">Food Only</option>
+                        <option value="both">Both</option>
+                      </select>
                     </div>
                   </div>
                   <div>
-                    <Label>Longitude</Label>
+                    <Label>Address *</Label>
                     <Input
-                      value={newPoint.lng}
-                      onChange={(e) => setNewPoint({ ...newPoint, lng: e.target.value })}
-                      placeholder="Longitude"
+                      value={newPoint.address}
+                      onChange={(e) => setNewPoint({ ...newPoint, address: e.target.value })}
+                      placeholder="Street address"
                     />
                   </div>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <Label>City *</Label>
+                      <Input
+                        value={newPoint.city}
+                        onChange={(e) => setNewPoint({ ...newPoint, city: e.target.value })}
+                        placeholder="City"
+                      />
+                    </div>
+                    <div>
+                      <Label>State</Label>
+                      <Input
+                        value={newPoint.state}
+                        onChange={(e) => setNewPoint({ ...newPoint, state: e.target.value })}
+                        placeholder="State"
+                      />
+                    </div>
+                    <div>
+                      <Label>Pincode *</Label>
+                      <Input
+                        value={newPoint.pincode}
+                        onChange={(e) => setNewPoint({ ...newPoint, pincode: e.target.value })}
+                        placeholder="Pincode"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label>Latitude</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          value={newPoint.lat}
+                          onChange={(e) => setNewPoint({ ...newPoint, lat: e.target.value })}
+                          placeholder="Latitude"
+                        />
+                        <Button type="button" variant="outline" onClick={getCurrentLocation} size="sm">
+                          Get Location
+                        </Button>
+                      </div>
+                    </div>
+                    <div>
+                      <Label>Longitude</Label>
+                      <Input
+                        value={newPoint.lng}
+                        onChange={(e) => setNewPoint({ ...newPoint, lng: e.target.value })}
+                        placeholder="Longitude"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label>Description</Label>
+                    <Textarea
+                      value={newPoint.description}
+                      onChange={(e) => setNewPoint({ ...newPoint, description: e.target.value })}
+                      placeholder="Additional details about this feeding point..."
+                      rows={3}
+                    />
+                  </div>
+                  <Button
+                    className="w-full bg-gradient-to-r from-[#2BB6AF] to-[#239a94] hover:from-[#239a94] hover:to-[#1a7a75] text-white"
+                    onClick={handleAddPoint}
+                    disabled={submitting}
+                  >
+                    {submitting ? 'Submitting...' : 'Submit for Review'}
+                  </Button>
                 </div>
-                <div>
-                  <Label>Description</Label>
-                  <Textarea
-                    value={newPoint.description}
-                    onChange={(e) => setNewPoint({ ...newPoint, description: e.target.value })}
-                    placeholder="Additional details about this feeding point..."
-                    rows={3}
-                  />
-                </div>
-                <Button
-                  className="w-full bg-gradient-to-r from-[#2BB6AF] to-[#239a94] hover:from-[#239a94] hover:to-[#1a7a75] text-white"
-                  onClick={handleAddPoint}
-                  disabled={submitting}
-                >
-                  {submitting ? 'Submitting...' : 'Submit for Review'}
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+              </DialogContent>
+            </Dialog>
           )}
           {!canAddFeedingPoint && !isAdmin && (
             <div className="text-right">
@@ -360,7 +360,7 @@ export default function FeedingPoints() {
             <CardDescription>Click on markers to see feeding point details</CardDescription>
           </CardHeader>
           <CardContent className="p-0">
-            <div className="relative w-full h-[500px] bg-gray-100">
+            <div className="relative w-full h-[300px] sm:h-[400px] lg:h-[500px] bg-gray-100">
               {filteredPoints.length > 0 ? (
                 <iframe
                   width="100%"
@@ -442,12 +442,12 @@ export default function FeedingPoints() {
                     <CardTitle className="text-lg font-bold">{point.name}</CardTitle>
                     <Badge className={
                       point.type === 'water' ? 'bg-blue-100 text-blue-700' :
-                      point.type === 'food' ? 'bg-orange-100 text-orange-700' :
-                      'bg-green-100 text-green-700'
+                        point.type === 'food' ? 'bg-orange-100 text-orange-700' :
+                          'bg-green-100 text-green-700'
                     }>
                       {point.type === 'water' ? <Droplet className="h-3 w-3 mr-1" /> :
-                       point.type === 'food' ? <UtensilsCrossed className="h-3 w-3 mr-1" /> :
-                       <><Droplet className="h-3 w-3 mr-1" /><UtensilsCrossed className="h-3 w-3" /></>}
+                        point.type === 'food' ? <UtensilsCrossed className="h-3 w-3 mr-1" /> :
+                          <><Droplet className="h-3 w-3 mr-1" /><UtensilsCrossed className="h-3 w-3" /></>}
                       {point.type}
                     </Badge>
                   </div>

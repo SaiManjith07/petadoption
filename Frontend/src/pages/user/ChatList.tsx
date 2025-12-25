@@ -45,7 +45,7 @@ export default function ChatList() {
         chatApi.getChatRequestsForOwner(), // Requests where user is target (can accept)
         chatApi.getMyChatRequests(), // Requests user made (outgoing)
       ]);
-      
+
       // Handle chats result
       if (chatsData.status === 'fulfilled') {
         const chatsValue = chatsData.value;
@@ -64,11 +64,11 @@ export default function ChatList() {
         console.error('Error loading chats:', chatsData.reason);
         setChats([]);
       }
-      
+
       // Handle incoming requests (where user is target)
       let incoming: any[] = [];
       let outgoing: any[] = [];
-      
+
       if (incomingRequestsData.status === 'fulfilled') {
         const incomingValue = incomingRequestsData.value;
         // Handle different response formats
@@ -82,7 +82,7 @@ export default function ChatList() {
       } else {
         console.error('Error loading incoming requests:', incomingRequestsData.reason);
       }
-      
+
       // Handle outgoing requests (requests user made)
       if (myRequestsData.status === 'fulfilled') {
         const outgoingValue = myRequestsData.value;
@@ -97,25 +97,36 @@ export default function ChatList() {
       } else {
         console.error('Error loading outgoing requests:', myRequestsData.reason);
       }
-      
+
       // Combine both, but mark which is which
       // Filter incoming to only show admin_approved ones
+      // Combine both, avoiding duplicates
+      const allRequestsMap = new Map();
+
+      // Process incoming (admin_approved) from getChatRequestsForOwner
       const adminApprovedIncoming = incoming.filter((r: any) => r.status === 'admin_approved');
-      
-      setRequests([
-        ...adminApprovedIncoming.map((r: any) => ({ 
-          ...r, 
+      adminApprovedIncoming.forEach((r: any) => {
+        allRequestsMap.set(r.id, {
+          ...r,
           isIncoming: true,
-          // Ensure target_id is set correctly
           target_id: r.target_id || user?.id
-        })),
-        ...outgoing.map((r: any) => ({ 
-          ...r, 
-          isIncoming: false,
-          // Ensure requester_id is set correctly
-          requester_id: r.requester_id || user?.id
-        }))
-      ]);
+        });
+      });
+
+      // Process outgoing/all from getMyChatRequests
+      outgoing.forEach((r: any) => {
+        // Only add if not already present (prefer the specific incoming one if exists)
+        if (!allRequestsMap.has(r.id)) {
+          allRequestsMap.set(r.id, {
+            ...r,
+            // Use backend flag if available, otherwise check IDs
+            isIncoming: r.is_incoming !== undefined ? r.is_incoming : (r.target_id === user?.id),
+            requester_id: r.requester_id || (r.is_incoming ? undefined : user?.id)
+          });
+        }
+      });
+
+      setRequests(Array.from(allRequestsMap.values()));
     } catch (error: any) {
       console.error('Unexpected error loading data:', error);
       toast({
@@ -195,27 +206,32 @@ export default function ChatList() {
   const incomingRequests = Array.isArray(requests) ? requests.filter((r: any) => {
     if (!r) return false;
     // Check if this is an incoming request (user is target)
-    const isIncoming = r.isIncoming === true || 
-                       r.target_id === user?.id || 
-                       r.targetId === user?.id || 
-                       r.target?._id === user?.id || 
-                       r.target?.id === user?.id ||
-                       (r.requester_id !== user?.id && r.requesterId !== user?.id);
+    const isIncoming = r.isIncoming === true ||
+      r.target_id === user?.id ||
+      r.targetId === user?.id ||
+      r.target?._id === user?.id ||
+      r.target?.id === user?.id ||
+      (r.requester_id !== user?.id && r.requesterId !== user?.id);
     // Must be admin_approved status
     const isAdminApproved = r.status === 'admin_approved';
     return isIncoming && isAdminApproved;
   }) : [];
-  
-  // Outgoing requests: where user is the requester
+
+  // Outgoing requests: where user is the requester (strictly)
   const outgoingRequests = Array.isArray(requests) ? requests.filter((r: any) => {
     if (!r) return false;
-    return r.isIncoming === false || 
-           r.requester_id === user?.id || 
-           r.requesterId === user?.id || 
-           r.requester?._id === user?.id || 
-           r.requester?.id === user?.id;
+    // Must NOT be an incoming request, and user MUST be the requester
+    const isMe = r.requester_id === user?.id ||
+      r.requesterId === user?.id ||
+      r.requester?._id === user?.id ||
+      r.requester?.id === user?.id;
+
+    // Explicitly exclude if I am the target (which means it's incoming, even if I created it somehow - rare edge case)
+    const isTarget = r.target_id === user?.id || r.target?.id === user?.id;
+
+    return isMe && !isTarget;
   }) : [];
-  
+
   // Filter chats: show all active chats
   const activeChats = chats.filter(c => c.roomId || c.room_id || c.id);
 
@@ -229,17 +245,17 @@ export default function ChatList() {
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="chats" className="flex items-center gap-2">
-              <MessageSquare className="h-4 w-4" />
-              Active Chats ({activeChats.length})
+            <TabsTrigger value="chats" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-1 sm:px-3">
+              <MessageSquare className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="truncate">Active Chats ({activeChats.length})</span>
             </TabsTrigger>
-            <TabsTrigger value="incoming" className="flex items-center gap-2">
-              <Clock className="h-4 w-4" />
-              Incoming ({incomingRequests.length})
+            <TabsTrigger value="incoming" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-1 sm:px-3">
+              <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="truncate">Incoming ({incomingRequests.length})</span>
             </TabsTrigger>
-            <TabsTrigger value="outgoing" className="flex items-center gap-2">
-              <ArrowRight className="h-4 w-4" />
-              My Requests ({outgoingRequests.length})
+            <TabsTrigger value="outgoing" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-1 sm:px-3">
+              <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="truncate">Requests ({outgoingRequests.length})</span>
             </TabsTrigger>
           </TabsList>
 
@@ -262,18 +278,18 @@ export default function ChatList() {
                 {activeChats.map((chat) => (
                   <Card key={chat.roomId || chat.room_id || chat.id || `chat-${chat.roomId}`} className="hover:shadow-lg transition-shadow">
                     <CardContent className="p-6">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
+                      <div className="flex flex-col sm:flex-row items-start sm:justify-between gap-4">
+                        <div className="flex-1 w-full">
                           <div className="flex items-center gap-3 mb-2">
                             {chat.type === 'adoption' ? (
-                              <Heart className="h-5 w-5 text-pink-500" />
+                              <Heart className="h-5 w-5 text-pink-500 flex-shrink-0" />
                             ) : (
-                              <Search className="h-5 w-5 text-orange-500" />
+                              <Search className="h-5 w-5 text-orange-500 flex-shrink-0" />
                             )}
-                            <h3 className="text-lg font-semibold text-gray-900">
+                            <h3 className="text-lg font-semibold text-gray-900 truncate">
                               {chat.type === 'adoption' ? 'Adoption Chat' : 'Pet Claim Chat'}
                             </h3>
-                            <Badge variant={chat.type === 'adoption' ? 'default' : 'secondary'}>
+                            <Badge variant={chat.type === 'adoption' ? 'default' : 'secondary'} className="flex-shrink-0">
                               {chat.type === 'adoption' ? 'Adoption' : 'Claim'}
                             </Badge>
                           </div>
@@ -313,7 +329,7 @@ export default function ChatList() {
                               });
                             }
                           }}
-                          className="ml-4"
+                          className="w-full sm:w-auto sm:ml-4"
                         >
                           Open Chat
                           <ArrowRight className="h-4 w-4 ml-2" />
@@ -345,18 +361,18 @@ export default function ChatList() {
                 {incomingRequests.map((request) => (
                   <Card key={request.id} className="border-2 border-orange-200">
                     <CardContent className="p-6">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
+                      <div className="flex flex-col sm:flex-row items-start sm:justify-between gap-4">
+                        <div className="flex-1 w-full">
                           <div className="flex items-center gap-3 mb-2">
                             {request.type === 'adoption' ? (
-                              <Heart className="h-5 w-5 text-pink-500" />
+                              <Heart className="h-5 w-5 text-pink-500 flex-shrink-0" />
                             ) : (
-                              <Search className="h-5 w-5 text-orange-500" />
+                              <Search className="h-5 w-5 text-orange-500 flex-shrink-0" />
                             )}
-                            <h3 className="text-lg font-semibold text-gray-900">
+                            <h3 className="text-lg font-semibold text-gray-900 truncate">
                               {request.type === 'adoption' ? 'Adoption Request' : 'Pet Claim Request'}
                             </h3>
-                            <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-300">
+                            <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-300 flex-shrink-0">
                               Pending
                             </Badge>
                           </div>
@@ -368,7 +384,7 @@ export default function ChatList() {
                           </p>
                           {request.message && (
                             <div className="bg-gray-50 rounded-lg p-3 mb-3">
-                              <p className="text-sm text-gray-700">{request.message}</p>
+                              <p className="text-sm text-gray-700 line-clamp-3">{request.message}</p>
                             </div>
                           )}
                           <p className="text-xs text-gray-400 mb-2">
@@ -376,9 +392,9 @@ export default function ChatList() {
                           </p>
                           <div className="space-y-1">
                             <p className="text-xs text-blue-600 font-medium">
-                              From: {request.requester_name || request.requester?.name || request.requesterId?.name || 
-                                (typeof request.requesterId === 'object' && request.requesterId?.name 
-                                  ? request.requesterId.name 
+                              From: {request.requester_name || request.requester?.name || request.requesterId?.name ||
+                                (typeof request.requesterId === 'object' && request.requesterId?.name
+                                  ? request.requesterId.name
                                   : `User #${request.requester_id || request.requesterId || 'Unknown'}`)}
                             </p>
                             {request.requester?.email && (
@@ -389,7 +405,7 @@ export default function ChatList() {
                             </Badge>
                           </div>
                         </div>
-                        <div className="flex flex-col gap-2 ml-4 min-w-[140px]">
+                        <div className="flex flex-col gap-2 w-full sm:w-auto sm:ml-4 sm:min-w-[140px]">
                           <Button
                             variant="outline"
                             size="sm"
@@ -397,7 +413,7 @@ export default function ChatList() {
                               setSelectedRequest(request);
                               setViewDialogOpen(true);
                             }}
-                            className="mb-2"
+                            className="mb-2 w-full"
                           >
                             <Eye className="h-4 w-4 mr-2" />
                             View Details
@@ -414,7 +430,7 @@ export default function ChatList() {
                                 });
                               }
                             }}
-                            className="bg-green-600 hover:bg-green-700 text-white"
+                            className="bg-green-600 hover:bg-green-700 text-white w-full"
                             size="sm"
                             disabled={!request.id}
                           >
@@ -436,6 +452,7 @@ export default function ChatList() {
                             variant="destructive"
                             size="sm"
                             disabled={!request.id}
+                            className="w-full"
                           >
                             <XCircle className="h-4 w-4 mr-2" />
                             Reject
@@ -466,49 +483,47 @@ export default function ChatList() {
             ) : (
               <div className="grid gap-4">
                 {outgoingRequests.map((request) => (
-                  <Card 
-                    key={request.id} 
-                    className={`border-2 ${
-                      request.status === 'active' ? 'border-green-200 bg-green-50' :
+                  <Card
+                    key={request.id}
+                    className={`border-2 ${request.status === 'active' ? 'border-green-200 bg-green-50' :
                       request.status === 'admin_approved' ? 'border-blue-200 bg-blue-50' :
-                      request.status === 'rejected' ? 'border-red-200 bg-red-50' :
-                      'border-yellow-200 bg-yellow-50'
-                    }`}
+                        request.status === 'rejected' ? 'border-red-200 bg-red-50' :
+                          'border-yellow-200 bg-yellow-50'
+                      }`}
                   >
                     <CardContent className="p-6">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
+                      <div className="flex flex-col sm:flex-row items-start sm:justify-between gap-4">
+                        <div className="flex-1 w-full">
                           <div className="flex items-center gap-3 mb-2">
                             {request.type === 'adoption' ? (
-                              <Heart className="h-5 w-5 text-pink-500" />
+                              <Heart className="h-5 w-5 text-pink-500 flex-shrink-0" />
                             ) : (
-                              <Search className="h-5 w-5 text-orange-500" />
+                              <Search className="h-5 w-5 text-orange-500 flex-shrink-0" />
                             )}
-                            <h3 className="text-lg font-semibold text-gray-900">
+                            <h3 className="text-lg font-semibold text-gray-900 truncate">
                               {request.type === 'adoption' ? 'Adoption Request' : 'Pet Claim Request'}
                             </h3>
-                            <Badge 
+                            <Badge
                               variant={
                                 request.status === 'active' ? 'default' :
-                                request.status === 'admin_approved' ? 'secondary' :
-                                request.status === 'admin_verifying' ? 'secondary' :
-                                request.status === 'rejected' ? 'destructive' :
-                                'outline'
+                                  request.status === 'admin_approved' ? 'secondary' :
+                                    request.status === 'admin_verifying' ? 'secondary' :
+                                      request.status === 'rejected' ? 'destructive' :
+                                        'outline'
                               }
-                              className={
-                                request.status === 'active' ? 'bg-green-600' :
-                                request.status === 'admin_approved' ? 'bg-blue-600' :
-                                request.status === 'admin_verifying' ? 'bg-purple-600' :
-                                request.status === 'rejected' ? 'bg-red-600' :
-                                'bg-yellow-600'
-                              }
+                              className={`flex-shrink-0 ${request.status === 'active' ? 'bg-green-600' :
+                                  request.status === 'admin_approved' ? 'bg-blue-600' :
+                                    request.status === 'admin_verifying' ? 'bg-purple-600' :
+                                      request.status === 'rejected' ? 'bg-red-600' :
+                                        'bg-yellow-600'
+                                }`}
                             >
                               {request.status === 'active' ? 'Active Chat' :
-                               request.status === 'admin_approved' ? 'Waiting for Owner' :
-                               request.status === 'admin_verifying' ? 'Admin Verifying' :
-                               request.status === 'rejected' ? 'Rejected' :
-                               request.status === 'pending' ? 'Pending Admin' :
-                               request.status}
+                                request.status === 'admin_approved' ? 'Waiting for Owner' :
+                                  request.status === 'admin_verifying' ? 'Admin Verifying' :
+                                    request.status === 'rejected' ? 'Rejected' :
+                                      request.status === 'pending' ? 'Pending Admin' :
+                                        request.status}
                             </Badge>
                           </div>
                           <p className="text-sm text-gray-600 mb-2">
@@ -519,7 +534,7 @@ export default function ChatList() {
                           </p>
                           {request.message && (
                             <div className="bg-gray-50 rounded-lg p-3 mb-3">
-                              <p className="text-sm text-gray-700">{request.message}</p>
+                              <p className="text-sm text-gray-700 line-clamp-3">{request.message}</p>
                             </div>
                           )}
                           <p className="text-xs text-gray-400 mb-2">
@@ -540,7 +555,7 @@ export default function ChatList() {
                                     });
                                   }
                                 }}
-                                className="bg-green-600 hover:bg-green-700"
+                                className="bg-green-600 hover:bg-green-700 w-full sm:w-auto"
                                 size="sm"
                               >
                                 <MessageSquare className="h-4 w-4 mr-2" />
@@ -550,7 +565,7 @@ export default function ChatList() {
                           )}
                           {request.status === 'admin_verifying' && (
                             <div className="mt-2 space-y-2">
-                              <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 text-xs">
+                              <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 text-xs w-full sm:w-auto text-center sm:text-left block sm:inline-block">
                                 ⏳ Admin is verifying your request
                               </Badge>
                               {request.admin_verification_room?.room_id && (
@@ -560,7 +575,7 @@ export default function ChatList() {
                                   }}
                                   variant="outline"
                                   size="sm"
-                                  className="w-full"
+                                  className="w-full sm:w-auto"
                                 >
                                   <MessageSquare className="h-4 w-4 mr-2" />
                                   Chat with Admin
@@ -570,13 +585,13 @@ export default function ChatList() {
                           )}
                           {request.status === 'admin_approved' && (
                             <div className="mt-2">
-                              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-xs">
+                              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-xs w-full sm:w-auto text-center sm:text-left block sm:inline-block">
                                 ✓ Admin Approved - Waiting for Pet Owner Response
                               </Badge>
                             </div>
                           )}
                         </div>
-                        <div className="flex flex-col gap-2 ml-4">
+                        <div className="flex flex-col gap-2 w-full sm:w-auto sm:ml-4">
                           <Button
                             variant="outline"
                             size="sm"
@@ -584,6 +599,7 @@ export default function ChatList() {
                               setSelectedRequest(request);
                               setViewDialogOpen(true);
                             }}
+                            className="w-full"
                           >
                             <Eye className="h-4 w-4 mr-2" />
                             View Details
@@ -617,9 +633,28 @@ export default function ChatList() {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-600">Status</p>
-                  <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 mt-1">
-                    <CheckCircle className="h-3 w-3 mr-1" />
-                    Admin Approved - Awaiting Your Response
+                  <Badge
+                    variant={
+                      selectedRequest.status === 'active' ? 'default' :
+                        selectedRequest.status === 'rejected' ? 'destructive' :
+                          'outline'
+                    }
+                    className={`mt-1 ${selectedRequest.status === 'active' ? 'bg-green-600' :
+                      selectedRequest.status === 'admin_approved' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                        selectedRequest.status === 'admin_verifying' ? 'bg-purple-50 text-purple-700 border-purple-200' :
+                          selectedRequest.status === 'rejected' ? 'bg-red-600' :
+                            'bg-yellow-600'
+                      }`}
+                  >
+                    {selectedRequest.status === 'active' ? <MessageSquare className="h-3 w-3 mr-1" /> :
+                      selectedRequest.status === 'admin_approved' ? <CheckCircle className="h-3 w-3 mr-1" /> :
+                        selectedRequest.status === 'rejected' ? <XCircle className="h-3 w-3 mr-1" /> :
+                          null}
+                    {selectedRequest.status === 'active' ? 'Active Chat' :
+                      selectedRequest.status === 'admin_approved' ? 'Admin Approved' :
+                        selectedRequest.status === 'admin_verifying' ? 'Admin Verifying' :
+                          selectedRequest.status === 'rejected' ? 'Rejected' :
+                            selectedRequest.status}
                   </Badge>
                 </div>
                 <div>
@@ -638,11 +673,11 @@ export default function ChatList() {
                   <p className="text-sm font-medium text-gray-600 mb-1">Requester Information</p>
                   <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
                     <p className="text-sm font-semibold">
-                      {selectedRequest.requester?.name || 
-                       selectedRequest.requesterId?.name || 
-                       (typeof selectedRequest.requesterId === 'object' && selectedRequest.requesterId?.name 
-                         ? selectedRequest.requesterId.name 
-                         : 'User')}
+                      {selectedRequest.requester?.name ||
+                        selectedRequest.requesterId?.name ||
+                        (typeof selectedRequest.requesterId === 'object' && selectedRequest.requesterId?.name
+                          ? selectedRequest.requesterId.name
+                          : 'User')}
                     </p>
                     {selectedRequest.requester?.email && (
                       <p className="text-xs text-gray-500 mt-1">{selectedRequest.requester.email}</p>
@@ -666,29 +701,31 @@ export default function ChatList() {
                   </div>
                 </div>
               )}
-              <div className="flex gap-2 pt-4 border-t">
-                <Button
-                  onClick={() => {
-                    handleApproveRequest(selectedRequest.id);
-                    setViewDialogOpen(false);
-                  }}
-                  className="flex-1 bg-green-600 hover:bg-green-700"
-                >
-                  <CheckCircle className="h-4 w-4 mr-2" />
-                  Approve & Create Chat
-                </Button>
-                <Button
-                  variant="destructive"
-                  onClick={() => {
-                    handleRejectRequest(selectedRequest.id);
-                    setViewDialogOpen(false);
-                  }}
-                  className="flex-1"
-                >
-                  <XCircle className="h-4 w-4 mr-2" />
-                  Reject
-                </Button>
-              </div>
+              {(selectedRequest as any).isIncoming && selectedRequest.status === 'admin_approved' && (
+                <div className="flex gap-2 pt-4 border-t">
+                  <Button
+                    onClick={() => {
+                      handleApproveRequest(selectedRequest.id);
+                      setViewDialogOpen(false);
+                    }}
+                    className="flex-1 bg-green-600 hover:bg-green-700"
+                  >
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    Approve & Create Chat
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={() => {
+                      handleRejectRequest(selectedRequest.id);
+                      setViewDialogOpen(false);
+                    }}
+                    className="flex-1"
+                  >
+                    <XCircle className="h-4 w-4 mr-2" />
+                    Reject
+                  </Button>
+                </div>
+              )}
             </div>
           )}
         </DialogContent>

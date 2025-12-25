@@ -66,7 +66,7 @@ export default function AdminChats() {
   // Reload data when switching tabs
   useEffect(() => {
     if (activeTab === 'chats' || activeTab === 'closed') {
-      console.log(`Switched to ${activeTab} tab, reloading data...`);
+      loadData();
       loadData();
     }
   }, [activeTab]);
@@ -85,7 +85,6 @@ export default function AdminChats() {
       if (requestsResult.status === 'fulfilled') {
         setChatRequests(Array.isArray(requestsResult.value) ? requestsResult.value : []);
       } else {
-        console.error('Error loading chat requests:', requestsResult.reason);
         setChatRequests([]);
         toast({
           title: 'Warning',
@@ -97,25 +96,13 @@ export default function AdminChats() {
       // Handle chats - load both active and closed
       if (chatsResult.status === 'fulfilled') {
         const chats = Array.isArray(chatsResult.value) ? chatsResult.value : [];
-        console.log('✓ Loaded chats from API:', chats.length);
-
         // Separate active and closed chats
         const active = chats.filter((c: any) => c.is_active !== false);
         // Relax check for closed chats (handle false, null, undefined)
         const closed = chats.filter((c: any) => !c.is_active);
-
-        if (chats.length > 0) {
-          console.log('Sample chat data:', JSON.stringify(chats[0], null, 2));
-          console.log('Active chats:', active.length, 'Closed chats:', closed.length);
-        } else {
-          console.warn('⚠ No chats returned from API. Check backend logs.');
-        }
         setActiveChats(active);
         setClosedChats(closed);
       } else {
-        console.error('✗ Error loading chats:', chatsResult.reason);
-        console.error('Error details:', chatsResult.reason?.response?.data);
-        console.error('Error status:', chatsResult.reason?.response?.status);
         setActiveChats([]);
         setClosedChats([]);
       }
@@ -128,7 +115,7 @@ export default function AdminChats() {
           const closed = allChats.filter((c: any) => !c.is_active);
           setClosedChats(closed);
         } catch (error) {
-          console.warn('Could not load closed chats separately:', error);
+          // Silent failure for closed chats load
         }
       }
 
@@ -136,11 +123,9 @@ export default function AdminChats() {
       if (statsResult.status === 'fulfilled') {
         setChatStats(statsResult.value || {});
       } else {
-        console.error('Error loading chat stats:', statsResult.reason);
         setChatStats({});
       }
     } catch (error: any) {
-      console.error('Unexpected error in loadData:', error);
       toast({
         title: 'Error',
         description: error.message || 'Failed to load chat data',
@@ -166,10 +151,7 @@ export default function AdminChats() {
           return;
         }
 
-        console.log('Starting verification for request ID:', requestIdNum);
-        const result = await adminApi.startVerification(requestIdNum);
-        console.log('Verification started, result:', result);
-        console.log('Verification room ID:', result?.verification_room_id);
+        const result = await adminApi.approveChatRequest(requestIdNum);
 
         toast({
           title: 'Verification Started',
@@ -180,7 +162,6 @@ export default function AdminChats() {
         await new Promise(resolve => setTimeout(resolve, 500));
 
         // Reload data immediately to show the new room in Active Chats
-        console.log('Reloading data to show new verification room...');
         await loadData();
 
         // Optionally navigate to the verification chat room
@@ -199,13 +180,7 @@ export default function AdminChats() {
         await loadData();
       }
     } catch (error: any) {
-      console.error('Error responding to request:', error);
-      console.error('Error details:', {
-        message: error?.message,
-        response: error?.response?.data,
-        status: error?.response?.status,
-        url: error?.config?.url,
-      });
+      // If room was created but there's an error, still show success
 
       // If room was created but there's an error, still show success
       if (error?.response?.status === 404) {
@@ -238,7 +213,7 @@ export default function AdminChats() {
           description: 'Room ID not found in chat object',
           variant: 'destructive',
         });
-        console.error('Chat object:', chat);
+        return;
         return;
       }
       const roomData = await adminApi.getChatRoom(roomId);
@@ -336,16 +311,19 @@ export default function AdminChats() {
     return matchesSearch && matchesType;
   });
 
-  console.log('Active chats:', activeChats.length, 'Filtered chats:', filteredChats.length);
+
 
   return (
     <AdminLayout onRefresh={loadData}>
-      <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8 w-full">
+      <div className="w-full">
         {/* Header */}
         <div className="mb-4 sm:mb-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-4">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Chat Management</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center gap-2">
+                <MessageSquare className="h-6 w-6 sm:h-8 sm:w-8 text-blue-500" />
+                Chat Management
+              </h1>
               <p className="text-sm sm:text-base text-gray-600 mt-1">Manage chat requests and monitor active conversations</p>
             </div>
           </div>
@@ -354,49 +332,49 @@ export default function AdminChats() {
         {/* Stats Cards */}
         {chatStats && (
           <div className="mb-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-              <Card className="shadow-md hover:shadow-lg transition-all duration-200 border-l-4 border-l-yellow-500">
-                <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+              <Card className="bg-white shadow-md hover:shadow-lg transition-all duration-300 border-l-4 border-l-yellow-500">
+                <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between space-y-0">
                   <CardTitle className="text-sm font-medium text-gray-600">Pending Requests</CardTitle>
                   <Clock className="h-4 w-4 text-yellow-500" />
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-4 pt-0">
                   <div className="text-3xl font-bold text-gray-800">{chatStats.pending_requests || 0}</div>
                 </CardContent>
               </Card>
-              <Card className="shadow-md hover:shadow-lg transition-all duration-200 border-l-4 border-l-green-500">
-                <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+              <Card className="bg-white shadow-md hover:shadow-lg transition-all duration-300 border-l-4 border-l-green-500">
+                <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between space-y-0">
                   <CardTitle className="text-sm font-medium text-gray-600">Active Chats</CardTitle>
                   <MessageCircle className="h-4 w-4 text-green-500" />
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-4 pt-0">
                   <div className="text-3xl font-bold text-gray-800">{chatStats.active_chats || 0}</div>
                 </CardContent>
               </Card>
-              <Card className="shadow-md hover:shadow-lg transition-all duration-200 border-l-4 border-l-blue-500">
-                <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+              <Card className="bg-white shadow-md hover:shadow-lg transition-all duration-300 border-l-4 border-l-blue-500">
+                <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between space-y-0">
                   <CardTitle className="text-sm font-medium text-gray-600">Total Requests</CardTitle>
                   <Users className="h-4 w-4 text-blue-500" />
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-4 pt-0">
                   <div className="text-3xl font-bold text-gray-800">{chatStats.total_requests || 0}</div>
                 </CardContent>
               </Card>
-              <Card className="shadow-md hover:shadow-lg transition-all duration-200 border-l-4 border-l-emerald-500">
-                <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+              <Card className="bg-white shadow-md hover:shadow-lg transition-all duration-300 border-l-4 border-l-emerald-500">
+                <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between space-y-0">
                   <CardTitle className="text-sm font-medium text-gray-600">Approved</CardTitle>
                   <CheckCircle className="h-4 w-4 text-emerald-500" />
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-4 pt-0">
                   <div className="text-3xl font-bold text-gray-800">{chatStats.approved_requests || 0}</div>
                 </CardContent>
               </Card>
-              <Card className="shadow-md hover:shadow-lg transition-all duration-200 border-l-4 border-l-red-500">
-                <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+              <Card className="bg-white shadow-md hover:shadow-lg transition-all duration-300 border-l-4 border-l-red-500">
+                <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between space-y-0">
                   <CardTitle className="text-sm font-medium text-gray-600">Rejected</CardTitle>
                   <XCircle className="h-4 w-4 text-red-500" />
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-4 pt-0">
                   <div className="text-3xl font-bold text-gray-800">{chatStats.rejected_requests || 0}</div>
                 </CardContent>
               </Card>
@@ -405,9 +383,9 @@ export default function AdminChats() {
         )}
 
         {/* Tabs */}
-        <Card>
-          <CardHeader>
-            <div className="flex gap-4 border-b">
+        <Card className="shadow-sm">
+          <CardHeader className="p-0 sm:p-6">
+            <div className="flex gap-4 border-b overflow-x-auto px-4 sm:px-0 scrollbar-hide">
               <button
                 onClick={() => setActiveTab('requests')}
                 className={`pb-2 px-1 font-medium transition-colors ${activeTab === 'requests'
@@ -514,19 +492,19 @@ export default function AdminChats() {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Type</TableHead>
+                          <TableHead className="hidden md:table-cell">Type</TableHead>
                           <TableHead>Pet ID</TableHead>
                           <TableHead>Requester</TableHead>
-                          <TableHead>Owner</TableHead>
+                          <TableHead className="hidden md:table-cell">Owner</TableHead>
                           <TableHead>Status</TableHead>
-                          <TableHead>Created</TableHead>
+                          <TableHead className="hidden md:table-cell">Created</TableHead>
                           <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {filteredRequests.map((req: any, index: number) => (
                           <TableRow key={req._id || req.id || `request-${index}`}>
-                            <TableCell>
+                            <TableCell className="hidden md:table-cell">
                               <Badge variant={req.type === 'adoption' ? 'default' : 'secondary'}>
                                 {req.type || 'N/A'}
                               </Badge>
@@ -543,7 +521,7 @@ export default function AdminChats() {
                                 <span className="text-xs text-gray-500 block">{req.requester.email}</span>
                               )}
                             </TableCell>
-                            <TableCell>
+                            <TableCell className="hidden md:table-cell">
                               {req.target?.name || req.targetId || req.pet?.posted_by?.name || 'N/A'}
                               {req.target?.email && (
                                 <span className="text-xs text-gray-500 block">{req.target.email}</span>
@@ -553,7 +531,7 @@ export default function AdminChats() {
                               {req.status === 'pending' ? (
                                 <Badge variant="outline" className="bg-yellow-50 text-yellow-700">
                                   <Clock className="h-3 w-3 mr-1" />
-                                  Pending Admin
+                                  Pending
                                 </Badge>
                               ) : req.status === 'admin_verifying' ? (
                                 <Badge variant="outline" className="bg-purple-50 text-purple-700">
@@ -563,7 +541,7 @@ export default function AdminChats() {
                               ) : req.status === 'admin_approved' ? (
                                 <Badge variant="outline" className="bg-blue-50 text-blue-700">
                                   <Clock className="h-3 w-3 mr-1" />
-                                  Admin Approved
+                                  Approved
                                 </Badge>
                               ) : req.status === 'active' ? (
                                 <Badge variant="default" className="bg-green-100 text-green-800">
@@ -577,7 +555,7 @@ export default function AdminChats() {
                                 </Badge>
                               )}
                             </TableCell>
-                            <TableCell className="text-sm text-gray-600">
+                            <TableCell className="text-sm text-gray-600 hidden md:table-cell">
                               {req.created_at || req.createdAt
                                 ? format(new Date(req.created_at || req.createdAt), 'MMM dd, yyyy')
                                 : 'N/A'}
@@ -627,14 +605,11 @@ export default function AdminChats() {
                                         size="sm"
                                         onClick={() => {
                                           const roomId = req.admin_verification_room?.room_id || req.admin_verification_room?.id || req.admin_verification_room;
-                                          console.log('Opening verification chat. Request:', req);
-                                          console.log('Admin verification room:', req.admin_verification_room);
-                                          console.log('Room ID to navigate:', roomId);
+
                                           if (roomId) {
                                             try {
                                               navigate(`/admin/chat/${roomId}`);
                                             } catch (error) {
-                                              console.error('Navigation error:', error);
                                               toast({
                                                 title: 'Navigation Error',
                                                 description: 'Failed to navigate to chat. Error: ' + (error as Error).message,
@@ -733,12 +708,12 @@ export default function AdminChats() {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Type</TableHead>
+                          <TableHead className="hidden md:table-cell">Type</TableHead>
                           <TableHead>Room ID</TableHead>
-                          <TableHead>Pet ID</TableHead>
+                          <TableHead className="hidden md:table-cell">Pet ID</TableHead>
                           <TableHead>Participants</TableHead>
-                          <TableHead>Messages</TableHead>
-                          <TableHead>Created</TableHead>
+                          <TableHead className="hidden md:table-cell">Messages</TableHead>
+                          <TableHead className="hidden md:table-cell">Created</TableHead>
                           <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -750,7 +725,7 @@ export default function AdminChats() {
 
                           return (
                             <TableRow key={chat.id || roomId || `chat-${index}`}>
-                              <TableCell>
+                              <TableCell className="hidden md:table-cell">
                                 {isVerificationRoom ? (
                                   <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
                                     <Shield className="h-3 w-3 mr-1" />
@@ -782,7 +757,7 @@ export default function AdminChats() {
                                 )}
                               </TableCell>
                               <TableCell className="font-mono text-xs">{roomId || 'N/A'}</TableCell>
-                              <TableCell className="font-mono text-xs">{chat.pet_id || chat.petId || chat.pet?.id || 'N/A'}</TableCell>
+                              <TableCell className="font-mono text-xs hidden md:table-cell">{chat.pet_id || chat.petId || chat.pet?.id || 'N/A'}</TableCell>
                               <TableCell>
                                 <div className="flex flex-col">
                                   <span className="text-sm font-medium">{participants.length} participant(s)</span>
@@ -798,8 +773,8 @@ export default function AdminChats() {
                                   )}
                                 </div>
                               </TableCell>
-                              <TableCell>{chat.messages?.length || chat.last_message ? 1 : 0}</TableCell>
-                              <TableCell className="text-sm text-gray-600">
+                              <TableCell className="hidden md:table-cell">{chat.messages?.length || chat.last_message ? 1 : 0}</TableCell>
+                              <TableCell className="text-sm text-gray-600 hidden md:table-cell">
                                 {chat.created_at || chat.createdAt
                                   ? format(new Date(chat.created_at || chat.createdAt), 'MMM dd, yyyy')
                                   : 'N/A'}
@@ -827,16 +802,7 @@ export default function AdminChats() {
                                     const isCreator = chat.created_by_admin_id === user?.id ||
                                       (chat.created_by_admin_id && user?.id && String(chat.created_by_admin_id) === String(user.id));
 
-                                    // Debug logging
-                                    console.log('Chat permission check:', {
-                                      roomId: roomIdToOpen,
-                                      currentUserId,
-                                      isParticipant,
-                                      isCreator,
-                                      isVerifyingAdmin,
-                                      created_by_admin_id: chat.created_by_admin_id,
-                                      participants: participants?.map((p: any) => ({ id: p.id, name: p.name })),
-                                    });
+                                    // If admin is the creator OR is a participant OR is the verifying admin, they can open full chat
 
                                     // If admin is the creator OR is a participant OR is the verifying admin, they can open full chat
                                     if (isCreator || isParticipant || isVerifyingAdmin) {
@@ -921,12 +887,12 @@ export default function AdminChats() {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Type</TableHead>
+                          <TableHead className="hidden md:table-cell">Type</TableHead>
                           <TableHead>Room ID</TableHead>
                           <TableHead>Pet</TableHead>
-                          <TableHead>Participants</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Closed Date</TableHead>
+                          <TableHead className="hidden md:table-cell">Participants</TableHead>
+                          <TableHead className="hidden md:table-cell">Status</TableHead>
+                          <TableHead className="hidden md:table-cell">Closed Date</TableHead>
                           <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -938,7 +904,7 @@ export default function AdminChats() {
 
                           return (
                             <TableRow key={roomId || `closed-chat-${index}`} className="opacity-75">
-                              <TableCell>
+                              <TableCell className="hidden md:table-cell">
                                 <Badge variant="outline" className="bg-gray-50 text-gray-700">
                                   {chat.type || 'General'}
                                 </Badge>
@@ -963,7 +929,7 @@ export default function AdminChats() {
                                   <span className="text-gray-400">N/A</span>
                                 )}
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="hidden md:table-cell">
                                 <div className="flex flex-col gap-1">
                                   {participants.slice(0, 2).map((p: any) => (
                                     <span key={p.id || p} className="text-sm">
@@ -975,13 +941,13 @@ export default function AdminChats() {
                                   )}
                                 </div>
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="hidden md:table-cell">
                                 <Badge variant="outline" className="bg-gray-100 text-gray-700">
                                   <CheckCircle className="h-3 w-3 mr-1" />
                                   Closed/Reunited
                                 </Badge>
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="hidden md:table-cell">
                                 {chat.updated_at ? format(new Date(chat.updated_at), 'MMM d, yyyy') : 'N/A'}
                               </TableCell>
                               <TableCell className="text-right">
@@ -1063,6 +1029,12 @@ export default function AdminChats() {
                       <p className="text-xs text-gray-500">{selectedRequest.pet.name}</p>
                     )}
                   </div>
+                  {selectedRequest.pet?.distinguishing_marks && (
+                    <div className="col-span-2">
+                      <p className="text-sm font-medium text-gray-600">Distinguishing Marks</p>
+                      <p className="text-sm text-gray-700">{selectedRequest.pet.distinguishing_marks}</p>
+                    </div>
+                  )}
                   <div>
                     <p className="text-sm font-medium text-gray-600">Requester</p>
                     <p className="text-sm">

@@ -11,8 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { useAuth } from '@/lib/auth';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
-import { AdminSidebar } from '@/components/layout/AdminSidebar';
-import { AdminTopNav } from '@/components/layout/AdminTopNav';
+import { AdminLayout } from '@/components/layout/AdminLayout';
 import { API_BASE_URL } from '@/config/api';
 
 export default function AdminRoleRequests() {
@@ -30,7 +29,6 @@ export default function AdminRoleRequests() {
   const [showRoleRequestDialog, setShowRoleRequestDialog] = useState(false);
   const [roleRequestActionNotes, setRoleRequestActionNotes] = useState('');
   const [roleRequestActionType, setRoleRequestActionType] = useState<'approve' | 'reject' | null>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     if (!isAdmin) {
@@ -136,7 +134,7 @@ export default function AdminRoleRequests() {
 
   const submitRoleRequestAction = () => {
     if (!selectedRoleRequest || !roleRequestActionType) return;
-    
+
     if (roleRequestActionType === 'reject' && !roleRequestActionNotes.trim()) {
       toast({
         title: 'Error',
@@ -154,280 +152,263 @@ export default function AdminRoleRequests() {
   };
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Fixed Sidebar */}
-      <div className="hidden lg:block">
-        <AdminSidebar isOpen={true} onClose={() => setSidebarOpen(false)} />
-      </div>
-      
-      {/* Mobile Sidebar */}
-      <div className="lg:hidden">
-        <AdminSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      </div>
-
-      {/* Main Content */}
-      <div className="flex flex-col min-w-0 lg:ml-64">
-        {/* Top Navigation */}
-        <AdminTopNav 
-          onMenuToggle={() => setSidebarOpen(!sidebarOpen)} 
-          sidebarOpen={sidebarOpen}
-          onRefresh={loadRoleRequests}
-        />
-
-        {/* Main Content Area - Scrollable */}
-        <main className="flex-1 overflow-y-auto bg-white">
-          <div className="p-6 lg:p-8 space-y-6 lg:space-y-8">
-            <section id="role-requests" className="scroll-mt-8">
-              <Card className="bg-white rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-gray-100">
-                <CardHeader className="border-b border-gray-100 pb-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle className="text-2xl font-bold text-gray-900">Role Requests</CardTitle>
-                      <CardDescription className="text-sm text-gray-500 mt-1">
-                        Manage volunteer role requests (rescuer, feeder, transporter, volunteer)
-                      </CardDescription>
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={loadRoleRequests}
-                      disabled={roleRequestsLoading}
-                      className="gap-2"
-                    >
-                      {roleRequestsLoading ? (
-                        <>
-                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600"></div>
-                          Loading...
-                        </>
-                      ) : (
-                        <>
-                          <Activity className="h-4 w-4" />
-                          Refresh
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-6">
-                  {/* Filters and Search */}
-                  <div className="mb-6 space-y-4">
-                    <div className="flex flex-col md:flex-row gap-4">
-                      <div className="flex-1 relative">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                        <Input
-                          placeholder="Search by name, email, role, or reason..."
-                          value={roleRequestSearchTerm}
-                          onChange={(e) => setRoleRequestSearchTerm(e.target.value)}
-                          className="pl-10"
-                        />
-                      </div>
-                      <select
-                        value={roleRequestStatusFilter}
-                        onChange={(e) => setRoleRequestStatusFilter(e.target.value)}
-                        className="px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-green-500"
-                      >
-                        <option value="all">All Status</option>
-                        <option value="pending">Pending</option>
-                        <option value="approved">Approved</option>
-                        <option value="rejected">Rejected</option>
-                      </select>
-                      <select
-                        value={roleRequestRoleFilter}
-                        onChange={(e) => setRoleRequestRoleFilter(e.target.value)}
-                        className="px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-green-500"
-                      >
-                        <option value="all">All Roles</option>
-                        <option value="rescuer">Rescuer</option>
-                        <option value="feeder">Feeder</option>
-                        <option value="transporter">Transporter</option>
-                        <option value="volunteer">Volunteer</option>
-                      </select>
-                    </div>
-                    {/* Statistics */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <div className="bg-gray-50 rounded-lg p-3">
-                        <p className="text-xs text-gray-600 mb-1">Total</p>
-                        <p className="text-2xl font-bold text-gray-900">{roleRequests.length}</p>
-                      </div>
-                      <div className="bg-yellow-50 rounded-lg p-3">
-                        <p className="text-xs text-gray-600 mb-1">Pending</p>
-                        <p className="text-2xl font-bold text-yellow-700">
-                          {roleRequests.filter((r: any) => r.status === 'pending').length}
-                        </p>
-                      </div>
-                      <div className="bg-green-50 rounded-lg p-3">
-                        <p className="text-xs text-gray-600 mb-1">Approved</p>
-                        <p className="text-2xl font-bold text-green-700">
-                          {roleRequests.filter((r: any) => r.status === 'approved').length}
-                        </p>
-                      </div>
-                      <div className="bg-red-50 rounded-lg p-3">
-                        <p className="text-xs text-gray-600 mb-1">Rejected</p>
-                        <p className="text-2xl font-bold text-red-700">
-                          {roleRequests.filter((r: any) => r.status === 'rejected').length}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
+    <AdminLayout onRefresh={loadRoleRequests} isRefreshing={roleRequestsLoading}>
+      <div className="space-y-6 lg:space-y-8">
+        <section id="role-requests" className="scroll-mt-8">
+          <Card className="bg-white rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-gray-100">
+            <CardHeader className="border-b border-gray-100 pb-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-2xl font-bold text-gray-900">Role Requests</CardTitle>
+                  <CardDescription className="text-sm text-gray-500 mt-1">
+                    Manage volunteer role requests (rescuer, feeder, transporter, volunteer)
+                  </CardDescription>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={loadRoleRequests}
+                  disabled={roleRequestsLoading}
+                  className="gap-2"
+                >
                   {roleRequestsLoading ? (
-                    <div className="text-center py-12">
-                      <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-green-600 border-r-transparent"></div>
-                      <p className="mt-4 text-gray-600">Loading role requests...</p>
-                    </div>
-                  ) : filteredRoleRequests.length === 0 ? (
-                    <div className="text-center py-12">
-                      <UserPlus className="h-16 w-16 mx-auto text-gray-400 mb-4" />
-                      <h3 className="text-lg font-semibold text-gray-900 mb-2">No Role Requests Found</h3>
-                      <p className="text-gray-600">
-                        {roleRequestSearchTerm || roleRequestStatusFilter !== 'all' || roleRequestRoleFilter !== 'all'
-                          ? 'Try adjusting your search or filters'
-                          : 'No role requests found.'}
-                      </p>
-                    </div>
+                    <>
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600"></div>
+                      Loading...
+                    </>
                   ) : (
-                    <div className="space-y-4">
-                      {filteredRoleRequests.map((request: any) => (
-                        <Card key={request._id || request.id} className="hover:shadow-md transition-shadow">
-                          <CardHeader>
-                            <div className="flex items-start justify-between">
-                              <div className="flex items-center gap-3">
-                                <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
-                                  <UserPlus className="h-6 w-6 text-white" />
-                                </div>
-                                <div>
-                                  <CardTitle className="text-lg">
-                                    {request.user?.name || 'Unknown User'}
-                                  </CardTitle>
-                                  <CardDescription>
-                                    {request.user?.email || 'N/A'}
-                                  </CardDescription>
-                                </div>
-                              </div>
-                              <Badge
-                                variant={
-                                  request.status === 'pending' ? 'default' :
-                                  request.status === 'approved' ? 'default' :
-                                  'destructive'
-                                }
-                                className={
-                                  request.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                                  request.status === 'approved' ? 'bg-green-100 text-green-700' :
-                                  'bg-red-100 text-red-700'
-                                }
-                              >
-                                {request.status === 'pending' && <Clock className="h-3 w-3 mr-1" />}
-                                {request.status === 'approved' && <CheckCircle className="h-3 w-3 mr-1" />}
-                                {request.status === 'rejected' && <X className="h-3 w-3 mr-1" />}
-                                {request.status || 'Pending'}
-                              </Badge>
-                            </div>
-                          </CardHeader>
-                          <CardContent>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                              <div>
-                                <p className="text-sm font-semibold text-gray-700 mb-1">Requested Role</p>
-                                <Badge variant="outline" className="text-base capitalize">
-                                  {request.requested_role || 'N/A'}
-                                </Badge>
-                              </div>
-                              {request.user?.phone && (
-                                <div>
-                                  <p className="text-sm font-semibold text-gray-700 mb-1">Phone</p>
-                                  <p className="text-sm text-gray-600">{request.user.phone}</p>
-                                </div>
-                              )}
-                              {request.created_at && (
-                                <div>
-                                  <p className="text-sm font-semibold text-gray-700 mb-1">Requested Date</p>
-                                  <p className="text-sm text-gray-600">
-                                    {format(new Date(request.created_at), 'MMM dd, yyyy HH:mm')}
-                                  </p>
-                                </div>
-                              )}
-                              {request.reviewed_at && (
-                                <div>
-                                  <p className="text-sm font-semibold text-gray-700 mb-1">Reviewed Date</p>
-                                  <p className="text-sm text-gray-600">
-                                    {format(new Date(request.reviewed_at), 'MMM dd, yyyy HH:mm')}
-                                  </p>
-                                </div>
-                              )}
-                            </div>
-
-                            {request.reason && (
-                              <div className="mb-3">
-                                <p className="text-sm font-semibold text-gray-700 mb-1">Reason</p>
-                                <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">{request.reason}</p>
-                              </div>
-                            )}
-
-                            {request.experience && (
-                              <div className="mb-3">
-                                <p className="text-sm font-semibold text-gray-700 mb-1">Experience</p>
-                                <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">{request.experience}</p>
-                              </div>
-                            )}
-
-                            {request.availability && (
-                              <div className="mb-3">
-                                <p className="text-sm font-semibold text-gray-700 mb-1">Availability</p>
-                                <p className="text-sm text-gray-600">{request.availability}</p>
-                              </div>
-                            )}
-
-                            {request.resources && (
-                              <div className="mb-3">
-                                <p className="text-sm font-semibold text-gray-700 mb-1">Resources</p>
-                                <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">{request.resources}</p>
-                              </div>
-                            )}
-
-                            {request.review_notes && (
-                              <div className="mb-3">
-                                <p className="text-sm font-semibold text-gray-700 mb-1">Review Notes</p>
-                                <p className="text-sm text-gray-600 bg-blue-50 p-3 rounded-lg">{request.review_notes}</p>
-                              </div>
-                            )}
-
-                            {request.reviewed_by_name && (
-                              <div className="mb-3">
-                                <p className="text-sm font-semibold text-gray-700 mb-1">Reviewed By</p>
-                                <p className="text-sm text-gray-600">{request.reviewed_by_name}</p>
-                              </div>
-                            )}
-                            {request.status === 'pending' && (
-                              <div className="flex gap-2 mt-4 pt-4 border-t border-gray-200">
-                                <Button
-                                  size="sm"
-                                  className="bg-green-600 hover:bg-green-700 flex-1"
-                                  onClick={() => openRoleRequestAction(request, 'approve')}
-                                >
-                                  <CheckCircle className="mr-2 h-4 w-4" />
-                                  Approve
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="destructive"
-                                  className="flex-1"
-                                  onClick={() => openRoleRequestAction(request, 'reject')}
-                                >
-                                  <X className="mr-2 h-4 w-4" />
-                                  Reject
-                                </Button>
-                              </div>
-                            )}
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
+                    <>
+                      <Activity className="h-4 w-4" />
+                      Refresh
+                    </>
                   )}
-                </CardContent>
-              </Card>
-            </section>
-          </div>
-        </main>
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-4">
+              {/* Stats Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <Card className="bg-white shadow-md hover:shadow-lg transition-all duration-300 border-l-4 border-l-gray-500">
+                  <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between space-y-0">
+                    <CardTitle className="text-sm font-medium text-gray-600">Total Requests</CardTitle>
+                    <UserPlus className="h-4 w-4 text-gray-500" />
+                  </CardHeader>
+                  <CardContent className="p-4 pt-0">
+                    <div className="text-3xl font-bold text-gray-900">{roleRequests.length}</div>
+                  </CardContent>
+                </Card>
+                <Card className="bg-white shadow-md hover:shadow-lg transition-all duration-300 border-l-4 border-l-yellow-500">
+                  <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between space-y-0">
+                    <CardTitle className="text-sm font-medium text-gray-600">Pending Review</CardTitle>
+                    <Clock className="h-4 w-4 text-yellow-500" />
+                  </CardHeader>
+                  <CardContent className="p-4 pt-0">
+                    <div className="text-3xl font-bold text-yellow-600">
+                      {roleRequests.filter((r: any) => r.status === 'pending').length}
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="bg-white shadow-md hover:shadow-lg transition-all duration-300 border-l-4 border-l-green-500">
+                  <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between space-y-0">
+                    <CardTitle className="text-sm font-medium text-gray-600">Approved</CardTitle>
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                  </CardHeader>
+                  <CardContent className="p-4 pt-0">
+                    <div className="text-3xl font-bold text-green-600">
+                      {roleRequests.filter((r: any) => r.status === 'approved').length}
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="bg-white shadow-md hover:shadow-lg transition-all duration-300 border-l-4 border-l-red-500">
+                  <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between space-y-0">
+                    <CardTitle className="text-sm font-medium text-gray-600">Rejected</CardTitle>
+                    <X className="h-4 w-4 text-red-500" />
+                  </CardHeader>
+                  <CardContent className="p-4 pt-0">
+                    <div className="text-3xl font-bold text-red-600">
+                      {roleRequests.filter((r: any) => r.status === 'rejected').length}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Filters */}
+              <div className="flex flex-col sm:flex-row gap-4 mb-4">
+                <div className="flex-1">
+                  <div className="relative">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+                    <Input
+                      placeholder="Search by user, role, or reason..."
+                      className="pl-9"
+                      value={roleRequestSearchTerm}
+                      onChange={(e) => setRoleRequestSearchTerm(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <select
+                    value={roleRequestRoleFilter}
+                    onChange={(e) => setRoleRequestRoleFilter(e.target.value)}
+                    className="px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-green-500"
+                  >
+                    <option value="all">All Roles</option>
+                    <option value="rescuer">Rescuer</option>
+                    <option value="feeder">Feeder</option>
+                    <option value="transporter">Transporter</option>
+                    <option value="volunteer">Volunteer</option>
+                  </select>
+                  <select
+                    value={roleRequestStatusFilter}
+                    onChange={(e) => setRoleRequestStatusFilter(e.target.value)}
+                    className="px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-green-500"
+                  >
+                    <option value="all">All Status</option>
+                    <option value="pending">Pending</option>
+                    <option value="approved">Approved</option>
+                    <option value="rejected">Rejected</option>
+                  </select>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setRoleRequestSearchTerm('');
+                      setRoleRequestRoleFilter('all');
+                      setRoleRequestStatusFilter('all');
+                    }}
+                  >
+                    Clear
+                  </Button>
+                </div>
+              </div>
+
+              {roleRequestsLoading ? (
+                <div className="text-center py-12">
+                  <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-green-600 border-r-transparent"></div>
+                  <p className="mt-4 text-gray-600">Loading role requests...</p>
+                </div>
+              ) : filteredRoleRequests.length === 0 ? (
+                <div className="text-center py-12 bg-gray-50 rounded-lg">
+                  <UserPlus className="h-16 w-16 mx-auto text-gray-400 mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No Role Requests Found</h3>
+                  <p className="text-gray-600">
+                    {roleRequestSearchTerm || roleRequestStatusFilter !== 'all' || roleRequestRoleFilter !== 'all'
+                      ? 'Try adjusting your search or filters'
+                      : 'No role requests have been submitted yet.'}
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {filteredRoleRequests.map((request: any) => (
+                    <Card key={request.id || request._id} className="bg-white rounded-xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-gray-100 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 overflow-hidden flex flex-col">
+                      <div className={`h-2 w-full ${request.status === 'approved' ? 'bg-green-500' :
+                        request.status === 'rejected' ? 'bg-red-500' :
+                          'bg-yellow-500'
+                        }`} />
+                      <CardContent className="p-5 flex-1 flex flex-col">
+                        <div className="flex justify-between items-start mb-4">
+                          <div>
+                            <h3 className="text-lg font-bold text-gray-900 line-clamp-1">{request.user?.name || 'Unknown User'}</h3>
+                            <p className="text-sm text-gray-500">{request.user?.email || 'No Email'}</p>
+                          </div>
+                          <Badge variant={
+                            request.status === 'approved' ? 'default' :
+                              request.status === 'rejected' ? 'destructive' :
+                                'outline'
+                          } className={
+                            request.status === 'approved' ? 'bg-green-100 text-green-800 hover:bg-green-200' :
+                              request.status === 'rejected' ? 'bg-red-100 text-red-800 hover:bg-red-200' :
+                                'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
+                          }>
+                            {request.status === 'pending' ? (
+                              <div className="flex items-center gap-1">
+                                <Clock className="h-3 w-3" /> Pending
+                              </div>
+                            ) : request.status === 'approved' ? (
+                              <div className="flex items-center gap-1">
+                                <CheckCircle className="h-3 w-3" /> Approved
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-1">
+                                <X className="h-3 w-3" /> Rejected
+                              </div>
+                            )}
+                          </Badge>
+                        </div>
+
+                        <div className="space-y-3 mb-4 flex-1">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-gray-500">Requested Role:</span>
+                            <span className="font-semibold capitalize text-gray-900 bg-gray-100 px-2 py-0.5 rounded">
+                              {request.requested_role}
+                            </span>
+                          </div>
+
+                          {request.experience && (
+                            <div>
+                              <p className="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wider">Experience</p>
+                              <p className="text-sm text-gray-700 bg-gray-50 p-2 rounded border border-gray-100 line-clamp-3">
+                                {request.experience}
+                              </p>
+                            </div>
+                          )}
+
+                          {request.reason && (
+                            <div>
+                              <p className="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wider">Reason</p>
+                              <p className="text-sm text-gray-700 bg-gray-50 p-2 rounded border border-gray-100 line-clamp-3">
+                                {request.reason}
+                              </p>
+                            </div>
+                          )}
+
+                          <div className="text-xs text-gray-400 pt-2 border-t border-gray-100">
+                            Requested on: {request.created_at ? format(new Date(request.created_at), 'MMM dd, yyyy HH:mm') : 'N/A'}
+                          </div>
+                        </div>
+
+                        {request.review_notes && (
+                          <div className="mb-3">
+                            <p className="text-sm font-semibold text-gray-700 mb-1">Review Notes</p>
+                            <p className="text-sm text-gray-600 bg-blue-50 p-3 rounded-lg">{request.review_notes}</p>
+                          </div>
+                        )}
+
+                        {request.reviewed_by_name && (
+                          <div className="mb-3">
+                            <p className="text-sm font-semibold text-gray-700 mb-1">Reviewed By</p>
+                            <p className="text-sm text-gray-600">{request.reviewed_by_name}</p>
+                          </div>
+                        )}
+                        {request.status === 'pending' && (
+                          <div className="flex gap-2 mt-4 pt-4 border-t border-gray-200">
+                            <Button
+                              size="sm"
+                              className="bg-green-600 hover:bg-green-700 flex-1"
+                              onClick={() => openRoleRequestAction(request, 'approve')}
+                            >
+                              <CheckCircle className="mr-2 h-4 w-4" />
+                              Approve
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              className="flex-1"
+                              onClick={() => openRoleRequestAction(request, 'reject')}
+                            >
+                              <X className="mr-2 h-4 w-4" />
+                              Reject
+                            </Button>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </section>
       </div>
+
 
       {/* Role Request Action Dialog */}
       <Dialog open={showRoleRequestDialog} onOpenChange={setShowRoleRequestDialog}>
@@ -506,7 +487,7 @@ export default function AdminRoleRequests() {
           )}
         </DialogContent>
       </Dialog>
-    </div>
+    </AdminLayout>
   );
 }
 

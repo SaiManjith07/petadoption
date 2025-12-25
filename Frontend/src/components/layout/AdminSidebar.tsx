@@ -29,6 +29,7 @@ import { feedingPointAPI } from '@/services/api';
 interface AdminSidebarProps {
   isOpen?: boolean;
   onClose?: () => void;
+  className?: string;
 }
 
 interface PendingCounts {
@@ -108,7 +109,7 @@ const menuItems = [
   },
 ];
 
-export const AdminSidebar = ({ isOpen = true, onClose }: AdminSidebarProps) => {
+export const AdminSidebar = ({ isOpen = true, onClose, className }: AdminSidebarProps) => {
   const location = useLocation();
   const { user, isAdmin } = useAuth();
   const [pendingCounts, setPendingCounts] = useState<PendingCounts>({
@@ -144,7 +145,7 @@ export const AdminSidebar = ({ isOpen = true, onClose }: AdminSidebarProps) => {
       let foundPendingCount = 0;
       if (pendingFoundRes.status === 'fulfilled') {
         try {
-          const pendingPets = pendingFoundRes.value?.data || pendingFoundRes.value || [];
+          const pendingPets = (pendingFoundRes.value as any)?.data || pendingFoundRes.value || [];
           foundPendingCount = Array.isArray(pendingPets) ? pendingPets.length : 0;
         } catch (e) {
           console.error('Error counting pending found pets:', e);
@@ -158,7 +159,7 @@ export const AdminSidebar = ({ isOpen = true, onClose }: AdminSidebarProps) => {
       let lostPendingCount = 0;
       if (pendingLostRes.status === 'fulfilled') {
         try {
-          const pendingPets = pendingLostRes.value?.data || pendingLostRes.value || [];
+          const pendingPets = (pendingLostRes.value as any)?.data || pendingLostRes.value || [];
           lostPendingCount = Array.isArray(pendingPets) ? pendingPets.length : 0;
         } catch (e) {
           console.error('Error counting pending lost pets:', e);
@@ -220,12 +221,12 @@ export const AdminSidebar = ({ isOpen = true, onClose }: AdminSidebarProps) => {
     <>
       {/* Mobile Overlay */}
       {isOpen && (
-        <div 
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden" 
+        <div
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
           onClick={onClose}
         />
       )}
-      
+
       {/* Fixed Sidebar - Modern floating design with 280px width */}
       <div className={cn(
         "w-[280px] bg-white border-r border-[#E5E7EB] rounded-r-2xl",
@@ -236,27 +237,29 @@ export const AdminSidebar = ({ isOpen = true, onClose }: AdminSidebarProps) => {
         // Mobile: fixed and slideable
         "fixed left-0 top-[70px] h-[calc(100vh-70px)] z-[999] transform transition-all duration-300",
         isOpen ? "translate-x-0" : "-translate-x-full",
-        "lg:translate-x-0"
+        "lg:translate-x-0",
+        className
       )}>
         {/* Navigation Menu */}
         <nav className="px-4 py-4 sm:py-6 space-y-1 overflow-y-auto flex-1 min-h-0 scrollbar-hide">
           {menuItems.map((item) => {
             const Icon = item.icon;
-            const active = isActive(item.path, item.hash);
+            const hash = (item as any).hash;
+            const active = isActive(item.path, hash);
             const pendingCount = getPendingCount(item.pendingKey);
             const hasPending = pendingCount > 0;
-            
+
             return (
               <Link
-                key={item.path + (item.hash || '')}
-                to={item.path + (item.hash || '')}
+                key={item.path + (hash || '')}
+                to={item.path + (hash || '')}
                 className={cn(
                   'group flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 relative',
                   active
                     ? 'bg-gradient-to-r from-[hsl(var(--primary))]/10 to-[hsl(var(--primary-dark))]/10 text-[hsl(var(--primary))] shadow-sm'
                     : hasPending
-                    ? 'text-[hsl(var(--foreground))] hover:bg-[hsl(var(--warning))]/10 hover:text-[hsl(var(--warning))] bg-[hsl(var(--warning))]/5'
-                    : 'text-[hsl(var(--foreground))] hover:bg-[hsl(var(--background-secondary))] hover:text-[hsl(var(--primary))]'
+                      ? 'text-[hsl(var(--foreground))] hover:bg-[hsl(var(--warning))]/10 hover:text-[hsl(var(--warning))] bg-[hsl(var(--warning))]/5'
+                      : 'text-[hsl(var(--foreground))] hover:bg-[hsl(var(--background-secondary))] hover:text-[hsl(var(--primary))]'
                 )}
               >
                 {/* Active indicator bar */}
@@ -270,8 +273,8 @@ export const AdminSidebar = ({ isOpen = true, onClose }: AdminSidebarProps) => {
                 <Icon className={cn('h-5 w-5 flex-shrink-0', active ? 'text-[hsl(var(--primary))]' : hasPending && !active ? 'text-[hsl(var(--warning))]' : 'text-[hsl(var(--text-muted))] group-hover:text-[hsl(var(--primary))]')} strokeWidth={2} />
                 <span className={cn('font-semibold text-sm flex-1', active ? 'text-[hsl(var(--primary))]' : hasPending && !active ? 'text-[hsl(var(--warning))]' : 'text-[hsl(var(--foreground))]')}>{item.title}</span>
                 {hasPending && (
-                  <Badge 
-                    variant="destructive" 
+                  <Badge
+                    variant="destructive"
                     className="bg-[hsl(var(--warning))] hover:bg-[hsl(var(--warning))]/90 text-white text-xs px-2 py-0.5 min-w-[20px] flex items-center justify-center rounded-full"
                   >
                     {pendingCount > 99 ? '99+' : pendingCount}
@@ -285,18 +288,7 @@ export const AdminSidebar = ({ isOpen = true, onClose }: AdminSidebarProps) => {
           })}
         </nav>
 
-        {/* Admin Info Section - Bottom */}
-        <div className="p-4 border-t border-[#E5E7EB] bg-[#F9FAFB]">
-          <div className="flex items-center gap-3 px-3 py-3 rounded-xl bg-white border border-[#E5E7EB] shadow-sm">
-            <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-[hsl(var(--primary))] to-[hsl(var(--primary-dark))] flex items-center justify-center border-2 border-white shadow-md">
-              <User className="h-5 w-5 text-white" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-[hsl(var(--foreground))] truncate">{user?.name || 'Admin'}</p>
-              <p className="text-xs text-[hsl(var(--text-muted))] truncate">{user?.email || 'admin@petreunite.com'}</p>
-            </div>
-          </div>
-        </div>
+
       </div>
     </>
   );

@@ -90,10 +90,10 @@ export default function Admin() {
   // Auto-refresh dashboard data every 30 seconds
   useEffect(() => {
     if (!isAdmin) return;
-    
+
     const interval = setInterval(() => {
       loadDashboardData(false);
-    }, 30000); // Refresh every 30 seconds
+    }, 8000); // Refresh every 8 seconds
 
     return () => clearInterval(interval);
   }, [isAdmin]);
@@ -101,11 +101,11 @@ export default function Admin() {
   // Refresh dashboard when window regains focus
   useEffect(() => {
     if (!isAdmin) return;
-    
+
     const handleFocus = () => {
       loadDashboardData(false);
     };
-    
+
     window.addEventListener('focus', handleFocus);
     return () => window.removeEventListener('focus', handleFocus);
   }, [isAdmin]);
@@ -115,8 +115,8 @@ export default function Admin() {
     const hash = window.location.hash;
     if (hash === '#pets') {
       if (pets.length === 0 && !petsLoading) {
-      loadAllPets();
-    }
+        loadAllPets();
+      }
       // Scroll to the pets section
       setTimeout(() => {
         const element = document.getElementById('pets');
@@ -132,8 +132,8 @@ export default function Admin() {
     const hash = window.location.hash;
     if (hash === '#shelter-reg') {
       if (shelterRegistrations.length === 0 && !shelterRegistrationsLoading) {
-      loadShelterRegistrations();
-    }
+        loadShelterRegistrations();
+      }
       // Scroll to the shelter-reg section
       setTimeout(() => {
         const element = document.getElementById('shelter-reg');
@@ -164,7 +164,7 @@ export default function Admin() {
   const loadDashboardData = async (showLoading = true) => {
     try {
       if (showLoading) {
-      setLoading(true);
+        setLoading(true);
       } else {
         setIsRefreshing(true);
       }
@@ -179,21 +179,21 @@ export default function Admin() {
         adminApi.getAllChats(),
         adminApi.getChatStats(),
       ]);
-      
+
       // Extract data from responses
       const dashData = dashDataRes.status === 'fulfilled' ? (dashDataRes.value?.data || dashDataRes.value) : null;
-      const pendingFound = pendingFoundRes.status === 'fulfilled' ? 
-        (Array.isArray(pendingFoundRes.value?.data) ? pendingFoundRes.value.data : 
-         Array.isArray(pendingFoundRes.value) ? pendingFoundRes.value : []) : [];
-      const pendingLost = pendingLostRes.status === 'fulfilled' ? 
-        (Array.isArray(pendingLostRes.value?.data) ? pendingLostRes.value.data : 
-         Array.isArray(pendingLostRes.value) ? pendingLostRes.value : []) : [];
-      
+      const pendingFound = pendingFoundRes.status === 'fulfilled' ?
+        (Array.isArray(pendingFoundRes.value?.data) ? pendingFoundRes.value.data :
+          Array.isArray(pendingFoundRes.value) ? pendingFoundRes.value : []) : [];
+      const pendingLost = pendingLostRes.status === 'fulfilled' ?
+        (Array.isArray(pendingLostRes.value?.data) ? pendingLostRes.value.data :
+          Array.isArray(pendingLostRes.value) ? pendingLostRes.value : []) : [];
+
       // Calculate actual pending counts from API
       const foundPendingCount = pendingFound.length;
       const lostPendingCount = pendingLost.length;
       const totalPendingCount = foundPendingCount + lostPendingCount;
-      
+
       // Normalize dashboard data structure to match frontend expectations
       const normalizedDashData = dashData ? {
         pets: {
@@ -223,25 +223,25 @@ export default function Admin() {
         applications: dashData.applications || {},
         chats: dashData.chats || {},
       } : null;
-      
+
       setDashboardData(normalizedDashData);
-      
+
       // Combine found and lost pending reports
       const pendingReportsArray = [...pendingFound, ...pendingLost];
       setPendingReports(pendingReportsArray);
-      
-      
-      setPendingAdoptions(adoptionData.status === 'fulfilled' ? 
-        (Array.isArray(adoptionData.value?.data) ? adoptionData.value.data : 
-         Array.isArray(adoptionData.value) ? adoptionData.value : []) : []);
-      setChatRequests(chatRequestsData.status === 'fulfilled' ? 
-        (Array.isArray(chatRequestsData.value?.data) ? chatRequestsData.value.data : 
-         Array.isArray(chatRequestsData.value) ? chatRequestsData.value : []) : []);
-      setActiveChats(chatsData.status === 'fulfilled' ? 
-        (Array.isArray(chatsData.value?.data) ? chatsData.value.data : 
-         Array.isArray(chatsData.value) ? chatsData.value : []) : []);
+
+
+      setPendingAdoptions(adoptionData.status === 'fulfilled' ?
+        (Array.isArray(adoptionData.value?.data) ? adoptionData.value.data :
+          Array.isArray(adoptionData.value) ? adoptionData.value : []) : []);
+      setChatRequests(chatRequestsData.status === 'fulfilled' ?
+        (Array.isArray(chatRequestsData.value?.data) ? chatRequestsData.value.data :
+          Array.isArray(chatRequestsData.value) ? chatRequestsData.value : []) : []);
+      setActiveChats(chatsData.status === 'fulfilled' ?
+        (Array.isArray(chatsData.value?.data) ? chatsData.value.data :
+          Array.isArray(chatsData.value) ? chatsData.value : []) : []);
       setChatStats(chatStatsData.status === 'fulfilled' ? (chatStatsData.value || {}) : {});
-      
+
     } catch (error: any) {
       console.error('Error loading dashboard data:', error);
       toast({
@@ -251,7 +251,7 @@ export default function Admin() {
       });
     } finally {
       if (showLoading) {
-      setLoading(false);
+        setLoading(false);
       } else {
         setIsRefreshing(false);
       }
@@ -441,7 +441,7 @@ export default function Admin() {
 
   const submitRoleRequestAction = () => {
     if (!selectedRoleRequest || !roleRequestActionType) return;
-    
+
     if (roleRequestActionType === 'reject' && !roleRequestActionNotes.trim()) {
       toast({
         title: 'Error',
@@ -496,7 +496,7 @@ export default function Admin() {
         // Update local state immediately
         const updatedReports = pendingReports.filter(r => r._id !== acceptingId);
         setPendingReports(updatedReports);
-        
+
         // Update dashboard counts
         if (dashboardData) {
           const report = pendingReports.find((r: any) => r._id === acceptingId);
@@ -515,7 +515,7 @@ export default function Admin() {
             },
           });
         }
-        
+
         toast({
           title: 'Success',
           description: 'Report accepted and listed',
@@ -525,13 +525,13 @@ export default function Admin() {
         // Update local state immediately
         const updatedAdoptions = pendingAdoptions.filter(a => a._id !== acceptingId);
         setPendingAdoptions(updatedAdoptions);
-        
+
         toast({
           title: 'Success',
           description: 'Adoption request approved',
         });
       }
-      
+
       setShowAcceptModal(false);
       setAcceptingId(null);
       setAcceptNotes('');
@@ -546,7 +546,7 @@ export default function Admin() {
         verified_references: false,
         verified_financial_stability: false,
       });
-      
+
       // Refresh full data immediately with a small delay to ensure backend has processed
       await new Promise(resolve => setTimeout(resolve, 500));
       await loadDashboardData(false);
@@ -574,7 +574,7 @@ export default function Admin() {
       // Remove from local state immediately for better UX
       const updatedReports = pendingReports.filter(r => r._id !== reportId);
       setPendingReports(updatedReports);
-      
+
       // Update dashboard data counts
       if (dashboardData) {
         const status = reportId.toString().includes('found') ? 'found' : 'lost';
@@ -587,7 +587,7 @@ export default function Admin() {
           },
         });
       }
-      
+
       setShowRejectModal(false);
       setRejectingId(null);
       setRejectReason('');
@@ -595,7 +595,7 @@ export default function Admin() {
         title: 'Success',
         description: 'Report rejected',
       });
-      
+
       // Refresh full data immediately with a small delay to ensure backend has processed
       await new Promise(resolve => setTimeout(resolve, 500));
       await loadDashboardData(false);
@@ -625,9 +625,9 @@ export default function Admin() {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6 lg:space-y-8">
-          {/* Dashboard Content - Only show when not viewing #shelter-reg */}
-          {currentHash !== '#shelter-reg' && (
-            <>
+      {/* Dashboard Content - Only show when not viewing #shelter-reg */}
+      {currentHash !== '#shelter-reg' && (
+        <>
           {/* Header with Refresh Button */}
           <div className="flex items-center justify-between mb-4">
             <div>
@@ -658,14 +658,14 @@ export default function Admin() {
           {/* Key Metrics at a Glance - 4 Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
             {/* Pending Reports Card */}
-            <Card className="bg-white rounded-xl sm:rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-gray-100 hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] transition-all duration-300">
-              <CardContent className="p-4 sm:p-6">
+            <Card className="bg-white rounded-xl sm:rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-gray-100 border-l-4 border-l-[#2BB6AF] hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] transition-all duration-300">
+              <CardContent className="p-4">
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-2 sm:mb-3">
                       <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg sm:rounded-xl bg-[#E8F8EE] flex items-center justify-center flex-shrink-0">
                         <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 text-[#2BB6AF]" />
-                    </div>
+                      </div>
                       <span className="text-xs sm:text-sm font-semibold text-gray-600 truncate">Pending Reports</span>
                     </div>
                     <p className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-1 sm:mb-2">{dashboardData?.pending?.total || 0}</p>
@@ -685,14 +685,14 @@ export default function Admin() {
             </Card>
 
             {/* Adoptions Card */}
-            <Card className="bg-white rounded-xl sm:rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-gray-100 hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] transition-all duration-300">
-              <CardContent className="p-4 sm:p-6">
+            <Card className="bg-white rounded-xl sm:rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-gray-100 border-l-4 border-l-blue-500 hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] transition-all duration-300">
+              <CardContent className="p-4">
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-2 sm:mb-3">
                       <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg sm:rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
                         <Home className="h-4 w-4 sm:h-5 sm:w-5 text-blue-500" />
-                    </div>
+                      </div>
                       <span className="text-xs sm:text-sm font-semibold text-gray-600 truncate">Adoptions</span>
                     </div>
                     <p className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-1 sm:mb-2">{pendingAdoptions.length}</p>
@@ -708,14 +708,14 @@ export default function Admin() {
             </Card>
 
             {/* Total Users Card */}
-            <Card className="bg-white rounded-xl sm:rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-gray-100 hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] transition-all duration-300">
-              <CardContent className="p-4 sm:p-6">
+            <Card className="bg-white rounded-xl sm:rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-gray-100 border-l-4 border-l-[#2BB6AF] hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] transition-all duration-300">
+              <CardContent className="p-4">
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-2 sm:mb-3">
                       <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg sm:rounded-xl bg-[#E8F8EE] flex items-center justify-center flex-shrink-0">
                         <Users className="h-4 w-4 sm:h-5 sm:w-5 text-[#2BB6AF]" />
-                    </div>
+                      </div>
                       <span className="text-xs sm:text-sm font-semibold text-gray-600 truncate">Total Users</span>
                     </div>
                     <p className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-1 sm:mb-2">{dashboardData?.users?.total || 0}</p>
@@ -735,14 +735,14 @@ export default function Admin() {
             </Card>
 
             {/* Active Reports Card */}
-            <Card className="bg-white rounded-xl sm:rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-gray-100 hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] transition-all duration-300">
-              <CardContent className="p-4 sm:p-6">
+            <Card className="bg-white rounded-xl sm:rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-gray-100 border-l-4 border-l-[#4CAF50] hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] transition-all duration-300">
+              <CardContent className="p-4">
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-2 sm:mb-3">
                       <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg sm:rounded-xl bg-[#E8F8EE] flex items-center justify-center flex-shrink-0">
-                      <PawPrint className="h-4 w-4 sm:h-5 sm:w-5 text-[#4CAF50]" />
-                    </div>
+                        <PawPrint className="h-4 w-4 sm:h-5 sm:w-5 text-[#4CAF50]" />
+                      </div>
                       <span className="text-xs sm:text-sm font-semibold text-gray-600 truncate">Active Reports</span>
                     </div>
                     <p className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-1 sm:mb-2">{dashboardData?.active?.total || 0}</p>
@@ -765,7 +765,7 @@ export default function Admin() {
           {/* System Overview Analytics */}
           <Card className="bg-white rounded-xl sm:rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-gray-100">
             <CardHeader className="border-b border-gray-100 pb-3 sm:pb-4 px-4 sm:px-6">
-                <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between">
                 <div>
                   <CardTitle className="text-lg sm:text-xl font-bold text-gray-900">System Overview</CardTitle>
                   <CardDescription className="text-xs sm:text-sm text-gray-500 mt-1">Platform analytics and insights</CardDescription>
@@ -775,421 +775,90 @@ export default function Admin() {
                 </div>
               </div>
             </CardHeader>
-          <CardContent className="pt-4 sm:pt-6 px-4 sm:px-6">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+            <CardContent className="pt-4 sm:pt-6 px-4 sm:px-6">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
                 <div className="text-center p-3 sm:p-4 bg-[#E8F8EE] rounded-lg sm:rounded-xl border border-[#4CAF50]/10">
                   <p className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">{dashboardData?.pets?.found || 0}</p>
                   <p className="text-xs text-gray-600 mt-1 sm:mt-2 font-medium">Found Pets</p>
-                            </div>
+                </div>
                 <div className="text-center p-3 sm:p-4 bg-[#E8F8EE] rounded-lg sm:rounded-xl border border-[#4CAF50]/10">
                   <p className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">{dashboardData?.pets?.lost || 0}</p>
                   <p className="text-xs text-gray-600 mt-1 sm:mt-2 font-medium">Lost Pets</p>
-                          </div>
+                </div>
                 <div className="text-center p-3 sm:p-4 bg-[#E8F8EE] rounded-lg sm:rounded-xl border border-[#4CAF50]/10">
                   <p className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">{dashboardData?.pets?.adoptable || 0}</p>
                   <p className="text-xs text-gray-600 mt-1 sm:mt-2 font-medium">Adoptable</p>
-                            </div>
+                </div>
                 <div className="text-center p-3 sm:p-4 bg-[#E8F8EE] rounded-lg sm:rounded-xl border border-[#4CAF50]/10">
                   <p className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">{dashboardData?.matched || 0}</p>
                   <p className="text-xs text-gray-600 mt-1 sm:mt-2 font-medium">Matched</p>
-                          </div>
-                          </div>
-                        </CardContent>
-                      </Card>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Management Center removed - all functionalities moved to sidebar */}
-            </>
-          )}
+        </>
+      )}
 
-          {/* All Pets Section - Moved to separate page /admin/all-pets */}
-          {false && (
-          <section id="pets" className="scroll-mt-8">
-            <Card className="bg-white rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-gray-100">
-              <CardHeader className="border-b border-gray-100 pb-4">
-                <div className="flex items-center justify-between">
-                                  <div>
-                    <CardTitle className="text-2xl font-bold text-gray-900">All Pets</CardTitle>
-                    <CardDescription className="text-sm text-gray-500 mt-1">
-                      View and manage all pets in the database (Lost, Found, Adopted)
-                    </CardDescription>
-                                  </div>
-                                  </div>
-              </CardHeader>
-              <CardContent className="pt-6 space-y-4">
-                {/* Search and Filter */}
-                <div className="flex flex-col sm:flex-row gap-4 mb-4">
-                  <div className="flex-1">
-                    <Input
-                      placeholder="Search by breed, species, location, or status..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full"
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    <select
-                      value={typeFilter}
-                      onChange={(e) => setTypeFilter(e.target.value)}
-                      className="px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-green-500"
-                    >
-                      <option value="all">All Types</option>
-                      <option value="found">Found</option>
-                      <option value="lost">Lost</option>
-                      <option value="adoption">Adoption</option>
-                    </select>
-                    <select
-                      value={statusFilter}
-                      onChange={(e) => setStatusFilter(e.target.value)}
-                      className="px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-green-500"
-                    >
-                      <option value="all">All Status</option>
-                      <option value="Pending Verification">Pending</option>
-                      <option value="Listed Found">Listed Found</option>
-                      <option value="Listed Lost">Listed Lost</option>
-                      <option value="Matched">Matched</option>
-                      <option value="Reunited">Reunited</option>
-                      <option value="Available for Adoption">Available for Adoption</option>
-                      <option value="Adopted">Adopted</option>
-                    </select>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={loadAllPets}
-                      disabled={petsLoading}
-                      className="gap-2"
-                    >
-                      {petsLoading ? (
-                        <>
-                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600"></div>
-                          Loading...
-                        </>
-                      ) : (
-                        <>
-                          <Activity className="h-4 w-4" />
-                          Refresh
-                        </>
-                      )}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setSearchTerm('');
-                        setTypeFilter('all');
-                        setStatusFilter('all');
-                      }}
-                    >
-                      Clear
-                    </Button>
-                  </div>
+      {/* All Pets Section - Moved to separate page /admin/all-pets */}
+      {false && (
+        <section id="pets" className="scroll-mt-8">
+          <Card className="bg-white rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-gray-100">
+            <CardHeader className="border-b border-gray-100 pb-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-2xl font-bold text-gray-900">All Pets</CardTitle>
+                  <CardDescription className="text-sm text-gray-500 mt-1">
+                    View and manage all pets in the database (Lost, Found, Adopted)
+                  </CardDescription>
                 </div>
-
-                {(() => {
-                  if (petsLoading) {
-                    return (
-                      <div className="text-center py-12">
-                        <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-green-600 border-r-transparent"></div>
-                        <p className="mt-4 text-gray-600">Loading all pets...</p>
-                      </div>
-                    );
-                  }
-
-                  const filtered = pets.filter((p: any) => {
-                    // Map adoption_status to report_type for filtering
-                    const reportType = p.adoption_status === 'Found' ? 'found' : 
-                                      p.adoption_status === 'Lost' ? 'lost' : null;
-                    
-                    const matchesSearch = !searchTerm || 
-                      p.breed?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                      p.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                      p.location?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                      p.adoption_status?.toLowerCase().includes(searchTerm.toLowerCase());
-                    const matchesType = typeFilter === 'all' || reportType === typeFilter || p.report_type === typeFilter || p.type === typeFilter;
-                    const matchesStatus = statusFilter === 'all' || p.adoption_status === statusFilter || p.status === statusFilter;
-                    return matchesSearch && matchesType && matchesStatus;
-                  });
-
-                  return (
-                    <>
-                      <div className="mb-4 text-sm text-gray-600">
-                        {pets.length > 0 ? (
-                          <>Showing <span className="font-semibold">{filtered.length}</span> of <span className="font-semibold">{pets.length}</span> pets</>
-                        ) : (
-                          <>No pets found. Click "Refresh" to load all pets.</>
-                        )}
-                      </div>
-                            {filtered.length === 0 ? (
-                        <div className="text-center py-12 bg-gray-50 rounded-lg">
-                          <PawPrint className="h-16 w-16 mx-auto text-gray-400 mb-4" />
-                          <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                                  {searchTerm || typeFilter !== 'all' || statusFilter !== 'all' 
-                                    ? 'No pets match your search' 
-                              : 'No pets found'}
-                          </h3>
-                          <p className="text-gray-600">
-                            {searchTerm || typeFilter !== 'all' || statusFilter !== 'all' 
-                              ? 'Try adjusting your search or filters' 
-                              : 'Click "Refresh" to load all pets.'}
-                          </p>
-                        </div>
-                            ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                          {filtered.map((p: any) => {
-                                const petId = p.id || p._id;
-                                const createdDate = p.created_at || p.createdAt || p.date_submitted;
-                            const petImage = p.image || p.images?.[0]?.image || p.images?.[0]?.image_url || p.image_url;
-                            const imageUrl = petImage ? (petImage.startsWith('http') ? petImage : getImageUrl(petImage)) : 'https://via.placeholder.com/300x200?text=No+Image';
-                            
-                                return (
-                              <Card key={petId} className="bg-white rounded-xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-gray-100 hover:shadow-[0_8px_24px_rgba(0,0,0,0.1)] transition-all duration-300 overflow-hidden flex flex-col">
-                                {/* Pet Image */}
-                                <div className="relative h-48 w-full overflow-hidden bg-gray-100">
-                                  <img
-                                    src={imageUrl}
-                                    alt={p.name || 'Pet'}
-                                    className="w-full h-full object-cover"
-                                  />
-                                  <div className="absolute top-3 right-3">
-                              <Badge variant={
-                                p.adoption_status === 'Found' ? 'default' :
-                                p.adoption_status === 'Lost' ? 'secondary' : 
-                                p.adoption_status === 'Pending' ? 'outline' : 'outline'
-                                    } className="shadow-lg">
-                                {p.adoption_status === 'Found' ? 'Found' :
-                                 p.adoption_status === 'Lost' ? 'Lost' :
-                                 p.adoption_status === 'Pending' ? 'Pending' :
-                                 p.adoption_status === 'Available for Adoption' ? 'Adoption' :
-                                       p.adoption_status === 'Adopted' ? 'Adopted' :
-                                 p.adoption_status || 'N/A'}
-                              </Badge>
-                                  </div>
-                                  {p.is_verified && (
-                                    <div className="absolute top-3 left-3">
-                                      <Badge variant="default" className="bg-green-500 shadow-lg">
-                                        <CheckCircle className="h-3 w-3 mr-1" />
-                                        Verified
-                              </Badge>
-                                    </div>
-                                  )}
-                    </div>
-
-                                {/* Card Content */}
-                                <CardContent className="p-5 flex-1 flex flex-col">
-                  <div className="flex-1">
-                                    <h3 className="text-xl font-bold text-gray-900 mb-2 line-clamp-1">
-                                      {p.name || 'Unnamed Pet'}
-                                    </h3>
-                                    <div className="space-y-2 mb-4">
-                                      <div className="flex items-center gap-2 text-sm text-gray-600">
-                                        <PawPrint className="h-4 w-4 text-gray-400" />
-                                        <span className="font-medium">Breed:</span>
-                                        <span>{p.breed || 'Unknown'}</span>
-                  </div>
-                                      <div className="flex items-center gap-2 text-sm text-gray-600">
-                                        <Search className="h-4 w-4 text-gray-400" />
-                                        <span className="font-medium">Location:</span>
-                                        <span className="line-clamp-1">{p.location || 'N/A'}</span>
-                                      </div>
-                                      {createdDate && (
-                                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                                          <Calendar className="h-4 w-4 text-gray-400" />
-                                          <span className="font-medium">Reported:</span>
-                                          <span>{format(new Date(createdDate), 'MMM dd, yyyy')}</span>
-                                        </div>
-                                      )}
-                                    </div>
-                                  </div>
-                                  
-                                  {/* View More Button */}
-                              <Button
-                                    variant="default"
-                                    className="w-full bg-[#4CAF50] hover:bg-[#2E7D32] text-white mt-auto"
-                      onClick={() => {
-                                      setSelectedPet(p);
-                                      setShowPetDialog(true);
-                      }}
-                              >
-                                    <Eye className="h-4 w-4 mr-2" />
-                                    View More
-                              </Button>
-                                </CardContent>
-                              </Card>
-                                );
-                          })}
-                    </div>
-                      )}
-                  </>
-                );
-              })()}
-              </CardContent>
-            </Card>
-          </section>
-          )}
-
-          {/* Shelter Registrations Section - Only show when on #shelter-reg */}
-          {currentHash === '#shelter-reg' && (
-          <section id="shelter-reg" className="scroll-mt-8">
-            <Card className="bg-white rounded-xl sm:rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-gray-100">
-              <CardHeader className="border-b border-gray-100 pb-3 sm:pb-4 px-4 sm:px-6">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
-                  <div>
-                    <CardTitle className="text-xl sm:text-2xl font-bold text-gray-900">Shelter Registrations</CardTitle>
-                    <CardDescription className="text-xs sm:text-sm text-gray-500 mt-1">
-                      Review and manage shelter registration requests
-                    </CardDescription>
-                  </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={loadShelterRegistrations}
-                      disabled={shelterRegistrationsLoading}
-                      className="gap-2 text-xs sm:text-sm"
-                    >
-                      {shelterRegistrationsLoading ? (
-                        <>
-                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600"></div>
-                          Loading...
-                        </>
-                      ) : (
-                        <>
-                          <Activity className="h-4 w-4" />
-                          Refresh
-                        </>
-                      )}
-                    </Button>
-                  </div>
-              </CardHeader>
-              <CardContent className="pt-4 sm:pt-6 px-4 sm:px-6">
-                {shelterRegistrationsLoading ? (
-                  <div className="text-center py-8 sm:py-12">
-                    <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-green-600 border-r-transparent"></div>
-                    <p className="mt-4 text-sm sm:text-base text-gray-600">Loading shelter registrations...</p>
-                  </div>
-                ) : shelterRegistrations.length === 0 ? (
-                  <div className="text-center py-8 sm:py-12">
-                    <Building2 className="h-12 w-12 sm:h-16 sm:w-16 mx-auto text-gray-400 mb-4" />
-                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">No Shelter Registrations</h3>
-                    <p className="text-sm sm:text-base text-gray-600">No shelter registration requests found.</p>
-                          </div>
-                          ) : (
-                            <div className="space-y-3 sm:space-y-4">
-                    {shelterRegistrations.map((shelter: any) => (
-                      <Card key={shelter._id || shelter.id} className="hover:shadow-md transition-shadow">
-                                  <CardHeader className="p-4 sm:p-6">
-                                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
-                                      <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
-                                        <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-gradient-to-br from-[#2BB6AF] to-[#239a94] flex items-center justify-center flex-shrink-0">
-                                          <Building2 className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
-                                        </div>
-                                        <div className="min-w-0 flex-1">
-                                          <CardTitle className="text-base sm:text-lg truncate">{shelter.shelter_name}</CardTitle>
-                                          <CardDescription className="text-xs sm:text-sm truncate">
-                                            {shelter.user?.name || 'Unknown'} • {shelter.user?.email || 'N/A'}
-                                          </CardDescription>
-                                        </div>
-                                      </div>
-                                      <Badge
-                                        variant={
-                                          shelter.status === 'pending' ? 'default' :
-                                          shelter.status === 'approved' ? 'default' :
-                                          'destructive'
-                                        }
-                                        className={
-                                          shelter.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                                          shelter.status === 'approved' ? 'bg-green-100 text-green-700' :
-                                          'bg-red-100 text-red-700'
-                                        }
-                                      >
-                                        {shelter.status === 'pending' && <Clock className="h-3 w-3 mr-1" />}
-                                        {shelter.status === 'approved' && <CheckCircle className="h-3 w-3 mr-1" />}
-                                        {shelter.status === 'rejected' && <X className="h-3 w-3 mr-1" />}
-                                        <span className="text-xs sm:text-sm">{shelter.status || 'Pending'}</span>
-                                      </Badge>
-                                    </div>
-                                  </CardHeader>
-                                  <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-3 sm:mb-4">
-                                      <div>
-                                        <p className="text-sm font-semibold text-gray-700 mb-1">Location</p>
-                                        <p className="text-sm text-gray-600">
-                                {shelter.location?.city || shelter.city || 'N/A'}, {shelter.location?.state || shelter.state || ''}
-                                        </p>
-                              <p className="text-xs text-gray-500">{shelter.location?.pincode || shelter.pincode || ''}</p>
-                                      </div>
-                                      <div>
-                                        <p className="text-sm font-semibold text-gray-700 mb-1">Capacity</p>
-                                        <p className="text-sm text-gray-600">{shelter.capacity || shelter.total_capacity || 'N/A'} animals</p>
-                                      </div>
-                                      <div>
-                                        <p className="text-sm font-semibold text-gray-700 mb-1">Area</p>
-                                        <p className="text-sm text-gray-600">{shelter.area_sqft || 'N/A'} sq ft</p>
-                                      </div>
-                                      <div>
-                                        <p className="text-sm font-semibold text-gray-700 mb-1">Accepts Feeding</p>
-                                        <p className="text-sm text-gray-600">{shelter.accepts_feeding_data ? 'Yes' : 'No'}</p>
-                                      </div>
-                                    </div>
-                                    {shelter.status === 'pending' && (
-                                      <div className="flex flex-col sm:flex-row gap-2">
-                                        <Button
-                                          size="sm"
-                                          className="bg-green-600 hover:bg-green-700 text-xs sm:text-sm flex-1 sm:flex-none"
-                                          onClick={() => {
-                                            const notes = prompt('Add optional notes for approval:');
-                                            if (notes !== null) {
-                                    handleShelterAction(shelter._id || shelter.id, 'approve', notes);
-                                            }
-                                          }}
-                                        >
-                                          <CheckCircle className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-                                          Approve
-                                        </Button>
-                                        <Button
-                                          size="sm"
-                                          variant="destructive"
-                                          className="text-xs sm:text-sm flex-1 sm:flex-none"
-                                          onClick={() => {
-                                            const reason = prompt('Please provide a reason for rejection:');
-                                            if (reason && reason.trim()) {
-                                    handleShelterAction(shelter._id || shelter.id, 'reject', reason);
-                                            }
-                                          }}
-                                        >
-                                          <X className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-                                          Reject
-                                        </Button>
-                                      </div>
-                                    )}
-                        </CardContent>
-                      </Card>
-                                          ))}
-                                        </div>
-                )}
-              </CardContent>
-            </Card>
-          </section>
-          )}
-
-          {/* Role Requests Section - Moved to separate page /admin/role-requests */}
-          {false && (
-          <section id="role-requests" className="scroll-mt-8">
-            <Card className="bg-white rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-gray-100">
-              <CardHeader className="border-b border-gray-100 pb-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-2xl font-bold text-gray-900">Role Requests</CardTitle>
-                    <CardDescription className="text-sm text-gray-500 mt-1">
-                      Manage volunteer role requests (rescuer, feeder, transporter, volunteer)
-                    </CardDescription>
-                  </div>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-4">
+              {/* Search and Filter */}
+              <div className="flex flex-col sm:flex-row gap-4 mb-4">
+                <div className="flex-1">
+                  <Input
+                    placeholder="Search by breed, species, location, or status..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <select
+                    value={typeFilter}
+                    onChange={(e) => setTypeFilter(e.target.value)}
+                    className="px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-green-500"
+                  >
+                    <option value="all">All Types</option>
+                    <option value="found">Found</option>
+                    <option value="lost">Lost</option>
+                    <option value="adoption">Adoption</option>
+                  </select>
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    className="px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-green-500"
+                  >
+                    <option value="all">All Status</option>
+                    <option value="Pending Verification">Pending</option>
+                    <option value="Listed Found">Listed Found</option>
+                    <option value="Listed Lost">Listed Lost</option>
+                    <option value="Matched">Matched</option>
+                    <option value="Reunited">Reunited</option>
+                    <option value="Available for Adoption">Available for Adoption</option>
+                    <option value="Adopted">Adopted</option>
+                  </select>
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={loadRoleRequests}
-                    disabled={roleRequestsLoading}
+                    onClick={loadAllPets}
+                    disabled={petsLoading}
                     className="gap-2"
                   >
-                    {roleRequestsLoading ? (
+                    {petsLoading ? (
                       <>
                         <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600"></div>
                         Loading...
@@ -1201,547 +870,878 @@ export default function Admin() {
                       </>
                     )}
                   </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setSearchTerm('');
+                      setTypeFilter('all');
+                      setStatusFilter('all');
+                    }}
+                  >
+                    Clear
+                  </Button>
                 </div>
-              </CardHeader>
-              <CardContent className="pt-6">
-                {/* Filters and Search */}
-                <div className="mb-6 space-y-4">
-                  <div className="flex flex-col md:flex-row gap-4">
-                    <div className="flex-1 relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                      <Input
-                        placeholder="Search by name, email, role, or reason..."
-                        value={roleRequestSearchTerm}
-                        onChange={(e) => setRoleRequestSearchTerm(e.target.value)}
-                        className="pl-10"
-                      />
-                    </div>
-                    <select
-                      value={roleRequestStatusFilter}
-                      onChange={(e) => setRoleRequestStatusFilter(e.target.value)}
-                      className="px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-green-500"
-                    >
-                      <option value="all">All Status</option>
-                      <option value="pending">Pending</option>
-                      <option value="approved">Approved</option>
-                      <option value="rejected">Rejected</option>
-                    </select>
-                    <select
-                      value={roleRequestRoleFilter}
-                      onChange={(e) => setRoleRequestRoleFilter(e.target.value)}
-                      className="px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-green-500"
-                    >
-                      <option value="all">All Roles</option>
-                      <option value="rescuer">Rescuer</option>
-                      <option value="feeder">Feeder</option>
-                      <option value="transporter">Transporter</option>
-                      <option value="volunteer">Volunteer</option>
-                    </select>
-                  </div>
-                  {/* Statistics */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="bg-gray-50 rounded-lg p-3">
-                      <p className="text-xs text-gray-600 mb-1">Total</p>
-                      <p className="text-2xl font-bold text-gray-900">{roleRequests.length}</p>
-                    </div>
-                    <div className="bg-yellow-50 rounded-lg p-3">
-                      <p className="text-xs text-gray-600 mb-1">Pending</p>
-                      <p className="text-2xl font-bold text-yellow-700">
-                        {roleRequests.filter((r: any) => r.status === 'pending').length}
-                      </p>
-                    </div>
-                    <div className="bg-green-50 rounded-lg p-3">
-                      <p className="text-xs text-gray-600 mb-1">Approved</p>
-                      <p className="text-2xl font-bold text-green-700">
-                        {roleRequests.filter((r: any) => r.status === 'approved').length}
-                      </p>
-                    </div>
-                    <div className="bg-red-50 rounded-lg p-3">
-                      <p className="text-xs text-gray-600 mb-1">Rejected</p>
-                      <p className="text-2xl font-bold text-red-700">
-                        {roleRequests.filter((r: any) => r.status === 'rejected').length}
-                      </p>
-                    </div>
-                  </div>
-                </div>
+              </div>
 
-                {roleRequestsLoading ? (
-                  <div className="text-center py-12">
-                    <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-green-600 border-r-transparent"></div>
-                    <p className="mt-4 text-gray-600">Loading role requests...</p>
-                  </div>
-                ) : filteredRoleRequests.length === 0 ? (
-                  <div className="text-center py-12">
-                    <UserPlus className="h-16 w-16 mx-auto text-gray-400 mb-4" />
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">No Role Requests</h3>
-                    <p className="text-gray-600">
-                      {roleRequestSearchTerm || roleRequestStatusFilter !== 'all' || roleRequestRoleFilter !== 'all'
-                        ? 'No role requests match your filters'
-                        : 'No role requests found.'}
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {filteredRoleRequests.map((request: any) => (
-                      <Card key={request._id || request.id} className="hover:shadow-md transition-shadow">
-                        <CardHeader>
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <CardTitle className="text-lg">
-                                {request.user?.name || request.requested_by?.name || 'Unknown User'}
-                              </CardTitle>
-                              <CardDescription>
-                                {request.user?.email || request.requested_by?.email || 'N/A'}
-                              </CardDescription>
-                            </div>
-                            <Badge
-                              variant={
-                                request.status === 'pending' ? 'default' :
-                                request.status === 'approved' ? 'default' :
-                                'destructive'
-                              }
-                              className={
-                                request.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                                request.status === 'approved' ? 'bg-green-100 text-green-700' :
-                                'bg-red-100 text-red-700'
-                              }
-                            >
-                              {request.status === 'pending' && <Clock className="h-3 w-3 mr-1" />}
-                              {request.status === 'approved' && <CheckCircle className="h-3 w-3 mr-1" />}
-                              {request.status === 'rejected' && <X className="h-3 w-3 mr-1" />}
-                              {request.status || 'Pending'}
-                            </Badge>
-                          </div>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                            <div>
-                              <p className="text-sm font-semibold text-gray-700 mb-1">Requested Role</p>
-                              <Badge variant="outline" className="text-base capitalize">
-                                {request.requested_role || 'N/A'}
-                              </Badge>
-                            </div>
-                            {request.user?.phone && (
-                              <div>
-                                <p className="text-sm font-semibold text-gray-700 mb-1">Phone</p>
-                                <p className="text-sm text-gray-600">{request.user.phone}</p>
+              {(() => {
+                if (petsLoading) {
+                  return (
+                    <div className="text-center py-12">
+                      <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-green-600 border-r-transparent"></div>
+                      <p className="mt-4 text-gray-600">Loading all pets...</p>
+                    </div>
+                  );
+                }
+
+                const filtered = pets.filter((p: any) => {
+                  // Map adoption_status to report_type for filtering
+                  const reportType = p.adoption_status === 'Found' ? 'found' :
+                    p.adoption_status === 'Lost' ? 'lost' : null;
+
+                  const matchesSearch = !searchTerm ||
+                    p.breed?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    p.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    p.location?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    p.adoption_status?.toLowerCase().includes(searchTerm.toLowerCase());
+                  const matchesType = typeFilter === 'all' || reportType === typeFilter || p.report_type === typeFilter || p.type === typeFilter;
+                  const matchesStatus = statusFilter === 'all' || p.adoption_status === statusFilter || p.status === statusFilter;
+                  return matchesSearch && matchesType && matchesStatus;
+                });
+
+                return (
+                  <>
+                    <div className="mb-4 text-sm text-gray-600">
+                      {pets.length > 0 ? (
+                        <>Showing <span className="font-semibold">{filtered.length}</span> of <span className="font-semibold">{pets.length}</span> pets</>
+                      ) : (
+                        <>No pets found. Click "Refresh" to load all pets.</>
+                      )}
+                    </div>
+                    {filtered.length === 0 ? (
+                      <div className="text-center py-12 bg-gray-50 rounded-lg">
+                        <PawPrint className="h-16 w-16 mx-auto text-gray-400 mb-4" />
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                          {searchTerm || typeFilter !== 'all' || statusFilter !== 'all'
+                            ? 'No pets match your search'
+                            : 'No pets found'}
+                        </h3>
+                        <p className="text-gray-600">
+                          {searchTerm || typeFilter !== 'all' || statusFilter !== 'all'
+                            ? 'Try adjusting your search or filters'
+                            : 'Click "Refresh" to load all pets.'}
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {filtered.map((p: any) => {
+                          const petId = p.id || p._id;
+                          const createdDate = p.created_at || p.createdAt || p.date_submitted;
+                          const petImage = p.image || p.images?.[0]?.image || p.images?.[0]?.image_url || p.image_url;
+                          const imageUrl = petImage ? (petImage.startsWith('http') ? petImage : getImageUrl(petImage)) : 'https://via.placeholder.com/300x200?text=No+Image';
+
+                          return (
+                            <Card key={petId} className="bg-white rounded-xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-gray-100 hover:shadow-[0_8px_24px_rgba(0,0,0,0.1)] transition-all duration-300 overflow-hidden flex flex-col">
+                              {/* Pet Image */}
+                              <div className="relative h-48 w-full overflow-hidden bg-gray-100">
+                                <img
+                                  src={imageUrl}
+                                  alt={p.name || 'Pet'}
+                                  className="w-full h-full object-cover"
+                                />
+                                <div className="absolute top-3 right-3">
+                                  <Badge variant={
+                                    p.adoption_status === 'Found' ? 'default' :
+                                      p.adoption_status === 'Lost' ? 'secondary' :
+                                        p.adoption_status === 'Pending' ? 'outline' : 'outline'
+                                  } className="shadow-lg">
+                                    {p.adoption_status === 'Found' ? 'Found' :
+                                      p.adoption_status === 'Lost' ? 'Lost' :
+                                        p.adoption_status === 'Pending' ? 'Pending' :
+                                          p.adoption_status === 'Available for Adoption' ? 'Adoption' :
+                                            p.adoption_status === 'Adopted' ? 'Adopted' :
+                                              p.adoption_status || 'N/A'}
+                                  </Badge>
+                                </div>
+                                {p.is_verified && (
+                                  <div className="absolute top-3 left-3">
+                                    <Badge variant="default" className="bg-green-500 shadow-lg">
+                                      <CheckCircle className="h-3 w-3 mr-1" />
+                                      Verified
+                                    </Badge>
+                                  </div>
+                                )}
                               </div>
-                            )}
-                            {request.created_at && (
-                              <div>
-                                <p className="text-sm font-semibold text-gray-700 mb-1">Requested Date</p>
-                                <p className="text-sm text-gray-600">
-                                  {format(new Date(request.created_at), 'MMM dd, yyyy HH:mm')}
-                                </p>
-                              </div>
-                            )}
-                            {request.reviewed_at && (
-                              <div>
-                                <p className="text-sm font-semibold text-gray-700 mb-1">Reviewed Date</p>
-                                <p className="text-sm text-gray-600">
-                                  {format(new Date(request.reviewed_at), 'MMM dd, yyyy HH:mm')}
-                                </p>
-                              </div>
-                            )}
-                          </div>
 
-                          {request.reason && (
-                            <div className="mb-3">
-                              <p className="text-sm font-semibold text-gray-700 mb-1">Reason</p>
-                              <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">{request.reason}</p>
-                            </div>
-                          )}
-
-                          {request.experience && (
-                            <div className="mb-3">
-                              <p className="text-sm font-semibold text-gray-700 mb-1">Experience</p>
-                              <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">{request.experience}</p>
-                            </div>
-                          )}
-
-                          {request.availability && (
-                            <div className="mb-3">
-                              <p className="text-sm font-semibold text-gray-700 mb-1">Availability</p>
-                              <p className="text-sm text-gray-600">{request.availability}</p>
-                            </div>
-                          )}
-
-                          {request.resources && (
-                            <div className="mb-3">
-                              <p className="text-sm font-semibold text-gray-700 mb-1">Resources</p>
-                              <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">{request.resources}</p>
-                            </div>
-                          )}
-
-                          {request.review_notes && (
-                            <div className="mb-3">
-                              <p className="text-sm font-semibold text-gray-700 mb-1">Review Notes</p>
-                              <p className="text-sm text-gray-600 bg-blue-50 p-3 rounded-lg">{request.review_notes}</p>
-                            </div>
-                          )}
-
-                          {request.reviewed_by_name && (
-                            <div className="mb-3">
-                              <p className="text-sm font-semibold text-gray-700 mb-1">Reviewed By</p>
-                              <p className="text-sm text-gray-600">{request.reviewed_by_name}</p>
-                            </div>
-                          )}
-                          {request.status === 'pending' && (
-                            <div className="flex gap-2 mt-4 pt-4 border-t border-gray-200">
-                              <Button
-                                size="sm"
-                                className="bg-green-600 hover:bg-green-700 flex-1"
-                                onClick={() => openRoleRequestAction(request, 'approve')}
-                              >
-                                <CheckCircle className="mr-2 h-4 w-4" />
-                                Approve
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="destructive"
-                                className="flex-1"
-                                onClick={() => openRoleRequestAction(request, 'reject')}
-                              >
-                                <X className="mr-2 h-4 w-4" />
-                                Reject
-                              </Button>
+                              {/* Card Content */}
+                              <CardContent className="p-5 flex-1 flex flex-col">
+                                <div className="flex-1">
+                                  <h3 className="text-xl font-bold text-gray-900 mb-2 line-clamp-1">
+                                    {p.name || 'Unnamed Pet'}
+                                  </h3>
+                                  <div className="space-y-2 mb-4">
+                                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                                      <PawPrint className="h-4 w-4 text-gray-400" />
+                                      <span className="font-medium">Breed:</span>
+                                      <span>{p.breed || 'Unknown'}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                                      <Search className="h-4 w-4 text-gray-400" />
+                                      <span className="font-medium">Location:</span>
+                                      <span className="line-clamp-1">{p.location || 'N/A'}</span>
+                                    </div>
+                                    {createdDate && (
+                                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                                        <Calendar className="h-4 w-4 text-gray-400" />
+                                        <span className="font-medium">Reported:</span>
+                                        <span>{format(new Date(createdDate), 'MMM dd, yyyy')}</span>
                                       </div>
                                     )}
-                                  </CardContent>
-                                </Card>
-                              ))}
-                            </div>
-                          )}
-              </CardContent>
-            </Card>
-          </section>
-          )}
+                                  </div>
+                                </div>
 
-          {/* Role Request Action Dialog */}
-          <Dialog open={showRoleRequestDialog} onOpenChange={setShowRoleRequestDialog}>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>
-                  {roleRequestActionType === 'approve' ? 'Approve Role Request' : 'Reject Role Request'}
-                </DialogTitle>
-                <DialogDescription>
-                  {roleRequestActionType === 'approve'
-                    ? 'Add optional notes for approval'
-                    : 'Please provide a reason for rejection (required)'}
-                </DialogDescription>
-              </DialogHeader>
-              {selectedRoleRequest && (
-                <div className="space-y-4">
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <p className="text-sm font-semibold text-gray-700 mb-2">Request Details</p>
-                    <div className="space-y-1 text-sm">
-                      <p><span className="font-medium">User:</span> {selectedRoleRequest.user?.name || 'Unknown'}</p>
-                      <p><span className="font-medium">Email:</span> {selectedRoleRequest.user?.email || 'N/A'}</p>
-                      <p><span className="font-medium">Requested Role:</span> <span className="capitalize">{selectedRoleRequest.requested_role}</span></p>
-                    </div>
-                  </div>
-                  <div>
-                    <Label htmlFor="action-notes" className="text-sm font-semibold">
-                      {roleRequestActionType === 'approve' ? 'Approval Notes (Optional)' : 'Rejection Reason *'}
-                    </Label>
-                    <Textarea
-                      id="action-notes"
-                      value={roleRequestActionNotes}
-                      onChange={(e) => setRoleRequestActionNotes(e.target.value)}
-                      placeholder={
-                        roleRequestActionType === 'approve'
-                          ? 'Add any notes about this approval...'
-                          : 'Explain why this role request is being rejected...'
-                      }
-                      className="mt-2"
-                      rows={4}
-                    />
-                  </div>
-                  <div className="flex gap-2 justify-end pt-4">
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        setShowRoleRequestDialog(false);
-                        setSelectedRoleRequest(null);
-                        setRoleRequestActionNotes('');
-                        setRoleRequestActionType(null);
-                      }}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      onClick={submitRoleRequestAction}
-                      className={
-                        roleRequestActionType === 'approve'
-                          ? 'bg-green-600 hover:bg-green-700'
-                          : 'bg-red-600 hover:bg-red-700'
-                      }
-                    >
-                      {roleRequestActionType === 'approve' ? (
-                        <>
-                          <CheckCircle className="mr-2 h-4 w-4" />
-                          Approve
-                        </>
-                      ) : (
-                        <>
-                          <X className="mr-2 h-4 w-4" />
-                          Reject
-                        </>
-                      )}
-                    </Button>
-                  </div>
+                                {/* View More Button */}
+                                <Button
+                                  variant="default"
+                                  className="w-full bg-[#4CAF50] hover:bg-[#2E7D32] text-white mt-auto"
+                                  onClick={() => {
+                                    setSelectedPet(p);
+                                    setShowPetDialog(true);
+                                  }}
+                                >
+                                  <Eye className="h-4 w-4 mr-2" />
+                                  View More
+                                </Button>
+                              </CardContent>
+                            </Card>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
+            </CardContent>
+          </Card>
+        </section>
+      )}
+
+      {/* Shelter Registrations Section - Only show when on #shelter-reg */}
+      {currentHash === '#shelter-reg' && (
+        <section id="shelter-reg" className="scroll-mt-8">
+          <Card className="bg-white rounded-xl sm:rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-gray-100">
+            <CardHeader className="border-b border-gray-100 pb-3 sm:pb-4 px-4 sm:px-6">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
+                <div>
+                  <CardTitle className="text-xl sm:text-2xl font-bold text-gray-900">Shelter Registrations</CardTitle>
+                  <CardDescription className="text-xs sm:text-sm text-gray-500 mt-1">
+                    Review and manage shelter registration requests
+                  </CardDescription>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={loadShelterRegistrations}
+                  disabled={shelterRegistrationsLoading}
+                  className="gap-2 text-xs sm:text-sm"
+                >
+                  {shelterRegistrationsLoading ? (
+                    <>
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600"></div>
+                      Loading...
+                    </>
+                  ) : (
+                    <>
+                      <Activity className="h-4 w-4" />
+                      Refresh
+                    </>
+                  )}
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-4 sm:pt-6 px-4 sm:px-6">
+              {shelterRegistrationsLoading ? (
+                <div className="text-center py-8 sm:py-12">
+                  <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-green-600 border-r-transparent"></div>
+                  <p className="mt-4 text-sm sm:text-base text-gray-600">Loading shelter registrations...</p>
+                </div>
+              ) : shelterRegistrations.length === 0 ? (
+                <div className="text-center py-8 sm:py-12">
+                  <Building2 className="h-12 w-12 sm:h-16 sm:w-16 mx-auto text-gray-400 mb-4" />
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">No Shelter Registrations</h3>
+                  <p className="text-sm sm:text-base text-gray-600">No shelter registration requests found.</p>
+                </div>
+              ) : (
+                <div className="space-y-3 sm:space-y-4">
+                  {shelterRegistrations.map((shelter: any) => (
+                    <Card key={shelter._id || shelter.id} className="hover:shadow-md transition-shadow">
+                      <CardHeader className="p-4 sm:p-6">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
+                          <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                            <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-gradient-to-br from-[#2BB6AF] to-[#239a94] flex items-center justify-center flex-shrink-0">
+                              <Building2 className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <CardTitle className="text-base sm:text-lg truncate">{shelter.shelter_name}</CardTitle>
+                              <CardDescription className="text-xs sm:text-sm truncate">
+                                {shelter.user?.name || 'Unknown'} • {shelter.user?.email || 'N/A'}
+                              </CardDescription>
+                            </div>
+                          </div>
+                          <Badge
+                            variant={
+                              shelter.status === 'pending' ? 'default' :
+                                shelter.status === 'approved' ? 'default' :
+                                  'destructive'
+                            }
+                            className={
+                              shelter.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                                shelter.status === 'approved' ? 'bg-green-100 text-green-700' :
+                                  'bg-red-100 text-red-700'
+                            }
+                          >
+                            {shelter.status === 'pending' && <Clock className="h-3 w-3 mr-1" />}
+                            {shelter.status === 'approved' && <CheckCircle className="h-3 w-3 mr-1" />}
+                            {shelter.status === 'rejected' && <X className="h-3 w-3 mr-1" />}
+                            <span className="text-xs sm:text-sm">{shelter.status || 'Pending'}</span>
+                          </Badge>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-3 sm:mb-4">
+                          <div>
+                            <p className="text-sm font-semibold text-gray-700 mb-1">Location</p>
+                            <p className="text-sm text-gray-600">
+                              {shelter.location?.city || shelter.city || 'N/A'}, {shelter.location?.state || shelter.state || ''}
+                            </p>
+                            <p className="text-xs text-gray-500">{shelter.location?.pincode || shelter.pincode || ''}</p>
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold text-gray-700 mb-1">Capacity</p>
+                            <p className="text-sm text-gray-600">{shelter.capacity || shelter.total_capacity || 'N/A'} animals</p>
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold text-gray-700 mb-1">Area</p>
+                            <p className="text-sm text-gray-600">{shelter.area_sqft || 'N/A'} sq ft</p>
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold text-gray-700 mb-1">Accepts Feeding</p>
+                            <p className="text-sm text-gray-600">{shelter.accepts_feeding_data ? 'Yes' : 'No'}</p>
+                          </div>
+                        </div>
+                        {shelter.status === 'pending' && (
+                          <div className="flex flex-col sm:flex-row gap-2">
+                            <Button
+                              size="sm"
+                              className="bg-green-600 hover:bg-green-700 text-xs sm:text-sm flex-1 sm:flex-none"
+                              onClick={() => {
+                                const notes = prompt('Add optional notes for approval:');
+                                if (notes !== null) {
+                                  handleShelterAction(shelter._id || shelter.id, 'approve', notes);
+                                }
+                              }}
+                            >
+                              <CheckCircle className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                              Approve
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              className="text-xs sm:text-sm flex-1 sm:flex-none"
+                              onClick={() => {
+                                const reason = prompt('Please provide a reason for rejection:');
+                                if (reason && reason.trim()) {
+                                  handleShelterAction(shelter._id || shelter.id, 'reject', reason);
+                                }
+                              }}
+                            >
+                              <X className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                              Reject
+                            </Button>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))}
                 </div>
               )}
-            </DialogContent>
-          </Dialog>
+            </CardContent>
+          </Card>
+        </section>
+      )}
 
-          {/* Pet Details Dialog */}
-          <Dialog open={showPetDialog} onOpenChange={setShowPetDialog}>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle className="text-2xl font-bold text-gray-900">
-                  {selectedPet?.name || 'Pet Details'}
-                </DialogTitle>
-                <DialogDescription className="text-sm text-gray-600">
-                  Complete information about the pet
-                </DialogDescription>
-              </DialogHeader>
-              
-              {selectedPet && (
-                <div className="space-y-6 mt-4">
-                  {/* Pet Image Gallery */}
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-3">Photos</h3>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                      {selectedPet.images && selectedPet.images.length > 0 ? (
-                        selectedPet.images.map((img: any, idx: number) => {
-                          const imageUrl = img.image_url || img.image || selectedPet.image_url || selectedPet.image;
-                          const photoUrl = imageUrl ? (imageUrl.startsWith('http') ? imageUrl : getImageUrl(imageUrl)) : 'https://via.placeholder.com/300x200?text=No+Image';
-                      return (
-                            <div key={idx} className="relative h-48 rounded-lg overflow-hidden border border-gray-200">
-                              <img
-                                src={photoUrl}
-                                alt={`Pet photo ${idx + 1}`}
-                                className="w-full h-full object-cover"
-                              />
+      {/* Role Requests Section - Moved to separate page /admin/role-requests */}
+      {false && (
+        <section id="role-requests" className="scroll-mt-8">
+          <Card className="bg-white rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-gray-100">
+            <CardHeader className="border-b border-gray-100 pb-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-2xl font-bold text-gray-900">Role Requests</CardTitle>
+                  <CardDescription className="text-sm text-gray-500 mt-1">
+                    Manage volunteer role requests (rescuer, feeder, transporter, volunteer)
+                  </CardDescription>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={loadRoleRequests}
+                  disabled={roleRequestsLoading}
+                  className="gap-2"
+                >
+                  {roleRequestsLoading ? (
+                    <>
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600"></div>
+                      Loading...
+                    </>
+                  ) : (
+                    <>
+                      <Activity className="h-4 w-4" />
+                      Refresh
+                    </>
+                  )}
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-6">
+              {/* Filters and Search */}
+              <div className="mb-6 space-y-4">
+                <div className="flex flex-col md:flex-row gap-4">
+                  <div className="flex-1 relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Input
+                      placeholder="Search by name, email, role, or reason..."
+                      value={roleRequestSearchTerm}
+                      onChange={(e) => setRoleRequestSearchTerm(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                  <select
+                    value={roleRequestStatusFilter}
+                    onChange={(e) => setRoleRequestStatusFilter(e.target.value)}
+                    className="px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-green-500"
+                  >
+                    <option value="all">All Status</option>
+                    <option value="pending">Pending</option>
+                    <option value="approved">Approved</option>
+                    <option value="rejected">Rejected</option>
+                  </select>
+                  <select
+                    value={roleRequestRoleFilter}
+                    onChange={(e) => setRoleRequestRoleFilter(e.target.value)}
+                    className="px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-green-500"
+                  >
+                    <option value="all">All Roles</option>
+                    <option value="rescuer">Rescuer</option>
+                    <option value="feeder">Feeder</option>
+                    <option value="transporter">Transporter</option>
+                    <option value="volunteer">Volunteer</option>
+                  </select>
+                </div>
+                {/* Statistics */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <p className="text-xs text-gray-600 mb-1">Total</p>
+                    <p className="text-2xl font-bold text-gray-900">{roleRequests.length}</p>
+                  </div>
+                  <div className="bg-yellow-50 rounded-lg p-3">
+                    <p className="text-xs text-gray-600 mb-1">Pending</p>
+                    <p className="text-2xl font-bold text-yellow-700">
+                      {roleRequests.filter((r: any) => r.status === 'pending').length}
+                    </p>
+                  </div>
+                  <div className="bg-green-50 rounded-lg p-3">
+                    <p className="text-xs text-gray-600 mb-1">Approved</p>
+                    <p className="text-2xl font-bold text-green-700">
+                      {roleRequests.filter((r: any) => r.status === 'approved').length}
+                    </p>
+                  </div>
+                  <div className="bg-red-50 rounded-lg p-3">
+                    <p className="text-xs text-gray-600 mb-1">Rejected</p>
+                    <p className="text-2xl font-bold text-red-700">
+                      {roleRequests.filter((r: any) => r.status === 'rejected').length}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {roleRequestsLoading ? (
+                <div className="text-center py-12">
+                  <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-green-600 border-r-transparent"></div>
+                  <p className="mt-4 text-gray-600">Loading role requests...</p>
+                </div>
+              ) : filteredRoleRequests.length === 0 ? (
+                <div className="text-center py-12">
+                  <UserPlus className="h-16 w-16 mx-auto text-gray-400 mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No Role Requests</h3>
+                  <p className="text-gray-600">
+                    {roleRequestSearchTerm || roleRequestStatusFilter !== 'all' || roleRequestRoleFilter !== 'all'
+                      ? 'No role requests match your filters'
+                      : 'No role requests found.'}
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {filteredRoleRequests.map((request: any) => (
+                    <Card key={request._id || request.id} className="hover:shadow-md transition-shadow">
+                      <CardHeader>
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <CardTitle className="text-lg">
+                              {request.user?.name || request.requested_by?.name || 'Unknown User'}
+                            </CardTitle>
+                            <CardDescription>
+                              {request.user?.email || request.requested_by?.email || 'N/A'}
+                            </CardDescription>
                           </div>
-                          );
-                        })
-                      ) : selectedPet.image ? (
-                        <div className="relative h-48 rounded-lg overflow-hidden border border-gray-200">
+                          <Badge
+                            variant={
+                              request.status === 'pending' ? 'default' :
+                                request.status === 'approved' ? 'default' :
+                                  'destructive'
+                            }
+                            className={
+                              request.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                                request.status === 'approved' ? 'bg-green-100 text-green-700' :
+                                  'bg-red-100 text-red-700'
+                            }
+                          >
+                            {request.status === 'pending' && <Clock className="h-3 w-3 mr-1" />}
+                            {request.status === 'approved' && <CheckCircle className="h-3 w-3 mr-1" />}
+                            {request.status === 'rejected' && <X className="h-3 w-3 mr-1" />}
+                            {request.status || 'Pending'}
+                          </Badge>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                          <div>
+                            <p className="text-sm font-semibold text-gray-700 mb-1">Requested Role</p>
+                            <Badge variant="outline" className="text-base capitalize">
+                              {request.requested_role || 'N/A'}
+                            </Badge>
+                          </div>
+                          {request.user?.phone && (
+                            <div>
+                              <p className="text-sm font-semibold text-gray-700 mb-1">Phone</p>
+                              <p className="text-sm text-gray-600">{request.user.phone}</p>
+                            </div>
+                          )}
+                          {request.created_at && (
+                            <div>
+                              <p className="text-sm font-semibold text-gray-700 mb-1">Requested Date</p>
+                              <p className="text-sm text-gray-600">
+                                {format(new Date(request.created_at), 'MMM dd, yyyy HH:mm')}
+                              </p>
+                            </div>
+                          )}
+                          {request.reviewed_at && (
+                            <div>
+                              <p className="text-sm font-semibold text-gray-700 mb-1">Reviewed Date</p>
+                              <p className="text-sm text-gray-600">
+                                {format(new Date(request.reviewed_at), 'MMM dd, yyyy HH:mm')}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+
+                        {request.reason && (
+                          <div className="mb-3">
+                            <p className="text-sm font-semibold text-gray-700 mb-1">Reason</p>
+                            <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">{request.reason}</p>
+                          </div>
+                        )}
+
+                        {request.experience && (
+                          <div className="mb-3">
+                            <p className="text-sm font-semibold text-gray-700 mb-1">Experience</p>
+                            <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">{request.experience}</p>
+                          </div>
+                        )}
+
+                        {request.availability && (
+                          <div className="mb-3">
+                            <p className="text-sm font-semibold text-gray-700 mb-1">Availability</p>
+                            <p className="text-sm text-gray-600">{request.availability}</p>
+                          </div>
+                        )}
+
+                        {request.resources && (
+                          <div className="mb-3">
+                            <p className="text-sm font-semibold text-gray-700 mb-1">Resources</p>
+                            <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">{request.resources}</p>
+                          </div>
+                        )}
+
+                        {request.review_notes && (
+                          <div className="mb-3">
+                            <p className="text-sm font-semibold text-gray-700 mb-1">Review Notes</p>
+                            <p className="text-sm text-gray-600 bg-blue-50 p-3 rounded-lg">{request.review_notes}</p>
+                          </div>
+                        )}
+
+                        {request.reviewed_by_name && (
+                          <div className="mb-3">
+                            <p className="text-sm font-semibold text-gray-700 mb-1">Reviewed By</p>
+                            <p className="text-sm text-gray-600">{request.reviewed_by_name}</p>
+                          </div>
+                        )}
+                        {request.status === 'pending' && (
+                          <div className="flex gap-2 mt-4 pt-4 border-t border-gray-200">
+                            <Button
+                              size="sm"
+                              className="bg-green-600 hover:bg-green-700 flex-1"
+                              onClick={() => openRoleRequestAction(request, 'approve')}
+                            >
+                              <CheckCircle className="mr-2 h-4 w-4" />
+                              Approve
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              className="flex-1"
+                              onClick={() => openRoleRequestAction(request, 'reject')}
+                            >
+                              <X className="mr-2 h-4 w-4" />
+                              Reject
+                            </Button>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </section>
+      )}
+
+      {/* Role Request Action Dialog */}
+      <Dialog open={showRoleRequestDialog} onOpenChange={setShowRoleRequestDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>
+              {roleRequestActionType === 'approve' ? 'Approve Role Request' : 'Reject Role Request'}
+            </DialogTitle>
+            <DialogDescription>
+              {roleRequestActionType === 'approve'
+                ? 'Add optional notes for approval'
+                : 'Please provide a reason for rejection (required)'}
+            </DialogDescription>
+          </DialogHeader>
+          {selectedRoleRequest && (
+            <div className="space-y-4">
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <p className="text-sm font-semibold text-gray-700 mb-2">Request Details</p>
+                <div className="space-y-1 text-sm">
+                  <p><span className="font-medium">User:</span> {selectedRoleRequest.user?.name || 'Unknown'}</p>
+                  <p><span className="font-medium">Email:</span> {selectedRoleRequest.user?.email || 'N/A'}</p>
+                  <p><span className="font-medium">Requested Role:</span> <span className="capitalize">{selectedRoleRequest.requested_role}</span></p>
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="action-notes" className="text-sm font-semibold">
+                  {roleRequestActionType === 'approve' ? 'Approval Notes (Optional)' : 'Rejection Reason *'}
+                </Label>
+                <Textarea
+                  id="action-notes"
+                  value={roleRequestActionNotes}
+                  onChange={(e) => setRoleRequestActionNotes(e.target.value)}
+                  placeholder={
+                    roleRequestActionType === 'approve'
+                      ? 'Add any notes about this approval...'
+                      : 'Explain why this role request is being rejected...'
+                  }
+                  className="mt-2"
+                  rows={4}
+                />
+              </div>
+              <div className="flex gap-2 justify-end pt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowRoleRequestDialog(false);
+                    setSelectedRoleRequest(null);
+                    setRoleRequestActionNotes('');
+                    setRoleRequestActionType(null);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={submitRoleRequestAction}
+                  className={
+                    roleRequestActionType === 'approve'
+                      ? 'bg-green-600 hover:bg-green-700'
+                      : 'bg-red-600 hover:bg-red-700'
+                  }
+                >
+                  {roleRequestActionType === 'approve' ? (
+                    <>
+                      <CheckCircle className="mr-2 h-4 w-4" />
+                      Approve
+                    </>
+                  ) : (
+                    <>
+                      <X className="mr-2 h-4 w-4" />
+                      Reject
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Pet Details Dialog */}
+      <Dialog open={showPetDialog} onOpenChange={setShowPetDialog}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold text-gray-900">
+              {selectedPet?.name || 'Pet Details'}
+            </DialogTitle>
+            <DialogDescription className="text-sm text-gray-600">
+              Complete information about the pet
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedPet && (
+            <div className="space-y-6 mt-4">
+              {/* Pet Image Gallery */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">Photos</h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  {selectedPet.images && selectedPet.images.length > 0 ? (
+                    selectedPet.images.map((img: any, idx: number) => {
+                      const imageUrl = img.image_url || img.image || selectedPet.image_url || selectedPet.image;
+                      const photoUrl = imageUrl ? (imageUrl.startsWith('http') ? imageUrl : getImageUrl(imageUrl)) : 'https://via.placeholder.com/300x200?text=No+Image';
+                      return (
+                        <div key={idx} className="relative h-48 rounded-lg overflow-hidden border border-gray-200">
                           <img
-                            src={selectedPet.image_url || getImageUrl(selectedPet.image) || 'https://via.placeholder.com/300x200?text=No+Image'}
-                            alt="Pet"
+                            src={photoUrl}
+                            alt={`Pet photo ${idx + 1}`}
                             className="w-full h-full object-cover"
                           />
                         </div>
-                      ) : (
-                        <div className="col-span-full text-center py-8 text-gray-500">
-                          No images available
-                  </div>
-                )}
+                      );
+                    })
+                  ) : selectedPet.image ? (
+                    <div className="relative h-48 rounded-lg overflow-hidden border border-gray-200">
+                      <img
+                        src={selectedPet.image_url || getImageUrl(selectedPet.image) || 'https://via.placeholder.com/300x200?text=No+Image'}
+                        alt="Pet"
+                        className="w-full h-full object-cover"
+                      />
                     </div>
-                  </div>
+                  ) : (
+                    <div className="col-span-full text-center py-8 text-gray-500">
+                      No images available
+                    </div>
+                  )}
+                </div>
+              </div>
 
-                  {/* Basic Information */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <Card className="bg-gray-50">
-                                  <CardHeader>
-                        <CardTitle className="text-lg">Basic Information</CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-3">
-                        <div>
-                          <Label className="text-sm font-semibold text-gray-700">Pet Name</Label>
-                          <p className="text-gray-900">{selectedPet.name || 'Unnamed'}</p>
-                                        </div>
-                                        <div>
-                          <Label className="text-sm font-semibold text-gray-700">Breed</Label>
-                          <p className="text-gray-900">{selectedPet.breed || 'Unknown'}</p>
-                                        </div>
-                        <div>
-                          <Label className="text-sm font-semibold text-gray-700">Species</Label>
-                          <p className="text-gray-900">{selectedPet.species || selectedPet.type || 'N/A'}</p>
-                                      </div>
-                        <div>
-                          <Label className="text-sm font-semibold text-gray-700">Status</Label>
-                          <div className="mt-1">
-                            <Badge variant={
-                              selectedPet.adoption_status === 'Found' ? 'default' :
-                              selectedPet.adoption_status === 'Lost' ? 'secondary' : 
+              {/* Basic Information */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card className="bg-gray-50">
+                  <CardHeader>
+                    <CardTitle className="text-lg">Basic Information</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div>
+                      <Label className="text-sm font-semibold text-gray-700">Pet Name</Label>
+                      <p className="text-gray-900">{selectedPet.name || 'Unnamed'}</p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-semibold text-gray-700">Breed</Label>
+                      <p className="text-gray-900">{selectedPet.breed || 'Unknown'}</p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-semibold text-gray-700">Species</Label>
+                      <p className="text-gray-900">{selectedPet.species || selectedPet.type || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-semibold text-gray-700">Status</Label>
+                      <div className="mt-1">
+                        <Badge variant={
+                          selectedPet.adoption_status === 'Found' ? 'default' :
+                            selectedPet.adoption_status === 'Lost' ? 'secondary' :
                               selectedPet.adoption_status === 'Pending' ? 'outline' : 'outline'
-                            }>
-                              {selectedPet.adoption_status === 'Found' ? 'Found' :
-                               selectedPet.adoption_status === 'Lost' ? 'Lost' :
-                               selectedPet.adoption_status === 'Pending' ? 'Pending' :
-                               selectedPet.adoption_status === 'Available for Adoption' ? 'Available for Adoption' :
-                               selectedPet.adoption_status === 'Adopted' ? 'Adopted' :
-                               selectedPet.adoption_status || 'N/A'}
-                                      </Badge>
-                            {selectedPet.is_verified && (
-                              <Badge variant="default" className="ml-2 bg-green-500">
-                                <CheckCircle className="h-3 w-3 mr-1" />
-                                Verified
-                              </Badge>
-                            )}
-                                    </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    <Card className="bg-gray-50">
-                      <CardHeader>
-                        <CardTitle className="text-lg">Location & Contact</CardTitle>
-                                  </CardHeader>
-                      <CardContent className="space-y-3">
-                                      <div>
-                          <Label className="text-sm font-semibold text-gray-700">Location</Label>
-                          <p className="text-gray-900">{selectedPet.location || 'N/A'}</p>
-                                      </div>
-                        {selectedPet.pincode && (
-                                      <div>
-                            <Label className="text-sm font-semibold text-gray-700">Pincode</Label>
-                            <p className="text-gray-900">{selectedPet.pincode}</p>
-                                      </div>
+                        }>
+                          {selectedPet.adoption_status === 'Found' ? 'Found' :
+                            selectedPet.adoption_status === 'Lost' ? 'Lost' :
+                              selectedPet.adoption_status === 'Pending' ? 'Pending' :
+                                selectedPet.adoption_status === 'Available for Adoption' ? 'Available for Adoption' :
+                                  selectedPet.adoption_status === 'Adopted' ? 'Adopted' :
+                                    selectedPet.adoption_status || 'N/A'}
+                        </Badge>
+                        {selectedPet.is_verified && (
+                          <Badge variant="default" className="ml-2 bg-green-500">
+                            <CheckCircle className="h-3 w-3 mr-1" />
+                            Verified
+                          </Badge>
                         )}
-                        {selectedPet.city && (
-                                      <div>
-                            <Label className="text-sm font-semibold text-gray-700">City</Label>
-                            <p className="text-gray-900">{selectedPet.city}</p>
-                                      </div>
-                        )}
-                        {selectedPet.state && (
-                                      <div>
-                            <Label className="text-sm font-semibold text-gray-700">State</Label>
-                            <p className="text-gray-900">{selectedPet.state}</p>
-                                      </div>
-                        )}
-                        {selectedPet.contact_phone && (
-                          <div>
-                            <Label className="text-sm font-semibold text-gray-700">Contact Phone</Label>
-                            <p className="text-gray-900">{selectedPet.contact_phone}</p>
-                                    </div>
-                        )}
-                        {selectedPet.contact_email && (
-                          <div>
-                            <Label className="text-sm font-semibold text-gray-700">Contact Email</Label>
-                            <p className="text-gray-900">{selectedPet.contact_email}</p>
-                                        </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                                      </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
 
-                  {/* Description */}
-                  {selectedPet.description && (
-                    <Card className="bg-gray-50">
-                      <CardHeader>
-                        <CardTitle className="text-lg">Description</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-gray-900 whitespace-pre-wrap">{selectedPet.description}</p>
-                      </CardContent>
-                    </Card>
-                  )}
+                <Card className="bg-gray-50">
+                  <CardHeader>
+                    <CardTitle className="text-lg">Location & Contact</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div>
+                      <Label className="text-sm font-semibold text-gray-700">Location</Label>
+                      <p className="text-gray-900">{selectedPet.location || 'N/A'}</p>
+                    </div>
+                    {selectedPet.pincode && (
+                      <div>
+                        <Label className="text-sm font-semibold text-gray-700">Pincode</Label>
+                        <p className="text-gray-900">{selectedPet.pincode}</p>
+                      </div>
+                    )}
+                    {selectedPet.city && (
+                      <div>
+                        <Label className="text-sm font-semibold text-gray-700">City</Label>
+                        <p className="text-gray-900">{selectedPet.city}</p>
+                      </div>
+                    )}
+                    {selectedPet.state && (
+                      <div>
+                        <Label className="text-sm font-semibold text-gray-700">State</Label>
+                        <p className="text-gray-900">{selectedPet.state}</p>
+                      </div>
+                    )}
+                    {selectedPet.contact_phone && (
+                      <div>
+                        <Label className="text-sm font-semibold text-gray-700">Contact Phone</Label>
+                        <p className="text-gray-900">{selectedPet.contact_phone}</p>
+                      </div>
+                    )}
+                    {selectedPet.contact_email && (
+                      <div>
+                        <Label className="text-sm font-semibold text-gray-700">Contact Email</Label>
+                        <p className="text-gray-900">{selectedPet.contact_email}</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
 
-                  {/* Physical Details */}
-                  {(selectedPet.age || selectedPet.gender || selectedPet.color || selectedPet.size || selectedPet.weight) && (
-                    <Card className="bg-gray-50">
-                      <CardHeader>
-                        <CardTitle className="text-lg">Physical Details</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                          {selectedPet.age && (
-                            <div>
-                              <Label className="text-sm font-semibold text-gray-700">Age</Label>
-                              <p className="text-gray-900">{selectedPet.age}</p>
-                                      </div>
-                                    )}
-                          {selectedPet.gender && (
-                            <div>
-                              <Label className="text-sm font-semibold text-gray-700">Gender</Label>
-                              <p className="text-gray-900">{selectedPet.gender}</p>
-                                      </div>
-                                    )}
-                          {selectedPet.color && (
-                            <div>
-                              <Label className="text-sm font-semibold text-gray-700">Color</Label>
-                              <p className="text-gray-900">{selectedPet.color}</p>
-                                      </div>
-                                    )}
-                          {selectedPet.size && (
-                            <div>
-                              <Label className="text-sm font-semibold text-gray-700">Size</Label>
-                              <p className="text-gray-900">{selectedPet.size}</p>
-                            </div>
-                          )}
-                          {selectedPet.weight && (
-                            <div>
-                              <Label className="text-sm font-semibold text-gray-700">Weight</Label>
-                              <p className="text-gray-900">{selectedPet.weight}</p>
-                  </div>
-                )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
-
-                  {/* Additional Information */}
-                  <Card className="bg-gray-50">
-                    <CardHeader>
-                      <CardTitle className="text-lg">Additional Information</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      {selectedPet.created_at || selectedPet.createdAt || selectedPet.date_submitted ? (
-                        <div>
-                          <Label className="text-sm font-semibold text-gray-700">Reported Date</Label>
-                          <p className="text-gray-900">
-                            {format(new Date(selectedPet.created_at || selectedPet.createdAt || selectedPet.date_submitted), 'MMM dd, yyyy HH:mm')}
-                          </p>
-                </div>
-                      ) : null}
-                      {selectedPet.last_seen && (
-                        <div>
-                          <Label className="text-sm font-semibold text-gray-700">Last Seen</Label>
-                          <p className="text-gray-900">
-                            {format(new Date(selectedPet.last_seen), 'MMM dd, yyyy')}
-                          </p>
-                        </div>
-                      )}
-                      {selectedPet.posted_by && (
-                        <div>
-                          <Label className="text-sm font-semibold text-gray-700">Reported By</Label>
-                          <p className="text-gray-900">
-                            {selectedPet.posted_by.name || 'Unknown'} ({selectedPet.posted_by.email || 'N/A'})
-                          </p>
-                        </div>
-                      )}
-          </CardContent>
-        </Card>
-
-                  {/* Action Buttons */}
-                  <div className="flex gap-3 pt-4 border-t">
-                    <Button
-                      variant="outline"
-                      className="flex-1"
-                      onClick={() => navigate(`/pets/${selectedPet.id || selectedPet._id}`)}
-                    >
-                      <Eye className="h-4 w-4 mr-2" />
-                      View Full Page
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => setShowPetDialog(false)}
-                    >
-                      Close
-                    </Button>
-                  </div>
-                </div>
+              {/* Description */}
+              {selectedPet.description && (
+                <Card className="bg-gray-50">
+                  <CardHeader>
+                    <CardTitle className="text-lg">Description</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-gray-900 whitespace-pre-wrap">{selectedPet.description}</p>
+                  </CardContent>
+                </Card>
               )}
-            </DialogContent>
-          </Dialog>
 
-          {/* Modals and other components */}
+              {/* Physical Details */}
+              {(selectedPet.age || selectedPet.gender || selectedPet.color || selectedPet.size || selectedPet.weight) && (
+                <Card className="bg-gray-50">
+                  <CardHeader>
+                    <CardTitle className="text-lg">Physical Details</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      {selectedPet.age && (
+                        <div>
+                          <Label className="text-sm font-semibold text-gray-700">Age</Label>
+                          <p className="text-gray-900">{selectedPet.age}</p>
+                        </div>
+                      )}
+                      {selectedPet.gender && (
+                        <div>
+                          <Label className="text-sm font-semibold text-gray-700">Gender</Label>
+                          <p className="text-gray-900">{selectedPet.gender}</p>
+                        </div>
+                      )}
+                      {selectedPet.color && (
+                        <div>
+                          <Label className="text-sm font-semibold text-gray-700">Color</Label>
+                          <p className="text-gray-900">{selectedPet.color}</p>
+                        </div>
+                      )}
+                      {selectedPet.size && (
+                        <div>
+                          <Label className="text-sm font-semibold text-gray-700">Size</Label>
+                          <p className="text-gray-900">{selectedPet.size}</p>
+                        </div>
+                      )}
+                      {selectedPet.weight && (
+                        <div>
+                          <Label className="text-sm font-semibold text-gray-700">Weight</Label>
+                          <p className="text-gray-900">{selectedPet.weight}</p>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Additional Information */}
+              <Card className="bg-gray-50">
+                <CardHeader>
+                  <CardTitle className="text-lg">Additional Information</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {selectedPet.created_at || selectedPet.createdAt || selectedPet.date_submitted ? (
+                    <div>
+                      <Label className="text-sm font-semibold text-gray-700">Reported Date</Label>
+                      <p className="text-gray-900">
+                        {format(new Date(selectedPet.created_at || selectedPet.createdAt || selectedPet.date_submitted), 'MMM dd, yyyy HH:mm')}
+                      </p>
+                    </div>
+                  ) : null}
+                  {selectedPet.last_seen && (
+                    <div>
+                      <Label className="text-sm font-semibold text-gray-700">Last Seen</Label>
+                      <p className="text-gray-900">
+                        {format(new Date(selectedPet.last_seen), 'MMM dd, yyyy')}
+                      </p>
+                    </div>
+                  )}
+                  {selectedPet.posted_by && (
+                    <div>
+                      <Label className="text-sm font-semibold text-gray-700">Reported By</Label>
+                      <p className="text-gray-900">
+                        {selectedPet.posted_by.name || 'Unknown'} ({selectedPet.posted_by.email || 'N/A'})
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 pt-4 border-t">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => navigate(`/pets/${selectedPet.id || selectedPet._id}`)}
+                >
+                  <Eye className="h-4 w-4 mr-2" />
+                  View Full Page
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowPetDialog(false)}
+                >
+                  Close
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Modals and other components */}
       {/* Reject Modal */}
       {showRejectModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 sm:p-6 backdrop-blur-sm">
@@ -1792,7 +1792,7 @@ export default function Admin() {
                 {acceptType === 'report' ? 'Accept & Verify Report' : 'Accept & Verify Adoption Request'}
               </CardTitle>
               <CardDescription className="text-xs sm:text-sm">
-                {acceptType === 'report' 
+                {acceptType === 'report'
                   ? 'Verify at least 2 parameters before accepting (photos, location, contact, identity)'
                   : 'Verify at least 3 parameters before accepting (identity, home check, references, financial stability)'}
               </CardDescription>
@@ -1800,7 +1800,7 @@ export default function Admin() {
             <CardContent className="space-y-4 sm:space-y-6 p-4 sm:p-6 pt-0">
               <div className="space-y-4">
                 <Label className="text-base font-semibold">Verification Parameters</Label>
-                
+
                 {acceptType === 'report' ? (
                   <div className="space-y-3">
                     <div className="flex items-center space-x-2">
