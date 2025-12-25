@@ -103,11 +103,20 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 DATABASE_URL = os.getenv('DATABASE_URL')
 
 # Parse database URL with connection pooling settings
-db_config = dj_database_url.parse(DATABASE_URL, conn_max_age=600)
-
-DATABASES = {
-    'default': db_config
-}
+# Parse database URL with connection pooling settings
+if DATABASE_URL:
+    db_config = dj_database_url.parse(DATABASE_URL, conn_max_age=600)
+    DATABASES = {
+        'default': db_config
+    }
+else:
+    # Fallback to SQLite if no DATABASE_URL (e.g. during build or local dev)
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
