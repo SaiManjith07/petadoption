@@ -117,6 +117,12 @@ export default function AdminLostPets() {
       // When a lost pet is reported, it's created with adoption_status='Pending'
       // So we need to include Pending pets that are likely lost pets
       const lostPetsList = uniquePets.filter((pet: any) => {
+        // Explicitly exclude any pet with status 'Found' or 'Found Pet'
+        // This takes precedence over all other inclusion rules
+        if (pet.adoption_status === 'Found' || pet.adoption_status === 'Found Pet' || pet.status === 'Found' || pet._isFound) {
+          return false;
+        }
+
         // Check if it's explicitly marked as Lost
         if (pet.adoption_status === 'Lost') return true;
 
@@ -130,7 +136,7 @@ export default function AdminLostPets() {
         if (pet._isPendingLost) return true;
 
         // For Pending pets, check if they have last_seen but no found_date (indicating they're lost pets)
-        if (pet.adoption_status === 'Pending' && pet.last_seen && !pet.found_date && !pet.foundDate) return true;
+        if (pet.adoption_status === 'Pending' && pet.last_seen && !pet.found_date && !pet.found_date && !pet.foundDate) return true;
 
         return false;
       });

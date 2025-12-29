@@ -82,14 +82,14 @@ export function AdminTopNav({ onMenuToggle, sidebarOpen, onRefresh, isRefreshing
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-[1000] w-full h-[70px] border-b border-[#E5E7EB] bg-white/95 backdrop-blur-xl shadow-sm">
+    <header className="fixed top-0 left-0 right-0 z-40 w-full h-[70px] border-b border-[#E5E7EB] bg-white/95 backdrop-blur-xl shadow-sm">
       <div className="flex h-[70px] items-center justify-between px-6 w-full max-w-[1400px] mx-auto">
         {/* Logo and Website Name */}
         <div className="flex items-center gap-2 md:gap-4">
           <div className="flex-shrink-0">
-            <Logo 
-              size="md" 
-              showText={true} 
+            <Logo
+              size="md"
+              showText={true}
               showTagline={false}
               linkTo="/admin"
             />

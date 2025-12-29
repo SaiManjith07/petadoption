@@ -677,11 +677,11 @@ export default function AdminChatMonitor() {
                             </AvatarFallback>
                           </Avatar>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-900 truncate">
+                            <p className="text-sm font-medium text-gray-900 break-words">
                               {participant.name || 'Unknown User'}
                             </p>
                             {participant.email && (
-                              <p className="text-xs text-gray-500 truncate">{participant.email}</p>
+                              <p className="text-xs text-gray-500 break-all">{participant.email}</p>
                             )}
                           </div>
                         </div>

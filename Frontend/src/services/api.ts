@@ -9,17 +9,17 @@ const WS_URL = WS_BASE_URL;
 // Helper function to convert relative image paths to full URLs
 export const getImageUrl = (imagePath: string | undefined | null): string | null => {
   if (!imagePath) return null;
-  
+
   // If it's a data URL (base64), return as is
   if (imagePath.startsWith('data:')) {
     return imagePath;
   }
-  
+
   // If it's already a full URL (starts with http:// or https://), return as is
   if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
     return imagePath;
   }
-  
+
   // If it's a relative path, prepend the base URL
   const baseUrl = getBaseUrl();
   // Ensure path starts with / and baseUrl doesn't end with /
@@ -133,9 +133,9 @@ export const petsAPI = {
     if (params.species) queryParams.append('species', params.species);
     if (params.location) queryParams.append('location', params.location);
     if (params.report_type) queryParams.append('report_type', params.report_type);
-    
+
     const url = `${API_URL}/pets${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-    
+
     try {
       const response = await fetch(url);
       if (!response.ok) throw new Error('Failed to fetch pets');
@@ -148,9 +148,9 @@ export const petsAPI = {
       // Fallback to mock
       await mockDelay();
       initMockData();
-      
+
       let filtered = [...mockData.pets];
-      
+
       if (params.status) {
         filtered = filtered.filter(p => p.status === params.status);
       }
@@ -163,7 +163,7 @@ export const petsAPI = {
       if (params.report_type) {
         filtered = filtered.filter(p => p.report_type === params.report_type);
       }
-      
+
       return {
         items: filtered,
         total: filtered.length,
@@ -210,10 +210,10 @@ export const petsAPI = {
     // Determine endpoint based on report_type or status
     const reportType = petData.report_type || (petData.status?.includes('Found') ? 'found' : petData.status?.includes('Lost') ? 'lost' : 'found');
     const endpoint = reportType === 'lost' ? '/pets/lost' : '/pets/found';
-    
+
     // Create FormData for multipart/form-data
     const formData = new FormData();
-    
+
     // Add all text fields
     Object.keys(petData).forEach(key => {
       if (key !== 'photos' && key !== 'report_type' && petData[key] !== undefined && petData[key] !== null) {
@@ -224,10 +224,10 @@ export const petsAPI = {
         }
       }
     });
-    
+
     // Add report_type
     formData.append('report_type', reportType);
-    
+
     // Add photos - multer expects field name 'photos' (plural)
     if (petData.photos && Array.isArray(petData.photos)) {
       petData.photos.forEach((photo: any, index: number) => {
@@ -240,12 +240,12 @@ export const petsAPI = {
     } else {
       console.warn('No photos array found in petData or photos is not an array');
     }
-    
+
     try {
       const token = localStorage.getItem('token');
       const url = `${API_URL}${endpoint}`;
-      
-      
+
+
       const response = await fetch(url, {
         method: 'POST',
         headers: {
@@ -254,10 +254,10 @@ export const petsAPI = {
         },
         body: formData,
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Failed to create pet report' }));
-        
+
         // If there are specific validation errors, format them
         if (errorData.errors && typeof errorData.errors === 'object') {
           const errorMessages = Object.entries(errorData.errors)
@@ -265,16 +265,16 @@ export const petsAPI = {
             .join('\n');
           throw new Error(`Validation failed:\n${errorMessages}`);
         }
-        
+
         throw new Error(errorData.message || `Server error: ${response.status} ${response.statusText}`);
       }
-      
+
       const data = await response.json();
       return data.data;
     } catch (error: any) {
       // Log error for debugging
       console.error('Error creating pet report:', error);
-      
+
       // Provide more specific error messages
       if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
         throw new Error(
@@ -284,7 +284,7 @@ export const petsAPI = {
           '3. Verify your network connection'
         );
       }
-      
+
       // Re-throw error so frontend can handle it
       throw new Error(error.message || 'Failed to create pet report. Please check your connection and try again.');
     }
@@ -307,25 +307,25 @@ export const petsAPI = {
   async getMatches(species?: string, color?: string, location?: string) {
     await mockDelay(300);
     initMockData();
-    
+
     let matches = mockData.pets.filter(p => p.status === 'Listed Found');
-    
+
     if (species) {
-      matches = matches.filter(p => 
+      matches = matches.filter(p =>
         p.species.toLowerCase().includes(species.toLowerCase())
       );
     }
     if (color) {
-      matches = matches.filter(p => 
+      matches = matches.filter(p =>
         p.color.toLowerCase().includes(color.toLowerCase())
       );
     }
     if (location) {
-      matches = matches.filter(p => 
+      matches = matches.filter(p =>
         p.location.toLowerCase().includes(location.toLowerCase())
       );
     }
-    
+
     return matches;
   },
 
@@ -429,10 +429,10 @@ export const chatAPI = {
       if (!mockData.chatRequests) return null;
       const request = mockData.chatRequests.find(r => r.id === requestId);
       if (!request) return null;
-      
+
       request.status = approved ? 'approved' : 'rejected';
       request.respondedAt = new Date().toISOString();
-      
+
       if (approved) {
         // Create chat room when approved (admin will be added by backend)
         const roomId = `room-${Date.now()}`;
@@ -448,7 +448,7 @@ export const chatAPI = {
         mockData.chats.push(room);
         request.roomId = roomId;
       }
-      
+
       return request;
     }
   },
@@ -473,8 +473,8 @@ export const chatAPI = {
       await mockDelay();
       const chats = mockData.chats || [];
       // Filter chats where user is a participant
-      return chats.filter(chat => 
-        chat.participants?.includes(userId) || 
+      return chats.filter(chat =>
+        chat.participants?.includes(userId) ||
         chat.participants?.includes(currentUser?.id || '')
       );
     }
@@ -571,9 +571,9 @@ export const chatAPI = {
   connectWebSocket(roomId: string) {
     // Mock WebSocket connection
     return {
-      send: (message: any) => {},
-      close: () => {},
-      on: (event: string, callback: Function) => {},
+      send: (message: any) => { },
+      close: () => { },
+      on: (event: string, callback: Function) => { },
     };
   },
 };
@@ -608,9 +608,9 @@ export const adminAPI = {
         'Authorization': `Bearer ${localStorage.getItem('token')}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ 
+      body: JSON.stringify({
         notes,
-        verification_params: verificationParams 
+        verification_params: verificationParams
       }),
     });
     if (!response.ok) {
@@ -643,7 +643,7 @@ export const adminAPI = {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           notes,
           verification_params: {
             ...verificationParams,
@@ -683,7 +683,7 @@ export const adminAPI = {
   async approvePet(id: string) {
     const pet = mockData.pets.find(p => p.id === id);
     if (!pet) throw new Error('Pet not found');
-    
+
     const newStatus = pet.status.includes('Found') ? 'Listed Found' : 'Listed Lost';
     return petsAPI.update(id, { status: newStatus });
   },
@@ -988,7 +988,7 @@ export const usersAPI = {
       if (!token) {
         throw new Error('No authentication token found');
       }
-      
+
       const response = await fetch(url, {
         method: 'PATCH',
         headers: {
@@ -997,12 +997,12 @@ export const usersAPI = {
         },
         body: JSON.stringify(updates),
       });
-      
+
       if (!response.ok) {
         const error = await response.json().catch(() => ({ message: 'Failed to update user' }));
         throw new Error(error.message || error.detail || 'Failed to update user');
       }
-      
+
       const data = await response.json();
       return data;
     } catch (error: any) {
@@ -1089,7 +1089,7 @@ export const roleRequestAPI = {
         return [];
       }
       const response = await fetch(url, {
-        headers: { 
+        headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
@@ -1118,7 +1118,7 @@ export const roleRequestAPI = {
         return [];
       }
       const response = await fetch(url, {
-        headers: { 
+        headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
@@ -1146,10 +1146,14 @@ export const shelterAPI = {
     if (params?.pincode) queryParams.append('pincode', params.pincode);
     if (params?.city) queryParams.append('city', params.city);
     if (params?.min_available) queryParams.append('min_available', params.min_available);
-    
+
     const url = `${API_URL}/shelters${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
     try {
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        headers: {
+          'Content-Type': 'application/json'
+        },
+      });
       if (!response.ok) throw new Error('Failed to fetch shelters');
       const data = await response.json();
       return data.data || [];
@@ -1223,7 +1227,7 @@ export const feedingPointAPI = {
     if (params?.lat) queryParams.append('lat', params.lat);
     if (params?.lng) queryParams.append('lng', params.lng);
     if (params?.radius) queryParams.append('radius', params.radius);
-    
+
     const url = `${API_URL}/feeding-points${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
     try {
       const response = await fetch(url, {

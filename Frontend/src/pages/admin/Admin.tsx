@@ -219,7 +219,7 @@ export default function Admin() {
           found: dashData.pets?.found || 0,
           lost: dashData.pets?.lost || 0,
         },
-        matched: 0, // Will be calculated if needed
+        matched: dashData.matched || 0, // Use actual count from API
         applications: dashData.applications || {},
         chats: dashData.chats || {},
       } : null;

@@ -378,17 +378,7 @@ export default function AdminAllPets() {
                                     <Eye className="h-4 w-4 mr-2" />
                                     View More
                                   </Button>
-                                  <Button
-                                    variant="outline"
-                                    className="flex-1"
-                                    onClick={() => {
-                                      setSelectedPetForMedical({ id: petId, name: p.name });
-                                      setShowMedicalDialog(true);
-                                    }}
-                                  >
-                                    <Stethoscope className="h-4 w-4 mr-2" />
-                                    Medical
-                                  </Button>
+
                                 </div>
                               </CardContent>
                             </Card>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { UserPlus, Search, Activity, CheckCircle, X, Clock, AlertCircle } from 'lucide-react';
+import { UserPlus, Search, Activity, CheckCircle, X, Clock, AlertCircle, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -14,388 +14,358 @@ import { format } from 'date-fns';
 import { AdminLayout } from '@/components/layout/AdminLayout';
 import { API_BASE_URL } from '@/config/api';
 
+// Unified type for all request kinds
+interface SpecializedRequest {
+  id: string | number;
+  originalId: string | number; // ID in the backend database
+  type: 'role_request' | 'shelter_registration' | 'volunteer_registration';
+  user: {
+    name: string;
+    email: string;
+    id: string | number;
+  };
+  requested_role: string;
+  status: 'pending' | 'approved' | 'rejected';
+  created_at: string;
+  // Specific fields
+  ngo_name?: string;
+  experience?: string;
+  reason?: string;
+  shelter_capacity?: number;
+  can_provide_shelter?: boolean;
+  address?: string;
+  city?: string;
+  state?: string;
+  pincode?: string;
+  review_notes?: string;
+  reviewed_by_name?: string;
+}
+
 export default function AdminRoleRequests() {
   const { isAdmin } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const [roleRequests, setRoleRequests] = useState<any[]>([]);
-  const [roleRequestsLoading, setRoleRequestsLoading] = useState(false);
-  const [roleRequestSearchTerm, setRoleRequestSearchTerm] = useState('');
-  const [roleRequestStatusFilter, setRoleRequestStatusFilter] = useState<string>('all');
-  const [roleRequestRoleFilter, setRoleRequestRoleFilter] = useState<string>('all');
-  const [filteredRoleRequests, setFilteredRoleRequests] = useState<any[]>([]);
-  const [selectedRoleRequest, setSelectedRoleRequest] = useState<any>(null);
-  const [showRoleRequestDialog, setShowRoleRequestDialog] = useState(false);
-  const [roleRequestActionNotes, setRoleRequestActionNotes] = useState('');
-  const [roleRequestActionType, setRoleRequestActionType] = useState<'approve' | 'reject' | null>(null);
+  const [allRequests, setAllRequests] = useState<SpecializedRequest[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [roleFilter, setRoleFilter] = useState<string>('all');
+  const [filteredRequests, setFilteredRequests] = useState<SpecializedRequest[]>([]);
+
+  // Action state
+  const [selectedRequest, setSelectedRequest] = useState<SpecializedRequest | null>(null);
+  const [showDialog, setShowDialog] = useState(false);
+  const [actionNotes, setActionNotes] = useState('');
+  const [actionType, setActionType] = useState<'approve' | 'reject' | null>(null);
 
   useEffect(() => {
     if (!isAdmin) {
       navigate('/dashboard');
       return;
     }
-    loadRoleRequests();
+    loadAllRequests();
   }, [isAdmin, navigate]);
 
-  const loadRoleRequests = async () => {
+  const loadAllRequests = async () => {
     try {
-      setRoleRequestsLoading(true);
-      const API_URL = API_BASE_URL;
+      setLoading(true);
       const accessToken = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_URL}/role-requests/all/`, {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
+      const headers = { 'Authorization': `Bearer ${accessToken}` };
+
+      // 1. Fetch generic Role Requests
+      const roleReqResponse = await fetch(`${API_BASE_URL}/role-requests/all/`, { headers });
+      const roleReqData = roleReqResponse.ok ? await roleReqResponse.json() : { data: [] };
+      const rawRoleRequests = Array.isArray(roleReqData.data) ? roleReqData.data : [];
+
+      // 2. Fetch Pending Specialized Requests (Shelters, Volunteers)
+      // Note: This endpoint usually returns { data: { shelter_registrations: [], ... } }
+      const pendingResponse = await fetch(`${API_BASE_URL}/admin/pending-requests/`, { headers });
+      const pendingData = pendingResponse.ok ? await pendingResponse.json() : { data: {} };
+
+      const shelterRegs = pendingData.data?.shelter_registrations || [];
+      const volunteerRegs = pendingData.data?.role_requests || []; // Sometimes they might be here or under volunteers
+
+      // Normalize Role Requests
+      const normalizedRoleRequests: SpecializedRequest[] = rawRoleRequests.map((req: any) => ({
+        id: `rr-${req.id}`,
+        originalId: req.id,
+        type: 'role_request',
+        user: {
+          name: req.user?.name || 'Unknown',
+          email: req.user?.email || 'N/A',
+          id: req.user?.id
         },
-      });
-      if (!response.ok) throw new Error('Failed to fetch role requests');
-      const data = await response.json();
-      const requests = Array.isArray(data.data) ? data.data : Array.isArray(data) ? data : [];
-      setRoleRequests(requests);
+        requested_role: req.requested_role,
+        status: req.status,
+        created_at: req.created_at,
+        experience: req.experience,
+        reason: req.reason,
+        review_notes: req.review_notes,
+        reviewed_by_name: req.reviewed_by?.name
+      }));
+
+      // Normalize Shelter Registrations
+      const normalizedShelters: SpecializedRequest[] = shelterRegs.map((req: any) => ({
+        id: `sh-${req.id}`,
+        originalId: req.id,
+        type: 'shelter_registration',
+        user: {
+          name: req.user?.name || 'Unknown',
+          email: req.user?.email || 'N/A',
+          id: req.user?.id
+        },
+        requested_role: 'shelter',
+        status: 'pending', // These are usually pending if fetching from pending-requests
+        created_at: req.createdAt || req.created_at || new Date().toISOString(),
+        ngo_name: req.shelter_name,
+        shelter_capacity: req.total_capacity,
+        address: req.location?.address,
+        city: req.location?.city,
+        state: req.location?.state,
+        pincode: req.location?.pincode,
+        reason: req.facilities?.join(', ') // specific field mapping
+      }));
+
+      // Combine all
+      setAllRequests([...normalizedRoleRequests, ...normalizedShelters]);
+
     } catch (error: any) {
+      console.error("Failed to load requests", error);
       toast({
         title: 'Error',
-        description: error.message || 'Could not load role requests',
+        description: 'Failed to load requests',
         variant: 'destructive',
       });
-      setRoleRequests([]);
     } finally {
-      setRoleRequestsLoading(false);
+      setLoading(false);
     }
   };
 
-  // Filter role requests
+  // Filter effect
   useEffect(() => {
-    let filtered = [...roleRequests];
+    let result = [...allRequests];
 
-    // Search filter
-    if (roleRequestSearchTerm) {
-      filtered = filtered.filter((req: any) =>
-        req.user?.name?.toLowerCase().includes(roleRequestSearchTerm.toLowerCase()) ||
-        req.user?.email?.toLowerCase().includes(roleRequestSearchTerm.toLowerCase()) ||
-        req.requested_role?.toLowerCase().includes(roleRequestSearchTerm.toLowerCase()) ||
-        req.reason?.toLowerCase().includes(roleRequestSearchTerm.toLowerCase()) ||
-        req.experience?.toLowerCase().includes(roleRequestSearchTerm.toLowerCase())
+    if (searchTerm) {
+      const lower = searchTerm.toLowerCase();
+      result = result.filter(req =>
+        req.user.name.toLowerCase().includes(lower) ||
+        req.user.email.toLowerCase().includes(lower) ||
+        req.requested_role.toLowerCase().includes(lower)
       );
     }
 
-    // Status filter
-    if (roleRequestStatusFilter !== 'all') {
-      filtered = filtered.filter((req: any) => req.status === roleRequestStatusFilter);
+    if (statusFilter !== 'all') {
+      result = result.filter(req => req.status === statusFilter);
     }
 
-    // Role filter
-    if (roleRequestRoleFilter !== 'all') {
-      filtered = filtered.filter((req: any) => req.requested_role === roleRequestRoleFilter);
+    if (roleFilter !== 'all') {
+      result = result.filter(req => req.requested_role === roleFilter);
     }
 
-    setFilteredRoleRequests(filtered);
-  }, [roleRequests, roleRequestSearchTerm, roleRequestStatusFilter, roleRequestRoleFilter]);
+    // Sort by date desc
+    result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
-  const handleRoleRequestAction = async (requestId: string | number, action: 'approve' | 'reject', notes?: string) => {
+    setFilteredRequests(result);
+  }, [allRequests, searchTerm, statusFilter, roleFilter]);
+
+  const handleAction = async () => {
+    if (!selectedRequest || !actionType) return;
+
     try {
-      const API_URL = API_BASE_URL;
-      const response = await fetch(`${API_URL}/role-requests/${requestId}/${action}/`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ admin_notes: notes || '' }),
-      });
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `Failed to ${action} role request`);
+      const accessToken = localStorage.getItem('accessToken');
+      const headers = {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
+      };
+      const notes = actionNotes || '';
+      const isApprove = actionType === 'approve';
+
+      let url = '';
+      let body = {};
+
+      if (selectedRequest.type === 'role_request') {
+        // Role Request Model
+        url = `${API_BASE_URL}/role-requests/${selectedRequest.originalId}/${actionType}/`;
+        body = { admin_notes: notes };
+      } else if (selectedRequest.type === 'shelter_registration') {
+        // Shelter Model
+        url = `${API_BASE_URL}/admin/shelters/${selectedRequest.originalId}/verify/`;
+        body = {
+          approved: isApprove,
+          notes: notes,
+          verification_params: isApprove ? {
+            verified_registration: true,
+            verified_identity: true
+          } : {}
+        };
+      } else if (selectedRequest.type === 'volunteer_registration') {
+        url = `${API_BASE_URL}/admin/volunteers/${selectedRequest.originalId}/verify/`;
+        body = { approved: isApprove, notes: notes };
       }
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(body)
+      });
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.message || err.error || 'Action failed');
+      }
+
       toast({
         title: 'Success',
-        description: `Role request ${action === 'approve' ? 'approved' : 'rejected'} successfully`,
+        description: `Request ${isApprove ? 'approved' : 'rejected'} successfully`,
       });
-      setShowRoleRequestDialog(false);
-      setSelectedRoleRequest(null);
-      setRoleRequestActionNotes('');
-      setRoleRequestActionType(null);
-      loadRoleRequests();
+
+      setShowDialog(false);
+      loadAllRequests(); // Reload data
+
     } catch (error: any) {
       toast({
         title: 'Error',
-        description: error.message || `Failed to ${action} role request`,
+        description: error.message,
         variant: 'destructive',
       });
     }
   };
 
-  const openRoleRequestAction = (request: any, action: 'approve' | 'reject') => {
-    setSelectedRoleRequest(request);
-    setRoleRequestActionType(action);
-    setRoleRequestActionNotes('');
-    setShowRoleRequestDialog(true);
-  };
-
-  const submitRoleRequestAction = () => {
-    if (!selectedRoleRequest || !roleRequestActionType) return;
-
-    if (roleRequestActionType === 'reject' && !roleRequestActionNotes.trim()) {
-      toast({
-        title: 'Error',
-        description: 'Please provide a reason for rejection',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    handleRoleRequestAction(
-      selectedRoleRequest._id || selectedRoleRequest.id,
-      roleRequestActionType,
-      roleRequestActionNotes
-    );
+  const openDialog = (req: SpecializedRequest, action: 'approve' | 'reject') => {
+    setSelectedRequest(req);
+    setActionType(action);
+    setActionNotes('');
+    setShowDialog(true);
   };
 
   return (
-    <AdminLayout onRefresh={loadRoleRequests} isRefreshing={roleRequestsLoading}>
+    <AdminLayout onRefresh={loadAllRequests} isRefreshing={loading}>
       <div className="space-y-6 lg:space-y-8">
-        <section id="role-requests" className="scroll-mt-8">
-          <Card className="bg-white rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-gray-100">
+        <section className="scroll-mt-8">
+          <Card className="bg-white rounded-2xl shadow-sm border border-gray-100">
             <CardHeader className="border-b border-gray-100 pb-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle className="text-2xl font-bold text-gray-900">Role Requests</CardTitle>
+                  <CardTitle className="text-2xl font-bold text-gray-900">Role & Shelter Requests</CardTitle>
                   <CardDescription className="text-sm text-gray-500 mt-1">
-                    Manage volunteer role requests (rescuer, feeder, transporter, volunteer)
+                    Manage all incoming requests for volunteers, shelters, and other roles.
                   </CardDescription>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={loadRoleRequests}
-                  disabled={roleRequestsLoading}
-                  className="gap-2"
-                >
-                  {roleRequestsLoading ? (
-                    <>
-                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600"></div>
-                      Loading...
-                    </>
-                  ) : (
-                    <>
-                      <Activity className="h-4 w-4" />
-                      Refresh
-                    </>
-                  )}
+                <Button variant="outline" size="sm" onClick={loadAllRequests} disabled={loading} className="gap-2">
+                  <Activity className="h-4 w-4" /> Refresh
                 </Button>
               </div>
             </CardHeader>
-            <CardContent className="pt-6 space-y-4">
-              {/* Stats Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                <Card className="bg-white shadow-md hover:shadow-lg transition-all duration-300 border-l-4 border-l-gray-500">
-                  <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between space-y-0">
-                    <CardTitle className="text-sm font-medium text-gray-600">Total Requests</CardTitle>
-                    <UserPlus className="h-4 w-4 text-gray-500" />
-                  </CardHeader>
-                  <CardContent className="p-4 pt-0">
-                    <div className="text-3xl font-bold text-gray-900">{roleRequests.length}</div>
-                  </CardContent>
+            <CardContent className="pt-6 space-y-6">
+
+              {/* Quick Stats */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <Card className="bg-blue-50 border-none">
+                  <CardHeader className="p-4 pb-2"><CardTitle className="text-sm text-blue-600">Total Requests</CardTitle></CardHeader>
+                  <CardContent className="p-4 pt-0 text-2xl font-bold text-blue-700">{allRequests.length}</CardContent>
                 </Card>
-                <Card className="bg-white shadow-md hover:shadow-lg transition-all duration-300 border-l-4 border-l-yellow-500">
-                  <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between space-y-0">
-                    <CardTitle className="text-sm font-medium text-gray-600">Pending Review</CardTitle>
-                    <Clock className="h-4 w-4 text-yellow-500" />
-                  </CardHeader>
-                  <CardContent className="p-4 pt-0">
-                    <div className="text-3xl font-bold text-yellow-600">
-                      {roleRequests.filter((r: any) => r.status === 'pending').length}
-                    </div>
-                  </CardContent>
+                <Card className="bg-yellow-50 border-none">
+                  <CardHeader className="p-4 pb-2"><CardTitle className="text-sm text-yellow-600">Pending</CardTitle></CardHeader>
+                  <CardContent className="p-4 pt-0 text-2xl font-bold text-yellow-700">{allRequests.filter(r => r.status === 'pending').length}</CardContent>
                 </Card>
-                <Card className="bg-white shadow-md hover:shadow-lg transition-all duration-300 border-l-4 border-l-green-500">
-                  <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between space-y-0">
-                    <CardTitle className="text-sm font-medium text-gray-600">Approved</CardTitle>
-                    <CheckCircle className="h-4 w-4 text-green-500" />
-                  </CardHeader>
-                  <CardContent className="p-4 pt-0">
-                    <div className="text-3xl font-bold text-green-600">
-                      {roleRequests.filter((r: any) => r.status === 'approved').length}
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card className="bg-white shadow-md hover:shadow-lg transition-all duration-300 border-l-4 border-l-red-500">
-                  <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between space-y-0">
-                    <CardTitle className="text-sm font-medium text-gray-600">Rejected</CardTitle>
-                    <X className="h-4 w-4 text-red-500" />
-                  </CardHeader>
-                  <CardContent className="p-4 pt-0">
-                    <div className="text-3xl font-bold text-red-600">
-                      {roleRequests.filter((r: any) => r.status === 'rejected').length}
-                    </div>
-                  </CardContent>
+                <Card className="bg-green-50 border-none">
+                  <CardHeader className="p-4 pb-2"><CardTitle className="text-sm text-green-600">Approved</CardTitle></CardHeader>
+                  <CardContent className="p-4 pt-0 text-2xl font-bold text-green-700">{allRequests.filter(r => r.status === 'approved').length}</CardContent>
                 </Card>
               </div>
 
               {/* Filters */}
-              <div className="flex flex-col sm:flex-row gap-4 mb-4">
-                <div className="flex-1">
-                  <div className="relative">
-                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
-                    <Input
-                      placeholder="Search by user, role, or reason..."
-                      className="pl-9"
-                      value={roleRequestSearchTerm}
-                      onChange={(e) => setRoleRequestSearchTerm(e.target.value)}
-                    />
-                  </div>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex-1 relative">
+                  <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                  <Input
+                    placeholder="Search users..."
+                    className="pl-9"
+                    value={searchTerm}
+                    onChange={e => setSearchTerm(e.target.value)}
+                  />
                 </div>
                 <div className="flex gap-2">
                   <select
-                    value={roleRequestRoleFilter}
-                    onChange={(e) => setRoleRequestRoleFilter(e.target.value)}
-                    className="px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-green-500"
+                    className="h-10 px-3 py-2 border rounded-md text-sm bg-background"
+                    value={roleFilter}
+                    onChange={e => setRoleFilter(e.target.value)}
                   >
                     <option value="all">All Roles</option>
-                    <option value="rescuer">Rescuer</option>
-                    <option value="feeder">Feeder</option>
-                    <option value="transporter">Transporter</option>
+                    <option value="shelter">Shelter</option>
                     <option value="volunteer">Volunteer</option>
+                    <option value="rescuer">Rescuer</option>
                   </select>
                   <select
-                    value={roleRequestStatusFilter}
-                    onChange={(e) => setRoleRequestStatusFilter(e.target.value)}
-                    className="px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-green-500"
+                    className="h-10 px-3 py-2 border rounded-md text-sm bg-background"
+                    value={statusFilter}
+                    onChange={e => setStatusFilter(e.target.value)}
                   >
                     <option value="all">All Status</option>
                     <option value="pending">Pending</option>
                     <option value="approved">Approved</option>
                     <option value="rejected">Rejected</option>
                   </select>
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setRoleRequestSearchTerm('');
-                      setRoleRequestRoleFilter('all');
-                      setRoleRequestStatusFilter('all');
-                    }}
-                  >
-                    Clear
-                  </Button>
                 </div>
               </div>
 
-              {roleRequestsLoading ? (
-                <div className="text-center py-12">
-                  <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-green-600 border-r-transparent"></div>
-                  <p className="mt-4 text-gray-600">Loading role requests...</p>
-                </div>
-              ) : filteredRoleRequests.length === 0 ? (
-                <div className="text-center py-12 bg-gray-50 rounded-lg">
-                  <UserPlus className="h-16 w-16 mx-auto text-gray-400 mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No Role Requests Found</h3>
-                  <p className="text-gray-600">
-                    {roleRequestSearchTerm || roleRequestStatusFilter !== 'all' || roleRequestRoleFilter !== 'all'
-                      ? 'Try adjusting your search or filters'
-                      : 'No role requests have been submitted yet.'}
-                  </p>
-                </div>
+              {/* List */}
+              {loading ? (
+                <div className="py-12 text-center text-gray-500">Loading requests...</div>
+              ) : filteredRequests.length === 0 ? (
+                <div className="py-12 text-center text-gray-500 bg-gray-50 rounded-lg">No requests found matching your filters.</div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {filteredRoleRequests.map((request: any) => (
-                    <Card key={request.id || request._id} className="bg-white rounded-xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-gray-100 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 overflow-hidden flex flex-col">
-                      <div className={`h-2 w-full ${request.status === 'approved' ? 'bg-green-500' :
-                        request.status === 'rejected' ? 'bg-red-500' :
-                          'bg-yellow-500'
+                  {filteredRequests.map(req => (
+                    <Card key={req.id} className="overflow-hidden hover:shadow-md transition-shadow flex flex-col">
+                      <div className={`h-1 w-full ${req.status === 'approved' ? 'bg-green-500' :
+                          req.status === 'rejected' ? 'bg-red-500' : 'bg-yellow-500'
                         }`} />
-                      <CardContent className="p-5 flex-1 flex flex-col">
-                        <div className="flex justify-between items-start mb-4">
+                      <CardContent className="p-5 flex-1 flex flex-col gap-3">
+                        <div className="flex justify-between items-start">
                           <div>
-                            <h3 className="text-lg font-bold text-gray-900 line-clamp-1">{request.user?.name || 'Unknown User'}</h3>
-                            <p className="text-sm text-gray-500">{request.user?.email || 'No Email'}</p>
+                            <h3 className="font-semibold text-lg">{req.user.name}</h3>
+                            <p className="text-sm text-gray-500">{req.user.email}</p>
                           </div>
-                          <Badge variant={
-                            request.status === 'approved' ? 'default' :
-                              request.status === 'rejected' ? 'destructive' :
-                                'outline'
-                          } className={
-                            request.status === 'approved' ? 'bg-green-100 text-green-800 hover:bg-green-200' :
-                              request.status === 'rejected' ? 'bg-red-100 text-red-800 hover:bg-red-200' :
-                                'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
-                          }>
-                            {request.status === 'pending' ? (
-                              <div className="flex items-center gap-1">
-                                <Clock className="h-3 w-3" /> Pending
-                              </div>
-                            ) : request.status === 'approved' ? (
-                              <div className="flex items-center gap-1">
-                                <CheckCircle className="h-3 w-3" /> Approved
-                              </div>
-                            ) : (
-                              <div className="flex items-center gap-1">
-                                <X className="h-3 w-3" /> Rejected
-                              </div>
-                            )}
+                          <Badge variant={req.status === 'pending' ? 'outline' : req.status === 'approved' ? 'default' : 'destructive'}>
+                            {req.status}
                           </Badge>
                         </div>
 
-                        <div className="space-y-3 mb-4 flex-1">
-                          <div className="flex items-center justify-between text-sm">
-                            <span className="text-gray-500">Requested Role:</span>
-                            <span className="font-semibold capitalize text-gray-900 bg-gray-100 px-2 py-0.5 rounded">
-                              {request.requested_role}
-                            </span>
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-500">Role:</span>
+                            <span className="font-medium capitalize">{req.requested_role}</span>
                           </div>
-
-                          {request.experience && (
-                            <div>
-                              <p className="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wider">Experience</p>
-                              <p className="text-sm text-gray-700 bg-gray-50 p-2 rounded border border-gray-100 line-clamp-3">
-                                {request.experience}
-                              </p>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-500">Date:</span>
+                            <span className="font-medium">{format(new Date(req.created_at), 'MMM dd, yyyy')}</span>
+                          </div>
+                          {req.city && (
+                            <div className="flex justify-between text-sm">
+                              <span className="text-gray-500">Location:</span>
+                              <span className="font-medium">{req.city}</span>
                             </div>
                           )}
-
-                          {request.reason && (
-                            <div>
-                              <p className="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wider">Reason</p>
-                              <p className="text-sm text-gray-700 bg-gray-50 p-2 rounded border border-gray-100 line-clamp-3">
-                                {request.reason}
-                              </p>
-                            </div>
-                          )}
-
-                          <div className="text-xs text-gray-400 pt-2 border-t border-gray-100">
-                            Requested on: {request.created_at ? format(new Date(request.created_at), 'MMM dd, yyyy HH:mm') : 'N/A'}
-                          </div>
                         </div>
 
-                        {request.review_notes && (
-                          <div className="mb-3">
-                            <p className="text-sm font-semibold text-gray-700 mb-1">Review Notes</p>
-                            <p className="text-sm text-gray-600 bg-blue-50 p-3 rounded-lg">{request.review_notes}</p>
+                        {req.reason && (
+                          <div className="bg-gray-50 p-2 rounded text-sm text-gray-700 mt-2">
+                            <p className="font-xs text-gray-400 uppercase text-[10px] tracking-wider mb-1">Reason / Details</p>
+                            {req.reason}
                           </div>
                         )}
 
-                        {request.reviewed_by_name && (
-                          <div className="mb-3">
-                            <p className="text-sm font-semibold text-gray-700 mb-1">Reviewed By</p>
-                            <p className="text-sm text-gray-600">{request.reviewed_by_name}</p>
-                          </div>
-                        )}
-                        {request.status === 'pending' && (
-                          <div className="flex gap-2 mt-4 pt-4 border-t border-gray-200">
-                            <Button
-                              size="sm"
-                              className="bg-green-600 hover:bg-green-700 flex-1"
-                              onClick={() => openRoleRequestAction(request, 'approve')}
-                            >
-                              <CheckCircle className="mr-2 h-4 w-4" />
-                              Approve
+                        <div className="flex-1" />
+
+                        {req.status === 'pending' && (
+                          <div className="flex gap-2 mt-4 pt-4 border-t border-gray-100">
+                            <Button className="flex-1 bg-green-600 hover:bg-green-700" size="sm" onClick={() => openDialog(req, 'approve')}>
+                              <CheckCircle className="w-4 h-4 mr-1" /> Approve
                             </Button>
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              className="flex-1"
-                              onClick={() => openRoleRequestAction(request, 'reject')}
-                            >
-                              <X className="mr-2 h-4 w-4" />
-                              Reject
+                            <Button className="flex-1" variant="destructive" size="sm" onClick={() => openDialog(req, 'reject')}>
+                              <X className="w-4 h-4 mr-1" /> Reject
                             </Button>
                           </div>
                         )}
@@ -404,87 +374,51 @@ export default function AdminRoleRequests() {
                   ))}
                 </div>
               )}
+
             </CardContent>
           </Card>
         </section>
       </div>
 
-
-      {/* Role Request Action Dialog */}
-      <Dialog open={showRoleRequestDialog} onOpenChange={setShowRoleRequestDialog}>
-        <DialogContent className="max-w-2xl">
+      <Dialog open={showDialog} onOpenChange={setShowDialog}>
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle>
-              {roleRequestActionType === 'approve' ? 'Approve Role Request' : 'Reject Role Request'}
-            </DialogTitle>
+            <DialogTitle>{actionType === 'approve' ? 'Approve Request' : 'Reject Request'}</DialogTitle>
             <DialogDescription>
-              {roleRequestActionType === 'approve'
-                ? 'Add optional notes for approval'
-                : 'Please provide a reason for rejection (required)'}
+              {actionType === 'approve' ? 'Are you sure you want to approve this request? This will update user permissions.' : 'Please provide a reason for rejection.'}
             </DialogDescription>
           </DialogHeader>
-          {selectedRoleRequest && (
-            <div className="space-y-4">
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <p className="text-sm font-semibold text-gray-700 mb-2">Request Details</p>
-                <div className="space-y-1 text-sm">
-                  <p><span className="font-medium">User:</span> {selectedRoleRequest.user?.name || 'Unknown'}</p>
-                  <p><span className="font-medium">Email:</span> {selectedRoleRequest.user?.email || 'N/A'}</p>
-                  <p><span className="font-medium">Requested Role:</span> <span className="capitalize">{selectedRoleRequest.requested_role}</span></p>
-                </div>
+          <div className="space-y-4 py-4">
+            {selectedRequest && (
+              <div className="bg-gray-50 p-3 rounded text-sm mb-4">
+                <div className="font-medium">{selectedRequest.user.name}</div>
+                <div className="text-gray-500 capitalize">{selectedRequest.requested_role} Request</div>
+                {selectedRequest.type === 'shelter_registration' && (
+                  <div className="mt-2 text-blue-600 text-xs flex items-center gap-1">
+                    <Shield className="w-3 h-3" /> Shelter verification includes auto-check of registry & identity
+                  </div>
+                )}
               </div>
-              <div>
-                <Label htmlFor="action-notes" className="text-sm font-semibold">
-                  {roleRequestActionType === 'approve' ? 'Approval Notes (Optional)' : 'Rejection Reason *'}
-                </Label>
-                <Textarea
-                  id="action-notes"
-                  value={roleRequestActionNotes}
-                  onChange={(e) => setRoleRequestActionNotes(e.target.value)}
-                  placeholder={
-                    roleRequestActionType === 'approve'
-                      ? 'Add any notes about this approval...'
-                      : 'Explain why this role request is being rejected...'
-                  }
-                  className="mt-2"
-                  rows={4}
-                />
-              </div>
-              <div className="flex gap-2 justify-end pt-4">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setShowRoleRequestDialog(false);
-                    setSelectedRoleRequest(null);
-                    setRoleRequestActionNotes('');
-                    setRoleRequestActionType(null);
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={submitRoleRequestAction}
-                  className={
-                    roleRequestActionType === 'approve'
-                      ? 'bg-green-600 hover:bg-green-700'
-                      : 'bg-red-600 hover:bg-red-700'
-                  }
-                >
-                  {roleRequestActionType === 'approve' ? (
-                    <>
-                      <CheckCircle className="mr-2 h-4 w-4" />
-                      Approve
-                    </>
-                  ) : (
-                    <>
-                      <X className="mr-2 h-4 w-4" />
-                      Reject
-                    </>
-                  )}
-                </Button>
-              </div>
+            )}
+            <div>
+              <Label>Notes / Reason</Label>
+              <Textarea
+                value={actionNotes}
+                onChange={e => setActionNotes(e.target.value)}
+                placeholder={actionType === 'reject' ? "Reason for rejection (required)..." : "Optional verification notes..."}
+              />
             </div>
-          )}
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setShowDialog(false)}>Cancel</Button>
+            <Button
+              className={actionType === 'approve' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}
+              onClick={handleAction}
+              disabled={actionType === 'reject' && !actionNotes.trim()}
+            >
+              Confirm {actionType === 'approve' ? 'Approval' : 'Rejection'}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </AdminLayout>

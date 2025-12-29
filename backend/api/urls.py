@@ -123,7 +123,7 @@ def shelters_list(request):
                 pass
         
         serializer = ShelterSerializer(queryset, many=True, context={'request': request})
-        return Response(serializer.data)
+        return Response({'data': serializer.data})
     except Exception as e:
         import traceback
         return Response(

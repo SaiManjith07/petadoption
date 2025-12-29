@@ -1,8 +1,8 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { 
-  User, Mail, Shield, FileText, Phone, MapPin, Calendar, Edit2, Save, X, 
-  CheckCircle2, Lock, Eye, EyeOff, Camera, Globe, Building, Hash, 
+import {
+  User, Mail, Shield, FileText, Phone, MapPin, Calendar, Edit2, Save, X,
+  CheckCircle2, Lock, Eye, EyeOff, Camera, Globe, Building, Hash,
   AlertCircle, CheckCircle, Clock, UserCheck, Award, TrendingUp, Activity,
   Heart, Search, Home, Users, Building2, Truck, Utensils, BarChart3,
   Star, Zap, Target, Award as AwardIcon, Bell, MessageSquare, MapPin as MapPinIcon
@@ -32,6 +32,8 @@ export default function Profile() {
   const [isEditing, setIsEditing] = useState(false);
   const [myShelter, setMyShelter] = useState<any>(null);
   const [myRoleRequests, setMyRoleRequests] = useState<any[]>([]);
+  const [myRequests, setMyRequests] = useState<any[]>([]);
+  const [activityItems, setActivityItems] = useState<any[]>([]);
   const [stats, setStats] = useState({
     totalReports: 0,
     foundPets: 0,
@@ -46,7 +48,7 @@ export default function Profile() {
     new: false,
     confirm: false,
   });
-  
+
   const [personalInfo, setPersonalInfo] = useState({
     name: '',
     email: '',
@@ -75,44 +77,44 @@ export default function Profile() {
       const response = await petsApi.getAll();
       // Handle different response formats from backend
       const pets = response.results || response.data || response.items || [];
-      
+
       const userId = user?._id || user?.id;
       if (!userId) {
         console.warn('User ID not found');
         setMyPets([]);
         return;
       }
-      
+
       const userPets = pets.filter((p: any) => {
         // Check multiple possible fields for user identification
-        const postedById = typeof p.posted_by === 'object' 
+        const postedById = typeof p.posted_by === 'object'
           ? (p.posted_by._id || p.posted_by.id)
           : (typeof p.submitted_by === 'object'
             ? (p.submitted_by._id || p.submitted_by.id)
             : (p.submitted_by || p.posted_by));
-        
+
         const isMyPet = postedById && String(postedById) === String(userId);
-        
+
         // Include all pet types (lost, found, adoption)
-        const isRelevantPet = p.report_type === 'lost' || 
-                             p.report_type === 'found' || 
-                             p.report_type === 'adoption' ||
-                             p.status?.includes('Lost') || 
-                             p.status?.includes('Found') ||
-                             p.adoption_status === 'Lost' || 
-                             p.adoption_status === 'Found' ||
-                             p.adoption_status === 'Available for Adoption';
-        
+        const isRelevantPet = p.report_type === 'lost' ||
+          p.report_type === 'found' ||
+          p.report_type === 'adoption' ||
+          p.status?.includes('Lost') ||
+          p.status?.includes('Found') ||
+          p.adoption_status === 'Lost' ||
+          p.adoption_status === 'Found' ||
+          p.adoption_status === 'Available for Adoption';
+
         return isMyPet && isRelevantPet;
       });
-      
+
       // Sort by date (most recent first)
       userPets.sort((a: any, b: any) => {
         const dateA = new Date(a.date_submitted || a.created_at || a.createdAt || 0).getTime();
         const dateB = new Date(b.date_submitted || b.created_at || b.createdAt || 0).getTime();
         return dateB - dateA;
       });
-      
+
       // Normalize pet IDs
       const normalizedPets = userPets.map((pet: any) => {
         if (!pet.id && pet._id) {
@@ -120,7 +122,7 @@ export default function Profile() {
         }
         return pet;
       });
-      
+
       setMyPets(normalizedPets);
     } catch (error: any) {
       console.error('Error loading pets:', error);
@@ -182,7 +184,7 @@ export default function Profile() {
       // Load role requests
       try {
         const roleRes = await fetch(`${API_URL}/role-requests/my`, {
-          headers: { 
+          headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
@@ -200,6 +202,14 @@ export default function Profile() {
         console.error('Error loading role requests:', error);
         // Don't throw, just log - role requests are optional
       }
+
+      // Load chat requests (adoption/claim)
+      try {
+        const requests = await chatApi.getMyChatRequests();
+        setMyRequests(requests || []);
+      } catch (error) {
+        console.error('Error loading chat requests:', error);
+      }
     } catch (error) {
       console.error('Error loading additional data:', error);
     }
@@ -207,28 +217,28 @@ export default function Profile() {
 
   useEffect(() => {
     // Calculate statistics
-    const found = myPets.filter((p: any) => 
-      p.report_type === 'found' || 
-      p.status === 'Found' || 
+    const found = myPets.filter((p: any) =>
+      p.report_type === 'found' ||
+      p.status === 'Found' ||
       p.adoption_status === 'Found'
     ).length;
-    const lost = myPets.filter((p: any) => 
-      p.report_type === 'lost' || 
-      p.status === 'Lost' || 
+    const lost = myPets.filter((p: any) =>
+      p.report_type === 'lost' ||
+      p.status === 'Lost' ||
       p.adoption_status === 'Lost'
     ).length;
-    const adopted = myPets.filter((p: any) => 
-      p.status === 'Adopted' || 
+    const adopted = myPets.filter((p: any) =>
+      p.status === 'Adopted' ||
       p.status === 'Available for Adoption' ||
       p.adoption_status === 'Adopted'
     ).length;
-    const reunited = myPets.filter((p: any) => 
-      p.status === 'Reunited' || 
+    const reunited = myPets.filter((p: any) =>
+      p.status === 'Reunited' ||
       p.status === 'Matched' ||
       p.adoption_status === 'Reunited'
     ).length;
-    const pending = myPets.filter((p: any) => 
-      p.status?.includes('Pending') || 
+    const pending = myPets.filter((p: any) =>
+      p.status?.includes('Pending') ||
       p.adoption_status?.includes('Pending')
     ).length;
 
@@ -242,10 +252,29 @@ export default function Profile() {
     });
   }, [myPets]);
 
+  // Merge and sort activity items
+  useEffect(() => {
+    const items = [
+      ...myPets.map((p: any) => ({
+        type: 'report',
+        date: new Date(p.date_submitted || p.created_at || p.createdAt || new Date()),
+        data: p,
+      })),
+      ...myRequests.map((r: any) => ({
+        type: 'request',
+        date: new Date(r.created_at || new Date()),
+        data: r,
+      }))
+    ];
+
+    items.sort((a, b) => b.date.getTime() - a.date.getTime());
+    setActivityItems(items);
+  }, [myPets, myRequests]);
+
   const handleSave = async () => {
     try {
       setSaving(true);
-      
+
       // Prepare update data
       const updateData: any = {
         name: personalInfo.name,
@@ -257,12 +286,12 @@ export default function Profile() {
 
       // Use authApi.updateProfile which updates the current user's profile
       await authApi.updateProfile(updateData);
-      
+
       // Refresh user data to get the latest from server
       if (refreshUser) {
         await refreshUser();
       }
-      
+
       // Close editing mode - the useEffect will sync personalInfo with updated user
       setIsEditing(false);
       toast({
@@ -288,12 +317,12 @@ export default function Profile() {
       email: user?.email || '',
       phone: user?.phone || '',
       bio: user?.bio || '',
-        address: {
-          city: user?.address?.city || '',
-          state: user?.address?.state || '',
-          country: user?.address?.country || '',
-          pincode: user?.address?.pincode || '',
-        },
+      address: {
+        city: user?.address?.city || '',
+        state: user?.address?.state || '',
+        country: user?.address?.country || '',
+        pincode: user?.address?.pincode || '',
+      },
     });
     setIsEditing(false);
   };
@@ -321,7 +350,7 @@ export default function Profile() {
       setChangingPassword(true);
       const API_URL = API_BASE_URL;
       const token = localStorage.getItem('accessToken');
-      
+
       if (!token) {
         throw new Error('No authentication token found');
       }
@@ -342,14 +371,14 @@ export default function Profile() {
         const error = await response.json().catch(() => ({ message: 'Failed to update password' }));
         throw new Error(error.message || error.detail || 'Failed to update password');
       }
-      
+
       setPasswordData({
         currentPassword: '',
         newPassword: '',
         confirmPassword: '',
       });
       setShowPasswordDialog(false);
-      
+
       toast({
         title: 'Success',
         description: 'Password updated successfully',
@@ -406,6 +435,7 @@ export default function Profile() {
           <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4">
             <TabsTrigger value="profile">Profile</TabsTrigger>
             <TabsTrigger value="activity">Activity</TabsTrigger>
+            <TabsTrigger value="requests">Requests</TabsTrigger>
             <TabsTrigger value="security">Security</TabsTrigger>
             <TabsTrigger value="submissions">Submissions</TabsTrigger>
           </TabsList>
@@ -512,7 +542,7 @@ export default function Profile() {
                         <Building2 className="h-4 w-4 text-[#4CAF50]" />
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-gray-900 truncate">{myShelter.shelter_name}</p>
-                          <Badge 
+                          <Badge
                             variant={myShelter.status === 'approved' ? 'default' : 'secondary'}
                             className="text-xs mt-1"
                           >
@@ -766,7 +796,7 @@ export default function Profile() {
               <h2 className="text-2xl font-bold text-gray-900 mb-2">Your Activity</h2>
               <p className="text-gray-600">Overview of your pet reports and contributions</p>
             </div>
-            
+
             {/* Statistics Cards */}
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5 mb-8">
               <Card className="border-2 border-gray-200 hover:border-blue-500/50 transition-all">
@@ -836,6 +866,81 @@ export default function Profile() {
               </Card>
             </div>
 
+            {/* Recent Activity Timeline */}
+            <Card className="mb-8">
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5 text-blue-600" />
+                  <CardTitle>Recent Activity</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {activityItems.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    No recent activity
+                  </div>
+                ) : (
+                  <div className="relative border-l border-gray-200 ml-3 space-y-6">
+                    {activityItems.map((item, index) => (
+                      <div key={index} className="mb-6 ml-6 relative">
+                        <span className={`absolute -left-[31px] flex h-6 w-6 items-center justify-center rounded-full ring-4 ring-white ${item.type === 'report' ? 'bg-blue-100 text-blue-600' : 'bg-purple-100 text-purple-600'
+                          }`}>
+                          {item.type === 'report' ? <FileText className="h-3 w-3" /> : <MessageSquare className="h-3 w-3" />}
+                        </span>
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-1">
+                          <h3 className="text-sm font-semibold text-gray-900">
+                            {item.type === 'report' ? (
+                              <>
+                                Reported a <span className="text-blue-600">{item.data.report_type || 'for'} {item.data.species || 'pet'}</span>
+                              </>
+                            ) : (
+                              <>
+                                {item.data.is_incoming ? 'Received request for' : 'Requested to adopt/claim'} <span className="text-purple-600">{item.data.pet?.name || 'Pet'}</span>
+                              </>
+                            )}
+                          </h3>
+                          <time className="text-xs text-gray-500 min-w-fit">
+                            {format(item.date, 'MMM d, yyyy h:mm a')}
+                          </time>
+                        </div>
+                        <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                          {item.type === 'report' ? (
+                            <div className="flex gap-3">
+                              {item.data.image_url || (item.data.photos && item.data.photos.length > 0) ? (
+                                <img
+                                  src={getImageUrl(item.data.image_url || (typeof item.data.photos[0] === 'string' ? item.data.photos[0] : item.data.photos[0].url))}
+                                  className="h-10 w-10 rounded object-cover bg-gray-200"
+                                  alt="Pet"
+                                />
+                              ) : (
+                                <div className="h-10 w-10 rounded bg-gray-200 flex items-center justify-center text-gray-400">
+                                  <PawPrint className="h-5 w-5" />
+                                </div>
+                              )}
+                              <div>
+                                <p className="text-sm font-medium">{item.data.breed || 'Unknown Breed'}</p>
+                                <Badge variant="secondary" className="text-xs mt-1">{item.data.status}</Badge>
+                              </div>
+                            </div>
+                          ) : (
+                            <div>
+                              <p className="text-sm text-gray-600 italic mb-2">"{item.data.message}"</p>
+                              <Badge variant={
+                                item.data.status === 'active' ? 'default' :
+                                  item.data.status === 'rejected' ? 'destructive' : 'secondary'
+                              } className={item.data.status === 'active' ? 'bg-green-600' : ''}>
+                                Status: {item.data.status}
+                              </Badge>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
             {/* Volunteer Information */}
             {['rescuer', 'feeder', 'transporter'].includes(user?.role || '') && (
               <Card>
@@ -871,7 +976,7 @@ export default function Profile() {
                               {request.requested_at ? format(new Date(request.requested_at), 'MMM d, yyyy') : 'N/A'}
                             </p>
                           </div>
-                          <Badge 
+                          <Badge
                             variant={request.status === 'approved' ? 'default' : request.status === 'pending' ? 'secondary' : 'destructive'}
                           >
                             {request.status}
@@ -901,7 +1006,7 @@ export default function Profile() {
                     </div>
                     <div>
                       <p className="text-sm font-medium text-gray-700 mb-1">Status</p>
-                      <Badge 
+                      <Badge
                         variant={myShelter.status === 'approved' ? 'default' : myShelter.status === 'pending' ? 'secondary' : 'destructive'}
                       >
                         {myShelter.status === 'approved' ? 'Approved' : myShelter.status === 'pending' ? 'Pending Approval' : 'Rejected'}
@@ -1157,6 +1262,132 @@ export default function Profile() {
             </Card>
           </TabsContent>
 
+          {/* Requests Tab */}
+          <TabsContent value="requests" className="space-y-6">
+            <div className="grid gap-6 md:grid-cols-2">
+              {/* Sent Requests */}
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center gap-2">
+                    <MessageSquare className="h-5 w-5 text-blue-500" />
+                    <CardTitle>Sent Requests</CardTitle>
+                  </div>
+                  <CardDescription>Requests you sent to adopt or claim pets</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {myRequests.filter((r: any) => !r.is_incoming).length === 0 ? (
+                    <div className="text-center py-6 text-gray-500">
+                      <p>No requests sent yet</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {myRequests.filter((r: any) => !r.is_incoming).map((request: any) => (
+                        <div key={request.id} className="p-3 border rounded-lg hover:bg-slate-50 transition-colors">
+                          <div className="flex justify-between items-start mb-2">
+                            <div>
+                              <Link to={`/pets/${request.pet_id}`} className="font-semibold text-blue-600 hover:underline">
+                                {request.pet?.name || 'Unknown Pet'}
+                              </Link>
+                              <span className="text-xs text-gray-500 ml-2">
+                                ({request.type || 'Inquiry'})
+                              </span>
+                            </div>
+                            <Badge variant={
+                              request.status === 'active' || request.status === 'admin_approved' ? 'default' :
+                                request.status === 'rejected' ? 'destructive' : 'secondary'
+                            } className={
+                              request.status === 'active' || request.status === 'admin_approved' ? 'bg-green-600 hover:bg-green-700' : ''
+                            }>
+                              {request.status === 'active' ? 'Active Chat' :
+                                request.status === 'admin_approved' ? 'Active Chat' :
+                                  request.status === 'admin_verifying' ? 'Verifying' :
+                                    request.status}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-gray-600 mb-2 line-clamp-2 italic">"{request.message}"</p>
+                          <div className="flex justify-between items-center text-xs text-gray-400">
+                            <span>To: {request.target_name || 'Owner'}</span>
+                            <span>{request.created_at ? format(new Date(request.created_at), 'MMM d, yyyy') : ''}</span>
+                          </div>
+                          {(request.status === 'active' || request.status === 'admin_approved') && (
+                            <Button asChild size="sm" variant="outline" className="w-full mt-3 h-8 text-xs">
+                              <Link to={`/chats/${request.room_id || request.id}`}>
+                                <MessageSquare className="h-3 w-3 mr-1" /> Open Chat
+                              </Link>
+                            </Button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Received Requests */}
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center gap-2">
+                    <MessageSquare className="h-5 w-5 text-indigo-500" />
+                    <CardTitle>Received Requests</CardTitle>
+                  </div>
+                  <CardDescription>Requests from others for your pets</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {myRequests.filter((r: any) => r.is_incoming).length === 0 ? (
+                    <div className="text-center py-6 text-gray-500">
+                      <p>No requests received</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {myRequests.filter((r: any) => r.is_incoming).map((request: any) => (
+                        <div key={request.id} className="p-3 border rounded-lg hover:bg-slate-50 transition-colors">
+                          <div className="flex justify-between items-start mb-2">
+                            <div>
+                              <Link to={`/pets/${request.pet_id}`} className="font-semibold text-blue-600 hover:underline">
+                                {request.pet?.name || 'Unknown Pet'}
+                              </Link>
+                              <span className="text-xs text-gray-500 ml-2">
+                                ({request.type || 'Inquiry'})
+                              </span>
+                            </div>
+                            <Badge variant={
+                              request.status === 'active' || request.status === 'admin_approved' ? 'default' :
+                                request.status === 'rejected' ? 'destructive' : 'secondary'
+                            } className={
+                              request.status === 'active' || request.status === 'admin_approved' ? 'bg-green-600 hover:bg-green-700' : ''
+                            }>
+                              {request.status === 'active' ? 'Active Chat' :
+                                request.status === 'admin_approved' ? 'Active Chat' :
+                                  request.status === 'admin_verifying' ? 'Verifying' :
+                                    request.status}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="h-6 w-6 rounded-full bg-indigo-100 flex items-center justify-center text-xs font-bold text-indigo-600">
+                              {request.requester_name?.charAt(0) || '?'}
+                            </div>
+                            <span className="text-sm font-medium">{request.requester_name || 'User'}</span>
+                          </div>
+                          <p className="text-sm text-gray-600 mb-2 line-clamp-2 italic">"{request.message}"</p>
+                          <div className="flex justify-end text-xs text-gray-400">
+                            <span>{request.created_at ? format(new Date(request.created_at), 'MMM d, yyyy') : ''}</span>
+                          </div>
+                          {(request.status === 'active' || request.status === 'admin_approved') && (
+                            <Button asChild size="sm" variant="outline" className="w-full mt-3 h-8 text-xs">
+                              <Link to={`/chats/${request.room_id || request.id}`}>
+                                <MessageSquare className="h-3 w-3 mr-1" /> Open Chat
+                              </Link>
+                            </Button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
           {/* My Submissions Tab */}
           <TabsContent value="submissions" className="space-y-6">
             <Card>
@@ -1188,12 +1419,12 @@ export default function Profile() {
                     {myPets.map((pet: any) => {
                       const petId = pet.id || pet._id;
                       const photoPath = Array.isArray(pet.photos) && pet.photos.length > 0
-                        ? (typeof pet.photos[0] === 'string' 
-                            ? pet.photos[0] 
-                            : pet.photos[0]?.url || pet.photos[0]?.file_url || pet.photos[0])
+                        ? (typeof pet.photos[0] === 'string'
+                          ? pet.photos[0]
+                          : pet.photos[0]?.url || pet.photos[0]?.file_url || pet.photos[0])
                         : null;
-                      const photoUrl = photoPath?.startsWith('data:') 
-                        ? photoPath 
+                      const photoUrl = photoPath?.startsWith('data:')
+                        ? photoPath
                         : (getImageUrl(photoPath) || 'https://via.placeholder.com/300');
                       return (
                         <Card key={petId} className="overflow-hidden hover:shadow-md transition-shadow">
@@ -1223,10 +1454,10 @@ export default function Profile() {
                               <div className="flex gap-2 mt-auto">
                                 {petId ? (
                                   <>
-                                    <Button 
-                                      variant="default" 
-                                      size="sm" 
-                                      asChild 
+                                    <Button
+                                      variant="default"
+                                      size="sm"
+                                      asChild
                                       className="flex-1 bg-[#2BB6AF] hover:bg-[#239a94]"
                                     >
                                       <Link to={`/pets/${petId}`}>View Details</Link>

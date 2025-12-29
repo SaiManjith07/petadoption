@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/lib/auth';
-import { adminApi } from '@/api';
+import { adminApi, petsApi } from '@/api';
 import { useToast } from '@/hooks/use-toast';
 import { TableSkeleton, PageHeaderSkeleton } from '@/components/ui/skeletons';
 import { format } from 'date-fns';
@@ -56,13 +56,12 @@ export default function AdminAdopt() {
         setIsRefreshing(true);
       }
 
+
       // Try to get pending adoption requests first
       let requests: any[] = [];
       try {
         const pendingRequests = await adminApi.getPendingAdoptionRequests();
-        requests = Array.isArray(pendingRequests)
-          ? pendingRequests
-          : pendingRequests?.data || pendingRequests?.results || [];
+        requests = Array.isArray(pendingRequests) ? pendingRequests : [];
       } catch (pendingError: any) {
         console.warn('Pending adoption requests endpoint failed, trying alternative:', pendingError);
       }
@@ -71,16 +70,13 @@ export default function AdminAdopt() {
       if (requests.length === 0) {
         try {
           const allPets = await adminApi.getAllPets();
-          const petsArray = Array.isArray(allPets) ? allPets : allPets?.data || allPets?.results || [];
+          const petsArray = Array.isArray(allPets) ? allPets : [];
 
-          // Filter for adoption-related pets
+          // Filter for adoption-related pets (Available or Adopted)
+          // EXCLUDE 'Pending' because that is used for Found/Lost pets verification
           requests = petsArray.filter((p: any) => {
             const status = p.status || p.adoption_status || '';
-            return status === 'Pending Adoption' ||
-              status === 'Available for Adoption' ||
-              status === 'Adopted' ||
-              status.toLowerCase().includes('adoption') ||
-              status.toLowerCase().includes('adopt');
+            return status === 'Available for Adoption' || status === 'Adopted';
           });
         } catch (allPetsError: any) {
           console.error('Error loading all pets for adoption:', allPetsError);
@@ -90,7 +86,6 @@ export default function AdminAdopt() {
       console.log('Adoption requests loaded:', requests.length);
       if (requests.length > 0) {
         console.log('Sample request (full object):', JSON.stringify(requests[0], null, 2));
-        console.log('Sample request keys:', Object.keys(requests[0]));
       }
 
       setAdoptionRequests(requests);
@@ -123,7 +118,14 @@ export default function AdminAdopt() {
     }
 
     if (statusFilter !== 'all') {
-      filtered = filtered.filter(request => request.status === statusFilter);
+      filtered = filtered.filter(request => {
+        const status = request.status || request.adoption_status || '';
+        // Map 'Pending' from API to 'Pending Adoption' filter
+        if (statusFilter === 'Pending Adoption') {
+          return status === 'Pending' || status === 'Pending Adoption';
+        }
+        return status === statusFilter;
+      });
     }
 
     setFilteredRequests(filtered);
@@ -133,7 +135,7 @@ export default function AdminAdopt() {
     total: adoptionRequests.length,
     pending: adoptionRequests.filter((r: any) => {
       const status = r.status || r.adoption_status || '';
-      return status === 'Pending Adoption';
+      return status === 'Pending Adoption' || status === 'Pending';
     }).length,
     available: adoptionRequests.filter((r: any) => {
       const status = r.status || r.adoption_status || '';
@@ -358,7 +360,7 @@ export default function AdminAdopt() {
                                 request.pet_type ||
                                 request.type ||
                                 request.animal_type ||
-                                request.category ||
+                                (typeof request.category === 'object' && request.category ? request.category.name : request.category) ||
                                 request.name?.split(' ')[0] ||
                                 'Unknown';
                               const breed = request.breed ||
@@ -466,6 +468,35 @@ export default function AdminAdopt() {
                             >
                               <CheckCircle className="h-4 w-4" />
                               Accept & Verify Adoption
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="gap-1 border-yellow-600 text-yellow-700 hover:bg-yellow-50"
+                              onClick={async () => {
+                                try {
+                                  const id = request._id || request.id;
+                                  if (!id) return;
+                                  // Update status to Available for Adoption
+                                  await petsApi.update(id, {
+                                    adoption_status: 'Available for Adoption'
+                                  });
+                                  toast({
+                                    title: 'Success',
+                                    description: 'Pet status reset to Available for Adoption',
+                                  });
+                                  loadAdoptionRequests(false);
+                                } catch (error: any) {
+                                  toast({
+                                    title: 'Error',
+                                    description: error?.message || 'Failed to update status',
+                                    variant: 'destructive',
+                                  });
+                                }
+                              }}
+                            >
+                              <CheckCircle className="h-4 w-4" />
+                              Make Available
                             </Button>
                           </div>
                         )}

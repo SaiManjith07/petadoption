@@ -37,14 +37,9 @@ export default function AdminProfile() {
     name: '',
     email: '',
     phone: '',
-    bio: '',
-    address: {
-      city: '',
-      state: '',
-      country: '',
-      pincode: '',
-      full_address: '',
-    },
+    address: '',
+    pincode: '',
+    landmark: '',
   });
 
   const [passwordData, setPasswordData] = useState({
@@ -59,40 +54,25 @@ export default function AdminProfile() {
         name: user.name || '',
         email: user.email || '',
         phone: user.phone || '',
-        bio: user.bio || '',
-        address: {
-          city: user.address?.city || '',
-          state: user.address?.state || '',
-          country: user.address?.country || '',
-          pincode: user.address?.pincode || '',
-          full_address: user.address?.full_address || '',
-        },
+        address: user.address || '',
+        pincode: user.pincode || '',
+        landmark: user.landmark || '',
       });
     }
   }, [user]);
 
   const handleInputChange = (field: string, value: any) => {
-    if (field.includes('.')) {
-      const [parent, child] = field.split('.');
-      setFormData((prev) => ({
-        ...prev,
-        [parent]: {
-          ...prev[parent as keyof typeof prev],
-          [child]: value,
-        },
-      }));
-    } else {
-      setFormData((prev) => ({
-        ...prev,
-        [field]: value,
-      }));
-    }
+    setFormData((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
   };
 
   const handleSave = async () => {
     try {
       setLoading(true);
-      await usersAPI.updateUser(formData);
+      if (!user?.id) throw new Error('User ID not found');
+      await usersAPI.updateUser(user.id.toString(), formData);
       await refreshUser();
       setIsEditing(false);
       toast({
@@ -197,14 +177,9 @@ export default function AdminProfile() {
                               name: user.name || '',
                               email: user.email || '',
                               phone: user.phone || '',
-                              bio: user.bio || '',
-                              address: {
-                                city: user.address?.city || '',
-                                state: user.address?.state || '',
-                                country: user.address?.country || '',
-                                pincode: user.address?.pincode || '',
-                                full_address: user.address?.full_address || '',
-                              },
+                              address: user.address || '',
+                              pincode: user.pincode || '',
+                              landmark: user.landmark || '',
                             });
                           }
                         }}
@@ -290,25 +265,9 @@ export default function AdminProfile() {
                   <div>
                     <Label>Member Since</Label>
                     <p className="mt-1 text-sm text-gray-900 font-medium">
-                      {user?.createdAt ? format(new Date(user.createdAt), 'MMMM dd, yyyy') : 'N/A'}
+                      {user?.date_joined ? format(new Date(user.date_joined), 'MMMM dd, yyyy') : 'N/A'}
                     </p>
                   </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="bio">Bio</Label>
-                  {isEditing ? (
-                    <Textarea
-                      id="bio"
-                      value={formData.bio}
-                      onChange={(e) => handleInputChange('bio', e.target.value)}
-                      className="mt-1"
-                      rows={3}
-                      placeholder="Tell us about yourself..."
-                    />
-                  ) : (
-                    <p className="mt-1 text-sm text-gray-600">{user?.bio || 'No bio provided'}</p>
-                  )}
                 </div>
               </CardContent>
             </Card>
@@ -321,74 +280,46 @@ export default function AdminProfile() {
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="city">City</Label>
-                    {isEditing ? (
-                      <Input
-                        id="city"
-                        value={formData.address.city}
-                        onChange={(e) => handleInputChange('address.city', e.target.value)}
-                        className="mt-1"
-                      />
-                    ) : (
-                      <p className="mt-1 text-sm text-gray-900 font-medium">{user?.address?.city || 'N/A'}</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <Label htmlFor="state">State</Label>
-                    {isEditing ? (
-                      <Input
-                        id="state"
-                        value={formData.address.state}
-                        onChange={(e) => handleInputChange('address.state', e.target.value)}
-                        className="mt-1"
-                      />
-                    ) : (
-                      <p className="mt-1 text-sm text-gray-900 font-medium">{user?.address?.state || 'N/A'}</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <Label htmlFor="country">Country</Label>
-                    {isEditing ? (
-                      <Input
-                        id="country"
-                        value={formData.address.country}
-                        onChange={(e) => handleInputChange('address.country', e.target.value)}
-                        className="mt-1"
-                      />
-                    ) : (
-                      <p className="mt-1 text-sm text-gray-900 font-medium">{user?.address?.country || 'N/A'}</p>
-                    )}
-                  </div>
-
-                  <div>
                     <Label htmlFor="pincode">Pincode</Label>
                     {isEditing ? (
                       <Input
                         id="pincode"
-                        value={formData.address.pincode}
-                        onChange={(e) => handleInputChange('address.pincode', e.target.value)}
+                        value={formData.pincode}
+                        onChange={(e) => handleInputChange('pincode', e.target.value)}
                         className="mt-1"
                       />
                     ) : (
-                      <p className="mt-1 text-sm text-gray-900 font-medium">{user?.address?.pincode || 'N/A'}</p>
+                      <p className="mt-1 text-sm text-gray-900 font-medium">{user?.pincode || 'N/A'}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <Label htmlFor="landmark">Landmark</Label>
+                    {isEditing ? (
+                      <Input
+                        id="landmark"
+                        value={formData.landmark}
+                        onChange={(e) => handleInputChange('landmark', e.target.value)}
+                        className="mt-1"
+                      />
+                    ) : (
+                      <p className="mt-1 text-sm text-gray-900 font-medium">{user?.landmark || 'N/A'}</p>
                     )}
                   </div>
                 </div>
 
                 <div>
-                  <Label htmlFor="full_address">Full Address</Label>
+                  <Label htmlFor="address">Full Address</Label>
                   {isEditing ? (
                     <Textarea
-                      id="full_address"
-                      value={formData.address.full_address}
-                      onChange={(e) => handleInputChange('address.full_address', e.target.value)}
+                      id="address"
+                      value={formData.address}
+                      onChange={(e) => handleInputChange('address', e.target.value)}
                       className="mt-1"
-                      rows={2}
+                      rows={3}
                     />
                   ) : (
-                    <p className="mt-1 text-sm text-gray-600">{user?.address?.full_address || 'No address provided'}</p>
+                    <p className="mt-1 text-sm text-gray-600 whitespace-pre-wrap">{user?.address || 'No address provided'}</p>
                   )}
                 </div>
               </CardContent>
@@ -550,7 +481,7 @@ export default function AdminProfile() {
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600">Member Since</span>
                   <span className="text-sm font-medium text-gray-900">
-                    {user?.createdAt ? format(new Date(user.createdAt), 'MMM yyyy') : 'N/A'}
+                    {user?.date_joined ? format(new Date(user.date_joined), 'MMM yyyy') : 'N/A'}
                   </span>
                 </div>
               </CardContent>

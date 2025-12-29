@@ -12,9 +12,15 @@ class UserSerializer(serializers.ModelSerializer):
             'pincode', 'age', 'gender', 'address', 'landmark', 'profile_image',
             'is_volunteer', 'is_shelter_provider', 'volunteer_verified', 'shelter_verified',
             'admin_level', 'region', 'is_staff', 'is_superuser',
-            'date_joined', 'last_login'
+            'date_joined', 'last_login', 'is_active', 'is_verified'
         ]
         read_only_fields = ['id', 'date_joined', 'last_login', 'is_staff', 'is_superuser']
+
+    def get_is_verified(self, obj):
+        """Return verification status (for now, same as active)."""
+        return obj.is_active
+
+    is_verified = serializers.SerializerMethodField()
 
 
 class VolunteerSerializer(serializers.ModelSerializer):

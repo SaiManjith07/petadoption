@@ -26,7 +26,7 @@ export default function ShelterCapacity() {
   const loadShelters = async () => {
     try {
       setLoading(true);
-      const data = await shelterAPI.getAll({ min_available: 1 });
+      const data = await shelterAPI.getAll();
       setShelters(data);
     } catch (error: any) {
       toast({
@@ -40,7 +40,7 @@ export default function ShelterCapacity() {
   };
 
   const filteredShelters = shelters.filter(shelter => {
-    const matchesSearch = searchTerm === '' || 
+    const matchesSearch = searchTerm === '' ||
       shelter.shelter_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       shelter.location?.city?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCity = filterCity === '' || shelter.location?.city === filterCity;
@@ -63,7 +63,7 @@ export default function ShelterCapacity() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button 
+            <Button
               className="w-full bg-gradient-to-r from-[#2BB6AF] to-[#239a94] hover:from-[#239a94] hover:to-[#1a7a75] text-white"
               onClick={() => navigate('/auth/login')}
             >
@@ -133,20 +133,20 @@ export default function ShelterCapacity() {
         ) : (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {filteredShelters.map((shelter) => {
-              const occupancyPercentage = shelter.total_beds > 0 
+              const occupancyPercentage = shelter.total_beds > 0
                 ? Math.round((shelter.occupied_beds / shelter.total_beds) * 100)
                 : 0;
               const distance = Math.random() * 10 + 1; // Mock distance
-              
+
               return (
                 <Card key={shelter._id || shelter.id} className="hover:shadow-xl transition-all duration-300 hover:-translate-y-2 border-2 border-gray-100">
                   <CardHeader>
                     <div className="flex items-start justify-between mb-2">
                       <CardTitle className="text-xl font-bold text-gray-900">{shelter.shelter_name}</CardTitle>
-                      <Badge 
-                        className={shelter.available_beds > 5 ? 'bg-green-100 text-green-700' : 
-                                  shelter.available_beds > 0 ? 'bg-yellow-100 text-yellow-700' : 
-                                  'bg-red-100 text-red-700'}
+                      <Badge
+                        className={shelter.available_beds > 5 ? 'bg-green-100 text-green-700' :
+                          shelter.available_beds > 0 ? 'bg-yellow-100 text-yellow-700' :
+                            'bg-red-100 text-red-700'}
                       >
                         {shelter.available_beds} Available
                       </Badge>
@@ -169,8 +169,8 @@ export default function ShelterCapacity() {
                           {shelter.occupied_beds}/{shelter.total_beds} beds
                         </span>
                       </div>
-                      <Progress 
-                        value={occupancyPercentage} 
+                      <Progress
+                        value={occupancyPercentage}
                         className="h-2"
                       />
                       <div className="flex items-center justify-between mt-2 text-xs text-gray-500">
@@ -205,8 +205,8 @@ export default function ShelterCapacity() {
                       </div>
                     )}
 
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       className="w-full border-green-200 hover:bg-green-50 hover:border-green-300"
                       onClick={() => {
                         if (shelter.location?.coordinates) {

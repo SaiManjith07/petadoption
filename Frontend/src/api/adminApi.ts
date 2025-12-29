@@ -176,12 +176,12 @@ export const adminApi = {
         error: response.data?.error,
         fullResponse: response.data // Log full response for debugging
       });
-      
+
       if (!Array.isArray(data)) {
         console.warn('getAllChats: Response data is not an array:', data);
         return [];
       }
-      
+
       return data;
     } catch (error: any) {
       console.error('Error in getAllChats:', error);
@@ -195,13 +195,8 @@ export const adminApi = {
    */
   async getChatStats(): Promise<any> {
     const response = await apiClient.get('/admin/chats/stats');
-    return response.data.data || response.data || {
-      pending_requests: 0,
-      active_chats: 0,
-      total_requests: 0,
-      approved_requests: 0,
-      rejected_requests: 0,
-    };
+    // Backend returns nested structure { data: { ...stats } }
+    return response.data.data;
   },
 
   /**
@@ -211,7 +206,7 @@ export const adminApi = {
     try {
       // Use the new endpoint from chats app instead of adminpanel
       const response = await apiClient.get('/chats/requests/all/');
-    return response.data.data || response.data || [];
+      return response.data.data || response.data || [];
     } catch (error: any) {
       console.error('Error fetching chat requests:', error);
       // Fallback to empty array if endpoint fails

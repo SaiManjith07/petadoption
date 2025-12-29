@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { 
-  ArrowLeft, MapPin, Calendar, User, MessageSquare, Heart, Image as ImageIcon, 
-  Scale, Tag, Hash, Clock, CheckCircle2, Shield, Edit, 
-  Trash2, Share2, PawPrint, Palette, Award, Info, Navigation2, Phone, Mail, AlertCircle
+import {
+  ArrowLeft, MapPin, Calendar, User, MessageSquare, Heart, Image as ImageIcon,
+  Scale, Tag, Hash, Clock, CheckCircle2, Shield, Edit,
+  Trash2, Share2, PawPrint, Palette, Award, Info, Navigation2, Phone, Mail, AlertCircle,
+  FileText, ExternalLink
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -101,6 +102,20 @@ const getColorValue = (colorName: string): string => {
   return '#e5e7eb';
 };
 
+
+// Helper component for grid items
+const DetailItem = ({ label, icon, value, color }: { label: string, icon: any, value: any, color?: string }) => (
+  <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm transition-all hover:shadow-md">
+    <div className="flex items-center gap-2 mb-1 text-slate-400 text-[10px] font-bold uppercase tracking-wider">
+      <span className={color || 'text-slate-400'}>{icon}</span>
+      {label}
+    </div>
+    <div className="font-semibold text-slate-900 text-sm truncate" title={value?.toString()}>
+      {value}
+    </div>
+  </div>
+);
+
 export default function PetDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -119,7 +134,7 @@ export default function PetDetail() {
   const [daysInCare, setDaysInCare] = useState<number | null>(null);
   const [requiresConsent, setRequiresConsent] = useState(false);
   const [isProcessingConsent, setIsProcessingConsent] = useState(false);
-  
+
   const isUploadedByUser = user?.id && pet && (
     pet.posted_by?.id === user.id || pet.posted_by?._id === user.id ||
     pet.owner?.id === user.id || pet.owner?._id === user.id
@@ -157,22 +172,22 @@ export default function PetDetail() {
         updatedAt: data.updated_at || data.updatedAt,
       };
       setPet(petData);
-      
+
       // Check if consent is needed (for found pets uploaded by current user)
       // Verify user is the uploader
       const isUserUploader = user?.id && (
-        petData.posted_by?.id === user.id || 
+        petData.posted_by?.id === user.id ||
         petData.posted_by?._id === user.id ||
         petData.posted_by?.id === Number(user.id) ||
         petData.posted_by?._id === Number(user.id)
       );
-      
-      if (petData.adoption_status === 'Found' && 
-          petData.found_date && 
-          !petData.moved_to_adoption && 
-          !petData.is_reunited &&
-          isUserUploader &&
-          isAuthenticated) {
+
+      if (petData.adoption_status === 'Found' &&
+        petData.found_date &&
+        !petData.moved_to_adoption &&
+        !petData.is_reunited &&
+        isUserUploader &&
+        isAuthenticated) {
         try {
           const consentCheck = await petsApi.check15DayAdoption(Number(id));
           if (consentCheck.requires_decision) {
@@ -248,32 +263,32 @@ export default function PetDetail() {
 
   const handleConsentDecision = async (consent: boolean, wantsToKeep: boolean = false) => {
     if (!pet || !id) return;
-    
+
     try {
       setIsProcessingConsent(true);
       const result = await petsApi.check15DayAdoption(Number(id), consent, wantsToKeep);
-      
+
       if (wantsToKeep) {
-        toast({ 
-          title: 'Pet Ownership Transferred', 
-          description: `You are now the owner of "${pet.name}"` 
+        toast({
+          title: 'Pet Ownership Transferred',
+          description: `You are now the owner of "${pet.name}"`
         });
       } else if (consent) {
-        toast({ 
-          title: 'Pet Moved to Adoption', 
-          description: `"${pet.name}" has been moved to adoption listing. Thank you!` 
+        toast({
+          title: 'Pet Moved to Adoption',
+          description: `"${pet.name}" has been moved to adoption listing. Thank you!`
         });
       }
-      
+
       setShowConsentDialog(false);
       setRequiresConsent(false);
       // Reload pet to get updated status
       await loadPet();
     } catch (error: any) {
-      toast({ 
-        title: 'Error', 
-        description: error.message || 'Could not process your decision', 
-        variant: 'destructive' 
+      toast({
+        title: 'Error',
+        description: error.message || 'Could not process your decision',
+        variant: 'destructive'
       });
     } finally {
       setIsProcessingConsent(false);
@@ -343,16 +358,26 @@ export default function PetDetail() {
   };
 
   const photos = getPhotos();
-  const photoUrl = photos.length > 0 
+  const photoUrl = photos.length > 0
     ? (typeof photos[currentPhotoIndex] === 'string' ? photos[currentPhotoIndex] : photos[currentPhotoIndex]?.url)
     : null;
-  
+
   const fullImageUrl = photoUrl ? (
     photoUrl.startsWith('http') || photoUrl.startsWith('data:') ? photoUrl : getImageUrl(photoUrl)
   ) : null;
 
   const statusBadge = getStatusBadge();
-  const description = pet.description || pet.additionalInfo?.description || '';
+  let description = pet.description || pet.additionalInfo?.description || '';
+  let colorFromDesc = '';
+
+  // Extract explicit "Color: ..." from description to show in details instead
+  const colorMatch = description.match(/Color:\s*([^\n\.]+)/i);
+  if (colorMatch) {
+    colorFromDesc = colorMatch[1].trim();
+    description = description.replace(colorMatch[0], '').trim();
+    // Clean up trailing punctuation if it left a weird ending
+    description = description.replace(/,\s*$/, '').replace(/\.$/, '') + '.';
+  }
 
   // Get all pet data fields
   const distinguishingMarks = pet.distinguishing_marks || pet.physicalCharacteristics?.distinguishingMarks || '';
@@ -365,42 +390,47 @@ export default function PetDetail() {
   const foundDate = pet.found_date || '';
   const reportedDate = pet.createdAt || pet.created_at || '';
 
+  // Format Pet ID
+  const getFormattedId = (id: number, status: string) => {
+    const prefix = status.toLowerCase().includes('found') ? 'FP' :
+      status.toLowerCase().includes('lost') ? 'LP' : 'AP';
+    return `#${prefix}${id.toString().padStart(6, '0')}`;
+  };
+
   return (
-    <div className="min-h-screen bg-[#F5F7FA]">
+    <div className="min-h-screen bg-[#F8FAFC]">
       {/* Header Actions */}
-      <div className="max-w-[1200px] mx-auto px-6 py-6">
+      <div className="max-w-[1400px] mx-auto px-6 py-6">
         <div className="flex items-center justify-between mb-6">
-          <Button 
-            variant="outline" 
-            onClick={() => navigate(-1)} 
-            className="flex items-center gap-2 px-5 py-2.5 rounded-lg border-[#E5E7EB] bg-white hover:bg-[#F9FAFB] hover:-translate-x-1 transition-all duration-300 shadow-sm hover:shadow-md"
+          <Button
+            variant="ghost"
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-2 hover:bg-white/50"
           >
-            <ArrowLeft className="h-4 w-4" />
-            Back
+            <ArrowLeft className="h-5 w-5" />
+            Back to list
           </Button>
-          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+          <div className="flex items-center gap-2">
             {isAdmin && (
               <>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   onClick={() => navigate(`/pets/${pet.id}/edit`)}
-                  className="flex items-center gap-2 px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg border-blue-500 bg-blue-500 text-white hover:bg-blue-600 transition-all duration-300 shadow-sm hover:shadow-md text-sm sm:text-base"
+                  className="gap-2"
                 >
-                  <Edit className="h-4 w-4" />
-                  <span className="hidden sm:inline">Edit</span>
+                  <Edit className="h-4 w-4" /> Edit
                 </Button>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   onClick={() => setShowDeleteDialog(true)}
-                  className="flex items-center gap-2 px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg border-red-500 bg-red-500 text-white hover:bg-red-600 transition-all duration-300 shadow-sm hover:shadow-md text-sm sm:text-base"
+                  className="gap-2 text-red-600 hover:text-red-700 hover:bg-red-50"
                 >
-                  <Trash2 className="h-4 w-4" />
-                  <span className="hidden sm:inline">Delete</span>
+                  <Trash2 className="h-4 w-4" /> Delete
                 </Button>
               </>
             )}
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => {
                 if (navigator.share) {
                   navigator.share({ title: pet.name, url: window.location.href });
@@ -409,422 +439,292 @@ export default function PetDetail() {
                   toast({ title: 'Link copied!' });
                 }
               }}
-              className="px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg border-[#E5E7EB] bg-white hover:bg-[#F9FAFB] transition-all duration-300 shadow-sm hover:shadow-md text-sm sm:text-base"
+              className="gap-2"
             >
-              <Share2 className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Share</span>
+              <Share2 className="h-4 w-4" /> Share
             </Button>
           </div>
         </div>
 
-        {/* Full Width Pet Image - 600px height */}
-        <div className="relative w-full h-[600px] rounded-2xl overflow-hidden shadow-[0_4px_12px_rgba(0,0,0,0.1)] mb-6 bg-[#f5f5f5] flex items-center justify-center">
-          {fullImageUrl && !imageError ? (
-            <img
-              src={fullImageUrl}
-              alt={pet.name || 'Pet'}
-              className="w-full h-full max-h-[600px] object-contain object-center"
-              style={{ maxWidth: '100%', maxHeight: '100%' }}
-              onError={() => setImageError(true)}
-            />
-          ) : (
-            <div className="h-full w-full flex flex-col items-center justify-center bg-gradient-to-br from-[#E5E7EB] to-[#D1D5DB]">
-              <ImageIcon className="h-24 w-24 text-[#6B7280] mb-3" />
-              <p className="text-[#6B7280] font-medium">No Image Available</p>
-            </div>
-          )}
-          
-          {/* Verified Badge */}
-          {pet.is_verified && (
-            <div className="absolute top-5 right-5 bg-[#10B981] text-white px-5 py-2.5 rounded-full font-semibold text-sm flex items-center gap-2 shadow-[0_2px_8px_rgba(16,185,129,0.4)]">
-              <CheckCircle2 className="h-4 w-4" />
-              Verified
-            </div>
-          )}
-
-          {/* Image Navigation */}
-          {photos.length > 1 && (
-            <>
-              <div className="absolute top-5 left-5 bg-black/60 backdrop-blur-md text-white px-3 py-1.5 rounded-full text-sm">
-                {currentPhotoIndex + 1} / {photos.length}
-              </div>
-              <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2">
-                <div className="flex gap-2 justify-center bg-black/60 backdrop-blur-md rounded-full px-4 py-2">
-                  {photos.slice(0, 5).map((photo: any, index: number) => {
-                    const thumbUrl = typeof photo === 'string' ? photo : photo?.url;
-                    const thumbImageUrl = thumbUrl ? (thumbUrl.startsWith('http') || thumbUrl.startsWith('data:') ? thumbUrl : getImageUrl(thumbUrl)) : null;
-                    return (
-                      <button
-                        key={index}
-                        onClick={() => { setCurrentPhotoIndex(index); setImageError(false); }}
-                        className={`h-10 w-10 rounded-lg overflow-hidden border-2 transition-all ${
-                          currentPhotoIndex === index ? 'border-white scale-110 shadow-lg' : 'border-transparent opacity-70 hover:opacity-100'
-                        }`}
-                      >
-                        {thumbImageUrl && <img src={thumbImageUrl} alt="" className="h-full w-full object-cover" />}
-                      </button>
-                    );
-                  })}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start mb-8">
+          {/* Left Column: Image & Description */}
+          <div className="space-y-6">
+            <div className="relative w-full aspect-[4/5] lg:aspect-auto rounded-2xl overflow-hidden bg-white shadow-sm border border-slate-100 flex items-center justify-center">
+              {fullImageUrl && !imageError ? (
+                <img
+                  src={fullImageUrl}
+                  alt={pet.name || 'Pet'}
+                  className="w-full h-auto object-cover max-h-[70vh]"
+                  onError={() => setImageError(true)}
+                />
+              ) : (
+                <div className="h-[400px] w-full flex flex-col items-center justify-center bg-slate-50 text-slate-400">
+                  <ImageIcon className="h-24 w-24 mb-3" />
+                  <p className="font-medium">No Image Available</p>
                 </div>
+              )}
+
+              {/* Image Navigation Dots if multiple */}
+              {photos.length > 1 && (
+                <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex gap-2">
+                  {photos.slice(0, 5).map((_, index) => (
+                    <button
+                      key={index}
+                      onClick={(e) => { e.stopPropagation(); setCurrentPhotoIndex(index); }}
+                      className={`h-2.5 w-2.5 rounded-full transition-all ${currentPhotoIndex === index ? 'bg-white scale-110' : 'bg-white/50 hover:bg-white/70'
+                        }`}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Description Card - Moved to Left Column */}
+            <div className="bg-blue-50/30 rounded-2xl p-6 border border-blue-100/30">
+              <h3 className="text-sm font-bold text-slate-900 mb-3">Description</h3>
+              <p className="text-slate-600 text-sm leading-relaxed">
+                {description || "No description provided."}
+              </p>
+              {distinguishingMarks && (
+                <div className="mt-4 pt-4 border-t border-slate-200">
+                  <h4 className="text-xs font-bold text-slate-900 mb-2">Distinguishing Marks</h4>
+                  <p className="text-slate-600 text-sm">{distinguishingMarks}</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Right Column: Details */}
+          <div className="space-y-6">
+            {/* Header Info */}
+            <div>
+              <div className="flex items-center gap-3 mb-2">
+                {statusBadge && (
+                  <span className={`${statusBadge.color} text-white px-3 py-1 rounded-md text-xs font-bold uppercase tracking-wider`}>
+                    {statusBadge.text}
+                  </span>
+                )}
+                {pet.is_verified && (
+                  <span className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-md text-xs font-bold uppercase tracking-wider">
+                    Approved
+                  </span>
+                )}
+                <div className="flex-1" />
+                <span className="text-slate-500 font-mono font-medium">
+                  Pet ID: <span className="text-slate-900">{getFormattedId(pet.id, pet.adoption_status || '')}</span>
+                </span>
               </div>
-            </>
-          )}
+              <h1 className="text-4xl font-extrabold text-slate-900 mb-2">{pet.name || 'Unknown Pet'}</h1>
+              <div className="flex items-center text-slate-500">
+                {locationFound ? (
+                  <>
+                    <MapPin className="h-4 w-4 mr-1" />
+                    {locationFound}
+                  </>
+                ) : (
+                  <span className="italic">Location not specified</span>
+                )}
+              </div>
+            </div>
+
+            {/* Pets Details Card */}
+            <div className="bg-blue-50/50 rounded-2xl p-6 border border-blue-100/50">
+              <div className="flex items-center gap-2 mb-6">
+                <PawPrint className="h-5 w-5 text-slate-700" />
+                <h2 className="text-lg font-bold text-slate-900">Pets Details</h2>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-4">
+                {/* Row 1 */}
+                <DetailItem label="TAG" icon={<Tag className="h-4 w-4" />} value={pet.tag_registration_number || collarTagInfo || 'Not Present'} color="text-orange-500" />
+                <DetailItem label="PET NAME" icon={<Heart className="h-4 w-4" />} value={(!pet.name || (pet.category?.name && pet.name.toLowerCase() === pet.category.name.toLowerCase())) ? '—' : pet.name} color="text-red-500" />
+                <DetailItem label="PET TYPE" icon={<PawPrint className="h-4 w-4" />} value={pet.category?.name || pet.type || '—'} color="text-blue-500" />
+
+                {/* Row 2 */}
+                <DetailItem label="BREED" icon={<Award className="h-4 w-4" />} value={pet.breed || '—'} color="text-purple-500" />
+                <DetailItem label="GENDER" icon={<User className="h-4 w-4" />} value={pet.gender || '—'} color="text-pink-500" />
+                <DetailItem label="COLOR" icon={<Palette className="h-4 w-4" />} value={colorFromDesc || [getPrimaryColor(pet), getSecondaryColor(pet)].filter(Boolean).join(' - ') || '—'} color="text-indigo-500" />
+
+                {/* Row 3 */}
+                <DetailItem label="WEIGHT" icon={<Scale className="h-4 w-4" />} value={pet.weight ? `${pet.weight}kg` : '—'} color="text-yellow-600" />
+                <DetailItem label="ESTIMATED AGE" icon={<Calendar className="h-4 w-4" />} value={getEstimatedAge(pet)} color="text-orange-600" />
+              </div>
+            </div>
+
+            {/* Medical Records Accordion (if uploaded by user) - Kept in Right Column */}
+            {isUploadedByUser && pet.id && (
+              <Card className="bg-white rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-[#E5E7EB]">
+                <CardContent className="p-0">
+                  <Accordion type="single" collapsible defaultValue="">
+                    <AccordionItem value="medical-records" className="border-none">
+                      <AccordionTrigger className="px-6 py-4 hover:no-underline">
+                        <div className="flex items-center gap-2">
+                          <Info className="h-5 w-5 text-[#2DD4BF]" />
+                          <span className="font-semibold text-[#1F2937]">Medical Records</span>
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent className="px-6 pb-6">
+                        <UserPetMedicalRecords petId={Number(pet.id)} petName={pet.name} />
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         </div>
 
-        {/* Row 1: Basic Information Card */}
-        <Card className="bg-white rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-[#E5E7EB] mb-5 hover:shadow-[0_4px_12px_rgba(0,0,0,0.12)] transition-all duration-300 hover:-translate-y-0.5">
-          <CardContent className="p-6">
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <h1 className="text-3xl font-bold text-[#1F2937] mb-1">
-                  {pet.name || pet.category?.name || 'Unnamed Pet'}
-                </h1>
-                <p className="text-lg text-[#6B7280]">
-                  {pet.breed || pet.category?.name || 'Unknown Breed'}
-                </p>
-              </div>
-              {statusBadge && (
-                <Badge className={`${statusBadge.color} text-white px-4 py-2 rounded-full font-semibold text-sm flex items-center gap-1.5`}>
-                  {statusBadge.icon} {statusBadge.text}
-                </Badge>
-              )}
+        {/* Location Details - Full Width */}
+        <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm mb-6">
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 font-bold text-slate-900">
+              <MapPin className="h-5 w-5 text-indigo-600" />
+              Location Details
             </div>
-            <div className="grid grid-cols-2 gap-4 pt-4 border-t border-[#E5E7EB]">
-              {pet.gender && (
-                <div className="flex items-center gap-2.5">
-                  <User className="h-5 w-5 text-[#2DD4BF]" />
-                  <div>
-                    <div className="text-xs text-[#6B7280] font-medium">Gender</div>
-                    <div className="text-base font-semibold text-[#1F2937]">{pet.gender}</div>
-                  </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 flex items-center gap-3">
+                <div className="h-10 w-10 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-700 font-bold shrink-0">
+                  <MapPin className="h-5 w-5" />
                 </div>
-              )}
-              {pet.weight && (
-                <div className="flex items-center gap-2.5">
-                  <Scale className="h-5 w-5 text-[#2DD4BF]" />
-                  <div>
-                    <div className="text-xs text-[#6B7280] font-medium">Weight</div>
-                    <div className="text-base font-semibold text-[#1F2937]">{pet.weight} kg</div>
-                  </div>
-                </div>
-              )}
-              {pet.breed && (
-                <div className="flex items-center gap-2.5">
-                  <PawPrint className="h-5 w-5 text-[#2DD4BF]" />
-                  <div>
-                    <div className="text-xs text-[#6B7280] font-medium">Breed</div>
-                    <div className="text-base font-semibold text-[#1F2937] capitalize">{pet.breed}</div>
-                  </div>
-                </div>
-              )}
-              <div className="flex items-center gap-2.5">
-                <Calendar className="h-5 w-5 text-[#2DD4BF]" />
-                <div>
-                  <div className="text-xs text-[#6B7280] font-medium">Age</div>
-                  <div className="text-base font-semibold text-[#1F2937]">{getEstimatedAge(pet)}</div>
+                <div className="min-w-0">
+                  <div className="text-[10px] uppercase text-slate-400 font-bold tracking-wider">FOUND CITY</div>
+                  <div className="font-semibold text-slate-900 text-sm truncate">{locationFound ? locationFound.split(',')[0] : '—'}</div>
                 </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
 
-        {/* Row 2: Color/Pattern Card */}
-        {(getPrimaryColor(pet) || getSecondaryColor(pet) || getColorPattern(pet)) && (
-          <Card className="bg-white rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-[#E5E7EB] mb-5 hover:shadow-[0_4px_12px_rgba(0,0,0,0.12)] transition-all duration-300 hover:-translate-y-0.5">
-            <CardContent className="p-6">
-              <h3 className="text-lg font-semibold text-[#1F2937] mb-3 flex items-center gap-2.5">
-                <span className="text-2xl">🎨</span>
-                Color/Pattern
-              </h3>
-              <div className="p-3 bg-[#F9FAFB] rounded-lg border-l-4 border-[#2DD4BF]">
-                <div className="text-base text-[#4B5563]">
-                  {[getPrimaryColor(pet), getSecondaryColor(pet), getColorPattern(pet)].filter(Boolean).join(' / ') || 'Not specified'}
+              <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 flex items-center gap-3">
+                <div className="h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-700 shrink-0">
+                  <Navigation2 className="h-5 w-5" />
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Row 3: About/Description Card */}
-        {(description || distinguishingMarks) && (
-          <Card className="bg-white rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-[#E5E7EB] mb-5 hover:shadow-[0_4px_12px_rgba(0,0,0,0.12)] transition-all duration-300 hover:-translate-y-0.5">
-            <CardContent className="p-6">
-              <h3 className="text-xl font-semibold text-[#1F2937] mb-4 flex items-center gap-2.5">
-                <span className="text-2xl">📋</span>
-                About {pet.name || pet.category?.name || 'Pet'}
-              </h3>
-              {description && (
-                <p className="text-[#4B5563] leading-relaxed mb-4 whitespace-pre-wrap">{description}</p>
-              )}
-              {distinguishingMarks && (
-                <div className="mt-5 pt-5 border-t border-[#E5E7EB]">
-                  <h4 className="text-base font-semibold text-[#1F2937] mb-2.5">Distinguishing Marks:</h4>
-                  <p className="text-[#4B5563] leading-relaxed">{distinguishingMarks}</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Row 4: Timeline Card */}
-        {(foundDate || reportedDate) && (
-          <Card className="bg-white rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-[#E5E7EB] mb-5 hover:shadow-[0_4px_12px_rgba(0,0,0,0.12)] transition-all duration-300 hover:-translate-y-0.5">
-            <CardContent className="p-6">
-              <h3 className="text-lg font-semibold text-[#1F2937] mb-4 flex items-center gap-2.5">
-                <span className="text-2xl">📅</span>
-                Timeline
-              </h3>
-              <div className="space-y-3">
-                {foundDate && (
-                  <div className="flex items-center gap-3 p-3 bg-[#F9FAFB] rounded-lg">
-                    <span className="text-xl">🔍</span>
-                    <div className="flex-1">
-                      <div className="text-sm text-[#6B7280] font-medium">Found</div>
-                      <div className="text-base font-semibold text-[#1F2937]">
-                        {format(new Date(foundDate), 'MMM dd, yyyy')}
-                      </div>
-                    </div>
-                  </div>
-                )}
-                {reportedDate && (
-                  <div className="flex items-center gap-3 p-3 bg-[#F9FAFB] rounded-lg">
-                    <span className="text-xl">📢</span>
-                    <div className="flex-1">
-                      <div className="text-sm text-[#6B7280] font-medium">Reported</div>
-                      <div className="text-base font-semibold text-[#1F2937]">
-                        {format(new Date(reportedDate), 'MMM dd, yyyy')}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Row 5: Location Card */}
-        {locationFound && (
-          <Card className="bg-white rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-[#E5E7EB] mb-5 hover:shadow-[0_4px_12px_rgba(0,0,0,0.12)] transition-all duration-300 hover:-translate-y-0.5">
-            <CardContent className="p-6">
-              <h3 className="text-lg font-semibold text-[#1F2937] mb-4 flex items-center gap-2.5">
-                <span className="text-2xl">📍</span>
-                Location Details
-              </h3>
-              <div className="space-y-3 mb-4">
-                <div className="p-3 bg-[#F9FAFB] rounded-lg flex items-center gap-2.5">
-                  <span className="text-lg">📌</span>
-                  <div className="text-base font-semibold text-[#1F2937]">{locationFound}</div>
-                </div>
-                
-                {/* Google Maps Link */}
-                <a
-                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(locationFound + (pet.pincode ? ` ${pet.pincode}` : ''))}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#f0f9ff] text-[#0ea5e9] rounded-lg font-medium text-sm hover:bg-[#e0f2fe] hover:text-[#0284c7] transition-all duration-300 shadow-sm hover:shadow-md"
-                >
-                  <MapPin className="h-4 w-4" />
-                  View on Google Maps
-                </a>
-              </div>
-              
-              {/* Map Preview */}
-              {(latitude && longitude) && (
-                <div className="w-full h-[250px] bg-[#E5E7EB] rounded-xl mb-4 flex items-center justify-center">
-                  <MapPin className="h-12 w-12 text-[#6B7280]" />
-                </div>
-              )}
-
-              {/* Additional Location Info */}
-              {(mapUrl || (latitude && longitude)) && (
-                <div className="mt-4 pt-4 border-t border-[#E5E7EB]">
-                  <h4 className="text-sm font-semibold text-[#1F2937] mb-3">Additional Location Info:</h4>
-                  <div className="space-y-2">
-                    {mapUrl && (
-                      <div className="flex items-start gap-2 text-sm text-[#4B5563]">
-                        <span className="text-[#2DD4BF] font-bold text-lg">•</span>
-                        <span>Map URL: <a href={mapUrl} target="_blank" rel="noopener noreferrer" className="text-[#2DD4BF] hover:underline">{mapUrl}</a></span>
-                      </div>
-                    )}
-                    {(latitude && longitude) && (
-                      <div className="flex items-start gap-2 text-sm text-[#4B5563]">
-                        <span className="text-[#2DD4BF] font-bold text-lg">•</span>
-                        <span>Coordinates: {latitude}, {longitude}</span>
-                      </div>
-                    )}
+                <div className="min-w-0">
+                  <div className="text-[10px] uppercase text-slate-400 font-bold tracking-wider">STATE</div>
+                  <div className="font-semibold text-slate-900 text-sm truncate">
+                    {locationFound && locationFound.split(',').length > 1 ? locationFound.split(',').slice(1).join(',').trim() : 'Telangana'}
                   </div>
                 </div>
-              )}
+              </div>
 
-              {/* Get Directions Button */}
-              <Button
-                variant="outline"
-                className="w-full mt-4 p-3.5 bg-white border-2 border-[#2DD4BF] text-[#2DD4BF] rounded-lg font-semibold text-base hover:bg-[#2DD4BF] hover:text-white transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_4px_12px_rgba(45,212,191,0.3)]"
-                onClick={() => {
-                  let url = '';
-                  if (mapUrl) {
-                    url = mapUrl;
-                  } else if (latitude && longitude) {
-                    url = `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`;
-                  } else {
-                    const searchQuery = encodeURIComponent(locationFound);
-                    url = `https://www.google.com/maps/dir/?api=1&destination=${searchQuery}`;
-                  }
-                  window.open(url, '_blank');
-                }}
+              <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 flex items-center gap-3">
+                <div className="h-10 w-10 bg-amber-100 rounded-full flex items-center justify-center text-amber-700 shrink-0">
+                  <Hash className="h-5 w-5" />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-[10px] uppercase text-slate-400 font-bold tracking-wider">PINCODE</div>
+                  <div className="font-semibold text-slate-900 text-sm truncate">
+                    {pet.pincode || '—'}
+                  </div>
+                </div>
+              </div>
+
+              <a
+                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(locationFound + (pet.pincode ? ` ${pet.pincode}` : ''))}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-slate-50 p-3 rounded-xl border border-slate-100 flex items-center gap-3 hover:bg-slate-100 transition-colors group"
               >
-                <Navigation2 className="h-4 w-4 mr-2" />
-                Get Directions
-              </Button>
-            </CardContent>
-          </Card>
-        )}
+                <div className="h-10 w-10 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-700 shrink-0 group-hover:scale-110 transition-transform">
+                  <ExternalLink className="h-5 w-5" />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-[10px] uppercase text-slate-400 font-bold tracking-wider">VIEW ON MAP</div>
+                  <div className="font-semibold text-blue-600 text-sm truncate flex items-center gap-1">
+                    Open Google Maps
+                  </div>
+                </div>
+              </a>
+            </div>
+          </div>
+        </div>
 
-        {/* Row 6: Tag/Registration Card (if available) */}
-        {(tagRegistrationNumber || collarTagInfo) && (
-          <Card className="bg-white rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-[#E5E7EB] mb-5 hover:shadow-[0_4px_12px_rgba(0,0,0,0.12)] transition-all duration-300 hover:-translate-y-0.5">
-            <CardContent className="p-6">
-              <h3 className="text-lg font-semibold text-[#1F2937] mb-4 flex items-center gap-2.5">
-                <span className="text-2xl">🏷️</span>
-                Tag & Registration
-              </h3>
-              {tagRegistrationNumber && (
-                <div className="mb-3">
-                  <div className="text-sm text-[#6B7280] font-medium mb-1">Tag/Registration Number:</div>
-                  <div className="text-base text-[#1F2937] font-semibold p-2.5 bg-[#F9FAFB] rounded-lg">{tagRegistrationNumber}</div>
-                </div>
-              )}
-              {collarTagInfo && (
-                <div>
-                  <div className="text-sm text-[#6B7280] font-medium mb-1">Collar/Tag Information:</div>
-                  <div className="text-base text-[#1F2937] font-semibold p-2.5 bg-[#F9FAFB] rounded-lg">{collarTagInfo}</div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
+        {/* Reported Details - Full Width */}
+        <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm mb-8">
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-6 items-center">
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 font-bold text-slate-900">
+                <User className="h-5 w-5 text-indigo-600" />
+                Reported Details
+              </div>
 
-        {/* Row 7: Reporter Information Card */}
-        {pet.posted_by && (
-          <Card className="bg-white rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-[#E5E7EB] mb-5 hover:shadow-[0_4px_12px_rgba(0,0,0,0.12)] transition-all duration-300 hover:-translate-y-0.5">
-            <CardContent className="p-6">
-              <h3 className="text-lg font-semibold text-[#1F2937] mb-4 flex items-center gap-2.5">
-                <span className="text-2xl">👤</span>
-                Reported By
-              </h3>
-              <div className="flex items-center gap-4 p-4 bg-[#F9FAFB] rounded-xl">
-                <div className="h-14 w-14 rounded-full bg-gradient-to-br from-[#2DD4BF] to-[#14B8A6] flex items-center justify-center text-white font-bold text-xl shadow-md">
-                  {pet.posted_by.name?.charAt(0)?.toUpperCase() || 'U'}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 flex items-center gap-3">
+                  <div className="h-10 w-10 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-700 font-bold shrink-0">
+                    {pet.posted_by?.name?.charAt(0)?.toUpperCase() || 'U'}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-[10px] uppercase text-slate-400 font-bold tracking-wider">REPORTED BY</div>
+                    <div className="font-semibold text-slate-900 text-sm truncate">{pet.posted_by?.name || 'Unknown'} (USR{pet.posted_by?.id?.toString().padStart(6, '0')})</div>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-base font-semibold text-[#1F2937] truncate">{pet.posted_by.name || 'Unknown'}</div>
-                  {pet.posted_by.email && (
-                    <div className="text-sm text-[#6B7280] truncate">{pet.posted_by.email}</div>
-                  )}
+
+                <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 flex items-center gap-3">
+                  <div className="h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-700 shrink-0">
+                    <Calendar className="h-5 w-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-[10px] uppercase text-slate-400 font-bold tracking-wider">REPORTED ON</div>
+                    <div className="font-semibold text-slate-900 text-sm truncate">
+                      {reportedDate ? format(new Date(reportedDate), 'dd/MM/yyyy') : '—'}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 flex items-center gap-3">
+                  <div className="h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-700 shrink-0">
+                    <Clock className="h-5 w-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-[10px] uppercase text-slate-400 font-bold tracking-wider">LAST UPDATED</div>
+                    <div className="font-semibold text-slate-900 text-sm truncate">
+                      {pet.updatedAt ? format(new Date(pet.updatedAt), 'dd/MM/yyyy') : '—'}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 flex items-center gap-3">
+                  <div className="h-10 w-10 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-700 shrink-0">
+                    <Clock className="h-5 w-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-[10px] uppercase text-slate-400 font-bold tracking-wider">FOUND TIME</div>
+                    <div className="font-semibold text-slate-900 text-sm truncate">
+                      {foundDate ? format(new Date(foundDate), 'dd/MM/yyyy') : '—'}
+                    </div>
+                  </div>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        )}
+            </div>
 
-        {/* Row 8: Action Buttons */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10">
-          {isUploadedByUser ? (
-            <>
-              {requiresConsent && pet.adoption_status === 'Found' && !pet.moved_to_adoption && (
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-3 min-w-[200px]">
+              {isUploadedByUser ? (
                 <Button
-                  size="lg"
-                  onClick={() => setShowConsentDialog(true)}
-                  className="w-full bg-[#2DD4BF] hover:bg-[#14B8A6] text-white h-14 rounded-lg font-semibold text-base transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_4px_12px_rgba(45,212,191,0.3)]"
+                  variant="outline"
+                  className="w-full h-12 bg-amber-100 hover:bg-amber-200 text-amber-900 border-amber-200 gap-2 font-semibold shadow-sm"
+                  onClick={() => navigate(`/pets/${pet.id}/edit`)}
                 >
-                  <Clock className="mr-2 h-5 w-5" />
-                  Decision Required ({daysInCare} days)
-                </Button>
-              )}
-            </>
-          ) : (
-            <>
-              {(pet.adoption_status || '').toLowerCase().includes('found') ? (
-                <Button 
-                  size="lg" 
-                  onClick={handleClaimPet} 
-                  className="w-full bg-[#2DD4BF] hover:bg-[#14B8A6] text-white h-14 rounded-lg font-semibold text-base transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_4px_12px_rgba(45,212,191,0.3)]"
-                >
-                  <span className="mr-2">💬</span>
-                  This is My Pet - Claim
+                  <Edit className="h-4 w-4" /> Manage Pet
                 </Button>
               ) : (
-                <>
-                  {isAuthenticated && (
-                    <Button
-                      size="lg" 
-                      className="w-full bg-[#2DD4BF] hover:bg-[#14B8A6] text-white h-14 rounded-lg font-semibold text-base transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_4px_12px_rgba(45,212,191,0.3)]"
-                      onClick={() => {
-                        const status = (pet.adoption_status || '').toLowerCase();
-                        if (status.includes('adopt') || status.includes('available')) {
-                          setShowAdoptDialog(true);
-                        } else {
-                          handleClaimPet();
-                        }
-                      }}
-                    >
-                      <MessageSquare className="mr-2 h-5 w-5" />
-                      Contact Reporter
-                    </Button>
-                  )}
-                  {((pet.adoption_status || '').toLowerCase().includes('adopt') || 
-                    (pet.adoption_status || '').toLowerCase().includes('available')) && (
-                    <Button 
-                      size="lg" 
-                      onClick={() => setShowAdoptDialog(true)} 
-                      className="w-full bg-[#2DD4BF] hover:bg-[#14B8A6] text-white h-14 rounded-lg font-semibold text-base transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_4px_12px_rgba(45,212,191,0.3)]"
-                    >
-                      <Heart className="mr-2 h-5 w-5" />
-                      Apply to Adopt
-                    </Button>
-                  )}
-                </>
+                <Button
+                  className="w-full h-12 bg-amber-200 hover:bg-amber-300 text-amber-900 gap-2 font-bold shadow-sm"
+                  onClick={() => {
+                    const status = (pet.adoption_status || '').toLowerCase();
+                    if (status.includes('adopt') || status.includes('available')) {
+                      setShowAdoptDialog(true);
+                    } else {
+                      handleClaimPet();
+                    }
+                  }}
+                >
+                  <Shield className="h-5 w-5" />
+                  Request to Reunite
+                </Button>
               )}
-              <Button
-                variant="outline"
-                size="lg"
-                className="w-full border-2 border-[#2DD4BF] text-[#2DD4BF] bg-white hover:bg-[#E0F2F1] h-14 rounded-lg font-semibold text-base transition-all duration-300 hover:-translate-y-0.5"
-                onClick={() => {
-                  if (navigator.share) {
-                    navigator.share({ title: pet.name, url: window.location.href });
-                  } else {
-                    navigator.clipboard.writeText(window.location.href);
-                    toast({ title: 'Link copied!' });
-                  }
-                }}
-              >
-                <span className="mr-2">🔗</span>
-                Share Profile
-              </Button>
-            </>
-          )}
+            </div>
+          </div>
         </div>
 
-        {/* Medical Records Accordion (if uploaded by user) */}
-        {isUploadedByUser && pet.id && (
-          <Card className="bg-white rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-[#E5E7EB] mb-5">
-            <CardContent className="p-0">
-              <Accordion type="single" collapsible defaultValue="">
-                <AccordionItem value="medical-records" className="border-none">
-                  <AccordionTrigger className="px-6 py-4 hover:no-underline">
-                    <div className="flex items-center gap-2">
-                      <Info className="h-5 w-5 text-[#2DD4BF]" />
-                      <span className="font-semibold text-[#1F2937]">Medical Records</span>
-                    </div>
-                  </AccordionTrigger>
-                  <AccordionContent className="px-6 pb-6">
-                    <UserPetMedicalRecords petId={Number(pet.id)} petName={pet.name} />
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
-            </CardContent>
-          </Card>
-        )}
       </div>
 
       {/* Dialogs */}
@@ -920,15 +820,15 @@ export default function PetDetail() {
             </div>
           </div>
           <DialogFooter className="flex-col sm:flex-row gap-2">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => setShowConsentDialog(false)}
               disabled={isProcessingConsent}
               className="flex-1"
             >
               Decide Later
             </Button>
-            <Button 
+            <Button
               onClick={() => handleConsentDecision(false, true)}
               disabled={isProcessingConsent}
               className="flex-1 bg-gradient-to-r from-[#06B6D4] to-[#3B82F6] hover:from-[#0891B2] hover:to-[#2563EB] text-white"
@@ -936,7 +836,7 @@ export default function PetDetail() {
               <Heart className="mr-2 h-4 w-4" />
               Keep Pet
             </Button>
-            <Button 
+            <Button
               onClick={() => handleConsentDecision(true, false)}
               disabled={isProcessingConsent}
               className="flex-1 bg-gradient-to-r from-[#06B6D4] to-[#3B82F6] hover:from-[#0891B2] hover:to-[#2563EB] text-white"

@@ -15,6 +15,8 @@ export interface User {
   profile_image?: string;
   date_joined?: string;
   last_login?: string;
+  is_active?: boolean;
+  is_verified?: boolean;
 }
 
 export interface Category {

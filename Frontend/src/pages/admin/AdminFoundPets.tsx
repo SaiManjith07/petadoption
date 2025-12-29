@@ -135,6 +135,11 @@ export default function AdminFoundPets() {
         const hasFoundDate = pet.found_date || pet.foundDate ||
           (pet.found_date !== null && pet.found_date !== undefined);
 
+        // Explicitly exclude any pet with status 'Lost' or 'Lost Pet'
+        if (pet.adoption_status === 'Lost' || pet.adoption_status === 'Lost Pet' || pet.status === 'Lost' || pet._isLost) {
+          return false;
+        }
+
         if (hasFoundDate) return true;
 
         // Check if it's explicitly marked as Found

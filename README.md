@@ -99,6 +99,7 @@ npm run dev
 - **Pet Listings**: Browse adoptable, found, and lost pets with advanced filters
 - **Lost/Found Reports**: Report lost or found pets with detailed information
 - **Adoption Applications**: Apply to adopt pets with verification workflow
+- **Requests Management**: Track your sent adoption/claim requests and received applications
 - **Chat System**: Real-time messaging for pet reunification and communication
 - **Volunteer Registration**: Become an NGO volunteer with shelter capacity tracking
 - **Shelter Registration**: Register shelters with capacity and area management

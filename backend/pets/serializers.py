@@ -158,7 +158,7 @@ class PetListSerializer(serializers.ModelSerializer):
             'category', 'adoption_status', 'location', 'pincode', 'last_seen',
             'tag_registration_number', 'location_map_url', 'location_latitude', 'location_longitude',
             'image', 'image_url', 'cloudinary_url', 'cloudinary_public_id', 'images', 'photos', 'posted_by',
-            'created_at', 'updated_at', 'is_verified', 'is_featured', 'views_count'
+            'created_at', 'updated_at', 'is_verified', 'is_featured', 'views_count', 'found_date'
         ]
 
     def get_image_url(self, obj):

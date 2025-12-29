@@ -102,15 +102,28 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 # Supabase Connection
 DATABASE_URL = os.getenv('DATABASE_URL')
 
-# Parse database URL with connection pooling settings
-# Parse database URL with connection pooling settings
-if DATABASE_URL:
-    db_config = dj_database_url.parse(DATABASE_URL, conn_max_age=600)
-    DATABASES = {
-        'default': db_config
-    }
+# Parse database URL with connection pooling# Parse database URL with connection pooling settings
+# Allow forcing local SQLite via env var (useful if remote DB is unreachable)
+use_sqlite = os.getenv('USE_SQLITE') == 'True'
+
+if DATABASE_URL and not use_sqlite:
+    try:
+        db_config = dj_database_url.parse(DATABASE_URL, conn_max_age=600)
+        DATABASES = {
+            'default': db_config
+        }
+    except Exception as e:
+        print(f"Error parsing DATABASE_URL: {e}")
+        # Fallback to SQLite
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.sqlite3',
+                'NAME': BASE_DIR / 'db.sqlite3',
+            }
+        }
 else:
-    # Fallback to SQLite if no DATABASE_URL (e.g. during build or local dev)
+    # Fallback to SQLite if no DATABASE_URL or USE_SQLITE=True
+    print("Using local SQLite database")
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
@@ -251,7 +264,7 @@ if DEBUG:
     ])
 
 # Debug: Print CORS origins (always print for troubleshooting)
-print(f"[CORS] Allowed Origins: {CORS_ALLOWED_ORIGINS}")
+print(f"[CORS] Allowed Origins: {CORS_ALLOWED_ORIGINS} (Config Reloaded)")
 print(f"[CORS] Allowed Origin Regexes: {CORS_ALLOWED_ORIGIN_REGEXES}")
 vercel_allowed = 'https://petadoption-amber.vercel.app' in CORS_ALLOWED_ORIGINS or any('vercel.app' in regex for regex in CORS_ALLOWED_ORIGIN_REGEXES)
 print(f"[CORS] Vercel origin allowed: {vercel_allowed}")

@@ -557,29 +557,17 @@ def all_chats(request):
 def chat_stats(request):
     """Get chat statistics."""
     try:
-        # Check if ChatRoom table exists
         from django.db import connection
-        with connection.cursor() as cursor:
-            cursor.execute("""
-                SELECT EXISTS (
-                    SELECT FROM information_schema.tables 
-                    WHERE table_name = 'chats_chatroom'
-                );
-            """)
-            table_exists = cursor.fetchone()[0]
         
-        if not table_exists:
-            return Response({
-                'data': {
-                    'pending_requests': 0,
-                    'active_chats': 0,
-                    'total_requests': 0,
-                    'approved_requests': 0,
-                    'rejected_requests': 0,
-                }
-            })
+        # Check if ChatRoom table exists using proper Django introspection
+        # This works for both PostgreSQL and SQLite
+        all_tables = connection.introspection.table_names()
+        table_exists = 'chats_chatroom' in all_tables
         
-        from chats.models import ChatRequest
+        # Debugging
+        print(f"Checking table 'chats_chatroom'. Exists: {table_exists}")
+        
+        from chats.models import ChatRequest, ChatRoom
         
         # Get chat request stats
         total_requests = ChatRequest.objects.count()
@@ -977,7 +965,11 @@ def all_users(request):
 @permission_classes([IsAdminUser])
 def all_pets(request):
     """Get all pets with optional filters."""
-    queryset = Pet.objects.all()
+    queryset = Pet.objects.all().select_related(
+        'category', 'owner', 'posted_by'
+    ).prefetch_related(
+        'images'
+    ).order_by('-created_at')
     
     # Apply filters
     status = request.query_params.get('status')

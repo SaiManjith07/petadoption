@@ -436,8 +436,40 @@ class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
         from rest_framework.permissions import IsAdminUser
         return [IsAdminUser()]
     
+    def update(self, request, *args, **kwargs):
+        """Handle user update with better error handling."""
+        try:
+            partial = kwargs.pop('partial', False)
+            instance = self.get_object()
+            
+            # Print debug info
+            print(f"[UserUpdate] Updating user {instance.id} ({instance.email})")
+            print(f"[UserUpdate] Data: {request.data}")
+            
+            serializer = self.get_serializer(instance, data=request.data, partial=partial)
+            if not serializer.is_valid():
+                print(f"[UserUpdate] Validation errors: {serializer.errors}")
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                
+            self.perform_update(serializer)
+            return Response(serializer.data)
+        except Exception as e:
+            import traceback
+            error_trace = traceback.format_exc()
+            print(f"[UserUpdate] Error: {str(e)}")
+            print(error_trace)
+            return Response(
+                {
+                    'message': 'Failed to update user', 
+                    'error': str(e),
+                    'details': serializer.errors if 'serializer' in locals() else None
+                }, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
     def perform_destroy(self, instance):
         # Soft delete - deactivate instead of delete
         instance.is_active = False
         instance.save()
+
 

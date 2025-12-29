@@ -67,5 +67,6 @@ urlpatterns = [
     path('role-requests/<int:pk>/', views_role_request.RoleRequestDetailView.as_view(), name='role-request-detail'),
     path('role-requests/<int:request_id>/approve/', views_role_request.approve_role_request, name='approve-role-request'),
     path('role-requests/<int:request_id>/reject/', views_role_request.reject_role_request, name='reject-role-request'),
+    path('role-requests/all/', views_role_request.all_role_requests, name='all-role-requests'),
 ]
 

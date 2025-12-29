@@ -11,7 +11,8 @@ class RoleRequest(models.Model):
         ('rescuer', 'Rescuer'),
         ('feeder', 'Feeder'),
         ('transporter', 'Transporter'),
-        ('volunteer', 'Volunteer'),
+        ('volunteer', 'General Volunteer'),
+        ('shelter', 'Shelter Provider'),
     ]
     
     STATUS_CHOICES = [

@@ -495,7 +495,7 @@ export default function AdminChats() {
                           <TableHead className="hidden md:table-cell">Type</TableHead>
                           <TableHead>Pet ID</TableHead>
                           <TableHead>Requester</TableHead>
-                          <TableHead className="hidden md:table-cell">Owner</TableHead>
+                          <TableHead className="hidden md:table-cell">Reported By</TableHead>
                           <TableHead>Status</TableHead>
                           <TableHead className="hidden md:table-cell">Created</TableHead>
                           <TableHead className="text-right">Actions</TableHead>

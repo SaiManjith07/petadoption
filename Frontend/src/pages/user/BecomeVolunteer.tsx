@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { HandHeart, Droplet, Truck, CheckCircle2, AlertCircle, UserPlus, ShieldCheck, Clock } from 'lucide-react';
+import { HandHeart, Droplet, Truck, CheckCircle2, AlertCircle, UserPlus, ShieldCheck, Clock, Home, Heart } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,28 +21,28 @@ export default function BecomeVolunteer() {
   const [availability, setAvailability] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [myRequests, setMyRequests] = useState<any[]>([]);
-  
+
   // Resource fields for Rescuer
   const [equipment, setEquipment] = useState<string[]>([]);
   const [equipmentInput, setEquipmentInput] = useState('');
   const [vehicleType, setVehicleType] = useState('');
   const [certifications, setCertifications] = useState('');
   const [emergencyContact, setEmergencyContact] = useState('');
-  
+
   // Resource fields for Feeder
   const [feedingLocations, setFeedingLocations] = useState<string[]>([]);
   const [locationInput, setLocationInput] = useState('');
   const [foodStorageCapacity, setFoodStorageCapacity] = useState('');
   const [feedingSchedule, setFeedingSchedule] = useState('');
   const [numberOfFeedingPoints, setNumberOfFeedingPoints] = useState('');
-  
+
   // Resource fields for Transporter
   const [vehicleCapacity, setVehicleCapacity] = useState('');
   const [vehicleRegistration, setVehicleRegistration] = useState('');
   const [vehicleInsurance, setVehicleInsurance] = useState('');
   const [serviceArea, setServiceArea] = useState('');
   const [serviceRadius, setServiceRadius] = useState('');
-  
+
   // Common resource field
   const [additionalResources, setAdditionalResources] = useState('');
 
@@ -70,6 +70,22 @@ export default function BecomeVolunteer() {
       description: 'Help transport pets safely to shelters, veterinary clinics, or new homes.',
       color: 'from-purple-500 to-purple-600',
       iconColor: 'text-purple-600',
+    },
+    {
+      id: 'volunteer',
+      title: 'General Volunteer',
+      icon: Heart,
+      description: 'Assist with events, adoption drives, and general tasks to support the community.',
+      color: 'from-pink-500 to-pink-600',
+      iconColor: 'text-pink-600',
+    },
+    {
+      id: 'shelter',
+      title: 'Shelter Provider',
+      icon: Home,
+      description: 'Offer your space as a temporary or permanent shelter for animals in need.',
+      color: 'from-green-500 to-green-600',
+      iconColor: 'text-green-600',
     },
   ];
 
@@ -130,7 +146,7 @@ export default function BecomeVolunteer() {
 
     try {
       setSubmitting(true);
-      
+
       // Build resources object based on selected role
       const resources: any = {
         additional_resources: additionalResources || '',
@@ -202,7 +218,7 @@ export default function BecomeVolunteer() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button 
+            <Button
               className="w-full bg-[#2BB6AF] hover:bg-[#239a94] text-white shadow-lg hover:shadow-xl hover:shadow-[#2BB6AF]/50"
               onClick={() => navigate('/auth/login')}
             >
@@ -244,13 +260,12 @@ export default function BecomeVolunteer() {
                 const isSelected = selectedRole === role.id;
                 const hasRequest = myRequests.some(r => r.requested_role === role.id && r.status === 'pending');
                 const isApproved = myRequests.some(r => r.requested_role === role.id && r.status === 'approved');
-                
+
                 return (
                   <Card
                     key={role.id}
-                    className={`cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-2 border-2 ${
-                      isSelected ? 'border-[#2BB6AF] shadow-lg' : 'border-gray-200'
-                    } ${isApproved ? 'bg-[#E0F7F5]' : ''}`}
+                    className={`cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-2 border-2 ${isSelected ? 'border-[#2BB6AF] shadow-lg' : 'border-gray-200'
+                      } ${isApproved ? 'bg-[#E0F7F5]' : ''}`}
                     onClick={() => !hasRequest && !isApproved && setSelectedRole(role.id as any)}
                   >
                     <CardHeader>
@@ -515,7 +530,7 @@ export default function BecomeVolunteer() {
                 {myRequests.map((request) => {
                   const role = roles.find(r => r.id === request.requested_role);
                   const Icon = role?.icon || HandHeart;
-                  
+
                   return (
                     <Card key={request._id || request.id}>
                       <CardHeader>
@@ -534,8 +549,8 @@ export default function BecomeVolunteer() {
                           <Badge
                             className={
                               request.status === 'approved' ? 'bg-[#E0F7F5] text-[#2BB6AF]' :
-                              request.status === 'rejected' ? 'bg-red-100 text-red-700' :
-                              'bg-yellow-100 text-yellow-700'
+                                request.status === 'rejected' ? 'bg-red-100 text-red-700' :
+                                  'bg-yellow-100 text-yellow-700'
                             }
                           >
                             {request.status === 'approved' && <CheckCircle2 className="h-3 w-3 mr-1" />}

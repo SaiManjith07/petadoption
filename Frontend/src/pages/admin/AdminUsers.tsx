@@ -71,11 +71,9 @@ export default function AdminUsers() {
   const loadUsers = async () => {
     try {
       setLoading(true);
-      const filters: any = {};
-      if (roleFilter !== 'all') filters.role = roleFilter;
-      if (statusFilter !== 'all') filters.is_active = statusFilter === 'active';
-
-      const usersData = await adminApi.getAllUsers(filters);
+      // Fetch all users without filters to ensure stats are correct
+      // Filtering is handled client-side
+      const usersData = await adminApi.getAllUsers({});
       setUsers(usersData);
     } catch (error: any) {
       toast({
@@ -244,7 +242,6 @@ export default function AdminUsers() {
     active: usersExcludingCurrent.filter((u: any) => u.is_active !== false).length,
     inactive: usersExcludingCurrent.filter((u: any) => u.is_active === false).length,
     regular: usersExcludingCurrent.filter((u: any) => u.role === 'user').length,
-    rescuers: usersExcludingCurrent.filter((u: any) => u.role === 'rescuer').length,
     admins: usersExcludingCurrent.filter((u: any) => u.role === 'admin').length,
   };
 
@@ -296,18 +293,18 @@ export default function AdminUsers() {
             </Card>
             <Card className="bg-white shadow-md hover:shadow-lg transition-all duration-300 border-l-4 border-l-purple-500">
               <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between space-y-0">
-                <CardTitle className="text-sm font-medium text-gray-600">Rescuers</CardTitle>
+                <CardTitle className="text-sm font-medium text-gray-600">Admins</CardTitle>
                 <Shield className="h-4 w-4 text-purple-500" />
               </CardHeader>
               <CardContent className="p-4 pt-0">
-                <div className="text-3xl font-bold text-purple-600">{stats.rescuers}</div>
+                <div className="text-3xl font-bold text-purple-600">{stats.admins}</div>
               </CardContent>
             </Card>
           </div>
         </div>
 
         {/* Search and Filters */}
-        <Card className="mb-6 shadow-sm">
+        < Card className="mb-6 shadow-sm" >
           <CardHeader>
             <CardTitle>Search & Filter</CardTitle>
             <CardDescription>Find users by name, email, or filter by role and status</CardDescription>
@@ -330,20 +327,22 @@ export default function AdminUsers() {
                   value={roleFilter}
                   onChange={(e) => {
                     setRoleFilter(e.target.value);
-                    loadUsers();
                   }}
                   className="px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-green-500"
                 >
                   <option value="all">All Roles</option>
                   <option value="user">User</option>
-                  <option value="rescuer">Rescuer</option>
                   <option value="admin">Admin</option>
+                  <option value="rescuer">Rescuer</option>
+                  <option value="feeder">Feeder</option>
+                  <option value="transporter">Transporter</option>
+                  <option value="volunteer">Volunteer</option>
+                  <option value="shelter">Shelter</option>
                 </select>
                 <select
                   value={statusFilter}
                   onChange={(e) => {
                     setStatusFilter(e.target.value);
-                    loadUsers();
                   }}
                   className="px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-green-500"
                 >
@@ -363,10 +362,10 @@ export default function AdminUsers() {
               </div>
             </div>
           </CardContent>
-        </Card>
+        </Card >
 
         {/* Users Table */}
-        <Card className="shadow-sm">
+        < Card className="shadow-sm" >
           <CardHeader>
             <CardTitle>All Users</CardTitle>
             <CardDescription>
@@ -412,11 +411,18 @@ export default function AdminUsers() {
                         <TableCell>
                           <Badge
                             variant={
-                              user.role === 'admin'
+                              ['admin', 'super_admin'].includes(user.role)
                                 ? 'default'
-                                : user.role === 'rescuer'
+                                : ['rescuer', 'feeder', 'transporter', 'volunteer', 'shelter'].includes(user.role)
                                   ? 'secondary'
                                   : 'outline'
+                            }
+                            className={
+                              ['rescuer', 'feeder', 'transporter'].includes(user.role)
+                                ? 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                                : user.role === 'volunteer'
+                                  ? 'bg-purple-100 text-purple-700 hover:bg-purple-200'
+                                  : undefined
                             }
                           >
                             {user.role || 'user'}
@@ -436,8 +442,8 @@ export default function AdminUsers() {
                           )}
                         </TableCell>
                         <TableCell className="text-sm text-gray-600">
-                          {user.createdAt
-                            ? format(new Date(user.createdAt), 'MMM dd, yyyy')
+                          {user.date_joined
+                            ? format(new Date(user.date_joined), 'MMM dd, yyyy')
                             : 'N/A'}
                         </TableCell>
                         <TableCell className="text-right">
@@ -489,10 +495,10 @@ export default function AdminUsers() {
               </div>
             )}
           </CardContent>
-        </Card>
+        </Card >
 
         {/* View User Dialog */}
-        <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
+        < Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen} >
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>User Details</DialogTitle>
@@ -530,8 +536,8 @@ export default function AdminUsers() {
                   <div>
                     <Label>Joined</Label>
                     <p className="text-sm font-medium">
-                      {selectedUser.createdAt
-                        ? format(new Date(selectedUser.createdAt), 'MMM dd, yyyy HH:mm')
+                      {selectedUser.date_joined
+                        ? format(new Date(selectedUser.date_joined), 'MMM dd, yyyy HH:mm')
                         : 'N/A'}
                     </p>
                   </div>
@@ -554,10 +560,10 @@ export default function AdminUsers() {
               </div>
             )}
           </DialogContent>
-        </Dialog>
+        </Dialog >
 
         {/* Edit User Dialog */}
-        <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        < Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen} >
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Edit User</DialogTitle>
@@ -583,7 +589,11 @@ export default function AdminUsers() {
                   >
                     <option value="user">User</option>
                     <option value="rescuer">Rescuer</option>
-                    {selectedUser.role === 'admin' && <option value="admin">Admin</option>}
+                    <option value="feeder">Feeder</option>
+                    <option value="transporter">Transporter</option>
+                    <option value="volunteer">Volunteer</option>
+                    <option value="shelter">Shelter</option>
+                    <option value="admin">Admin</option>
                   </select>
                 </div>
                 <div className="flex items-center gap-2">
@@ -605,9 +615,9 @@ export default function AdminUsers() {
               </div>
             )}
           </DialogContent>
-        </Dialog>
-      </div>
-    </AdminLayout>
+        </Dialog >
+      </div >
+    </AdminLayout >
   );
 }
 

@@ -293,7 +293,7 @@ export default function AdminChatReadOnly() {
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium">
+                      <p className="text-sm font-medium break-words">
                         {p.name || p.email} {p.is_staff ? '(Admin)' : ''}
                       </p>
                       <p className="text-xs text-muted-foreground truncate">
